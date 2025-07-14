@@ -1,0 +1,4 @@
+SERVER_URL = "http://localhost:8000"
+HEARTBEAT_INTERVAL = 10
+PLUGINS_FOLDER = "./plugins"
+CACHE_TTL = 600
