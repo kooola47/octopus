@@ -1,6 +1,7 @@
 import time
 from flask import request, jsonify
 
+
 def register_heartbeat_routes(app, cache, logger):
     @app.route("/heartbeat", methods=["POST"])
     def heartbeat():
