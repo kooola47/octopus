@@ -42,6 +42,60 @@ A powerful distributed task orchestration system that allows you to create, dist
 5. **Access the dashboard**
    Open http://localhost:8000 in your browser
 
+### 🖥️ PowerShell Deployment (Windows)
+
+For Windows environments, use the included PowerShell scripts for automated setup with conda environments:
+
+#### Server Setup
+```powershell
+# Basic server setup (creates conda environment and starts server)
+.\setup_server.ps1
+
+# Skip environment setup (if already configured)
+.\setup_server.ps1 -SkipEnvSetup
+
+# Run on custom port
+.\setup_server.ps1 -Port 9000
+```
+
+#### Client Setup
+```powershell
+# Basic client setup (creates conda environment and starts client)
+.\setup_client.ps1
+
+# Connect to custom server
+.\setup_client.ps1 -ServerUrl "http://192.168.1.100:8000"
+
+# Set custom client name
+.\setup_client.ps1 -ClientName "WorkStation-01"
+
+# Skip environment setup
+.\setup_client.ps1 -SkipEnvSetup
+```
+
+#### Features of PowerShell Scripts
+- ✅ **Automatic conda environment creation** (octopus_server/octopus_client)
+- ✅ **Dependency installation** from requirements.txt
+- ✅ **Playwright browser extraction** from bundled zip file (for offline deployments)
+- ✅ **Server connectivity testing** (client script)
+- ✅ **Colored console output** with status indicators
+- ✅ **Error handling** and validation
+- ✅ **Customizable parameters** (port, server URL, client name)
+
+#### Offline Deployment
+For corporate environments without internet access:
+
+1. **Create playwright browser package** (run on machine with internet):
+   ```powershell
+   .\create_playwright_package.ps1
+   ```
+
+2. **Include playwright_browsers.zip** in your deployment package
+
+3. **Deploy to target machines** - scripts will automatically extract browsers
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions and troubleshooting.
+
 ## 📋 Features
 
 ### 🎯 Core Capabilities
