@@ -333,6 +333,7 @@ def add_execution_result(task_id, client, status, result):
     """
     Add or update an execution result for a task.
     This is specifically for recording task execution results.
+    For adhoc tasks, also updates the task status to Done when execution completes.
     """
     import logging
     logger = logging.getLogger("octopus_server")
@@ -340,6 +341,8 @@ def add_execution_result(task_id, client, status, result):
     init_db()
     with sqlite3.connect(DB_FILE) as conn:
         logger.info(f"Adding execution result: task_id={task_id}, client={client}, status={status}")
+        
+        # Record the execution result
         conn.execute('''
             INSERT INTO executions (task_id, client, status, result, updated_at)
             VALUES (?, ?, ?, ?, ?)
@@ -354,6 +357,20 @@ def add_execution_result(task_id, client, status, result):
             str(result),
             time.time()
         ))
+        
+        # For adhoc tasks, update the task status to Done when execution completes
+        # Check if this is an adhoc task and if the execution status indicates completion
+        if status.lower() in ['success', 'completed', 'done', 'failed', 'error']:
+            # Get the task type
+            task_row = conn.execute('SELECT type FROM tasks WHERE id = ?', (task_id,)).fetchone()
+            if task_row and task_row[0] == 'Adhoc':
+                # Update task status to Done for completed adhoc tasks
+                task_status = 'Done' if status.lower() in ['success', 'completed', 'done'] else 'Failed'
+                conn.execute('''
+                    UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?
+                ''', (task_status, time.time(), task_id))
+                logger.info(f"Updated adhoc task {task_id} status to {task_status}")
+        
         conn.commit()
         logger.info(f"Execution result added successfully for task {task_id}")
     return True
