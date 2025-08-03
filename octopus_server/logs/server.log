@@ -6353,3 +6353,506 @@ sqlite3.OperationalError: no such table: tasks
 2025-08-03 10:41:21,125 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:21] "GET /tasks HTTP/1.1" 200 -
 2025-08-03 10:41:22,178 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:22] "GET /commands/AriesPC HTTP/1.1" 200 -
 2025-08-03 10:41:22,242 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:22] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:23,966 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188881.922223, 'since_last_heartbeat': 9.999297380447388, 'last_heartbeat': 1754188883.9667647}
+2025-08-03 10:41:23,966 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:23] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:41:24,415 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:24] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:25,779 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:25] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:27,178 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:27] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:28,162 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:28] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:29,217 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:29] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:29,295 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:29] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:29,870 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188887.830646, 'since_last_heartbeat': 9.99978494644165, 'last_heartbeat': 1754188889.8704834}
+2025-08-03 10:41:29,870 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:29] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:41:31,459 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:31] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:31,726 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:41:31] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:41:32,825 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:32] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:33,165 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188891.1247172, 'since_last_heartbeat': 9.998841762542725, 'last_heartbeat': 1754188893.1656573}
+2025-08-03 10:41:33,166 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:33] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:41:34,221 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:34] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:35,201 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:35] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:36,034 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188893.968671, 'since_last_heartbeat': 9.999587297439575, 'last_heartbeat': 1754188896.0347426}
+2025-08-03 10:41:36,034 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:36] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:41:36,271 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:36] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:36,368 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:36] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:38,514 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:38] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:39,910 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:39] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:41,275 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:41] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:41,926 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188899.8710334, 'since_last_heartbeat': 9.999446392059326, 'last_heartbeat': 1754188901.9265249}
+2025-08-03 10:41:41,927 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:41] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:41:42,253 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:42] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:42,747 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:41:42] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:41:43,318 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:43] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:43,427 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:43] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:45,210 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188903.167657, 'since_last_heartbeat': 9.999320268630981, 'last_heartbeat': 1754188905.2106843}
+2025-08-03 10:41:45,211 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:45] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:41:45,568 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:45] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:46,966 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:46] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:48,092 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188906.0370066, 'since_last_heartbeat': 9.999994277954102, 'last_heartbeat': 1754188908.0925581}
+2025-08-03 10:41:48,093 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:48] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:41:48,311 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:48] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:49,321 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:49] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:50,382 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:50] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:50,493 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:50] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:52,607 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:52] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:53,728 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:41:53] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:41:53,966 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188911.928761, 'since_last_heartbeat': 10.000146865844727, 'last_heartbeat': 1754188913.966982}
+2025-08-03 10:41:53,967 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:53] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:41:54,027 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:54] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:55,380 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:55] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:56,386 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:56] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:57,245 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188915.2135782, 'since_last_heartbeat': 9.99988317489624, 'last_heartbeat': 1754188917.2454395}
+2025-08-03 10:41:57,246 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:57] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:41:57,428 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:57] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:41:57,541 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:57] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:41:59,636 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:41:59] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:00,135 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188918.0955114, 'since_last_heartbeat': 9.999879121780396, 'last_heartbeat': 1754188920.1354113}
+2025-08-03 10:42:00,135 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:00] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:01,082 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:01] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:02,434 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:02] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:03,436 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:03] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:04,484 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:04] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:04,594 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:04] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:04,731 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:42:04] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:42:06,030 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188923.9682698, 'since_last_heartbeat': 9.99928903579712, 'last_heartbeat': 1754188926.030218}
+2025-08-03 10:42:06,031 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:06] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:06,694 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:06] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:08,141 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:08] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:09,298 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188927.2477248, 'since_last_heartbeat': 9.999558448791504, 'last_heartbeat': 1754188929.2984774}
+2025-08-03 10:42:09,299 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:09] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:09,471 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:09] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:10,489 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:10] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:11,535 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:11] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:11,647 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:11] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:12,183 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188930.1365962, 'since_last_heartbeat': 9.999614715576172, 'last_heartbeat': 1754188932.1839619}
+2025-08-03 10:42:12,185 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:12] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:13,474 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:42:13,475 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:42:13,475 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:13] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:42:13,736 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:13] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:15,221 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:15] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:15,730 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:42:15] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:42:16,355 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:42:16,356 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:42:16,356 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:16] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:42:16,547 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:16] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:17,510 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:17] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:18,079 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188936.0325012, 'since_last_heartbeat': 10.000086545944214, 'last_heartbeat': 1754188938.0799646}
+2025-08-03 10:42:18,081 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:18] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:18,591 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:18] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:18,688 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:18] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:19,334 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:42:19,335 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:42:19,335 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:19] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:42:20,779 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:20] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:21,351 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188939.3004115, 'since_last_heartbeat': 9.999781608581543, 'last_heartbeat': 1754188941.3512092}
+2025-08-03 10:42:21,352 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:21] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:22,266 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:22] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:23,598 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:23] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:24,247 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188942.1861477, 'since_last_heartbeat': 10.000115156173706, 'last_heartbeat': 1754188944.2475462}
+2025-08-03 10:42:24,248 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:24] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:24,573 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:24] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:25,644 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:25] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:25,737 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:25] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:26,724 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:42:26] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:42:27,843 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:27] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:29,335 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:29] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:30,129 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188948.0811589, 'since_last_heartbeat': 10.000115633010864, 'last_heartbeat': 1754188950.1282563}
+2025-08-03 10:42:30,129 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:30] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:30,657 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:30] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:31,614 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:31] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:32,688 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:32] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:32,796 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:32] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:33,413 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188951.3526258, 'since_last_heartbeat': 9.999011754989624, 'last_heartbeat': 1754188953.4136066}
+2025-08-03 10:42:33,414 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:33] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:34,886 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:34] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:36,300 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188954.249242, 'since_last_heartbeat': 9.999496459960938, 'last_heartbeat': 1754188956.3005285}
+2025-08-03 10:42:36,301 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:36] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:36,379 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:36] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:37,694 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:37] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:37,734 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:42:37] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:42:38,668 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:38] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:39,760 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:39] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:39,841 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:39] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:41,927 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:41] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:42,175 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188960.1306434, 'since_last_heartbeat': 9.9992835521698, 'last_heartbeat': 1754188962.1758826}
+2025-08-03 10:42:42,176 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:42] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:43,439 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:43] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:44,744 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:44] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:45,452 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188963.4153903, 'since_last_heartbeat': 9.99949836730957, 'last_heartbeat': 1754188965.4522204}
+2025-08-03 10:42:45,453 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:45] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:45,746 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:45] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:46,801 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:46] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:46,895 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:46] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:48,345 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188966.3027163, 'since_last_heartbeat': 10.000174283981323, 'last_heartbeat': 1754188968.3450036}
+2025-08-03 10:42:48,346 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:48] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:48,729 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:42:48] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:42:48,982 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:48] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:50,468 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:50] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:51,787 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:51] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:52,792 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:52] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:53,852 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:53] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:53,931 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:53] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:54,240 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188972.1782212, 'since_last_heartbeat': 9.99984097480774, 'last_heartbeat': 1754188974.24033}
+2025-08-03 10:42:54,241 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:54] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:56,058 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:56] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:57,491 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188975.456517, 'since_last_heartbeat': 9.999298334121704, 'last_heartbeat': 1754188977.4911578}
+2025-08-03 10:42:57,492 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:57] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:42:57,508 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:57] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:42:58,851 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:58] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:42:59,739 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:42:59] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:42:59,843 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:42:59] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:00,386 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188978.3462236, 'since_last_heartbeat': 10.00012993812561, 'last_heartbeat': 1754188980.3864303}
+2025-08-03 10:43:00,387 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:00] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:00,905 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:00] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:00,972 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:00] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:03,112 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:03] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:04,585 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:04] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:05,915 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:05] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:06,299 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188984.2421203, 'since_last_heartbeat': 9.99958848953247, 'last_heartbeat': 1754188986.2997675}
+2025-08-03 10:43:06,300 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:06] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:06,888 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:06] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:07,959 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:07] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:08,038 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:08] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:09,529 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188987.4932802, 'since_last_heartbeat': 9.998924732208252, 'last_heartbeat': 1754188989.5292928}
+2025-08-03 10:43:09,530 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:09] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:10,148 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:10] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:10,731 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:43:10] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:43:11,628 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:11] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:12,435 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188990.3896244, 'since_last_heartbeat': 9.999620914459229, 'last_heartbeat': 1754188992.4352334}
+2025-08-03 10:43:12,437 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:12] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:12,964 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:12] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:13,951 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:13] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:15,003 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:15] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:15,083 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:15] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:15,544 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:43:15,545 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:43:15,546 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:15] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:43:17,194 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:17] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:18,337 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188996.3020265, 'since_last_heartbeat': 10.000672817230225, 'last_heartbeat': 1754188998.3377113}
+2025-08-03 10:43:18,337 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:18] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:18,398 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:43:18,399 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:43:18,400 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:18] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:43:18,676 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:18] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:20,006 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:20] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:20,998 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:20] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:21,397 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:43:21,398 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:43:21,398 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:21] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:43:21,567 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188999.5308526, 'since_last_heartbeat': 9.999546527862549, 'last_heartbeat': 1754189001.5675619}
+2025-08-03 10:43:21,568 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:21] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:21,715 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:43:21] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:43:22,079 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:22] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:22,143 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:22] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:24,230 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:24] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:24,476 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189002.438318, 'since_last_heartbeat': 10.000073909759521, 'last_heartbeat': 1754189004.4768658}
+2025-08-03 10:43:24,478 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:24] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:25,712 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:25] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:27,070 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:27] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:28,079 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:28] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:29,112 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:29] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:29,191 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:29] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:30,381 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189008.3389425, 'since_last_heartbeat': 9.998867511749268, 'last_heartbeat': 1754189010.3819687}
+2025-08-03 10:43:30,382 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:30] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:31,278 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:31] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:32,736 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:43:32] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:43:32,746 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:32] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:33,623 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189011.5690653, 'since_last_heartbeat': 9.999492168426514, 'last_heartbeat': 1754189013.6230445}
+2025-08-03 10:43:33,623 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:33] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:34,120 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:34] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:35,124 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:35] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:36,174 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:36] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:36,254 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:36] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:36,547 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189014.4786496, 'since_last_heartbeat': 9.999118566513062, 'last_heartbeat': 1754189016.547531}
+2025-08-03 10:43:36,548 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:36] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:38,337 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:38] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:39,805 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:39] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:41,164 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:41] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:42,170 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:42] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:42,444 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189020.3847516, 'since_last_heartbeat': 9.99975872039795, 'last_heartbeat': 1754189022.444729}
+2025-08-03 10:43:42,445 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:42] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:43,220 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:43] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:43,299 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:43] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:43,736 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:43:43] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:43:45,399 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:45] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:45,663 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189023.624606, 'since_last_heartbeat': 9.99910283088684, 'last_heartbeat': 1754189025.663147}
+2025-08-03 10:43:45,663 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:45] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:46,871 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:46] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:48,221 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:48] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:48,588 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189026.549613, 'since_last_heartbeat': 9.999417304992676, 'last_heartbeat': 1754189028.58833}
+2025-08-03 10:43:48,589 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:48] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:49,204 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:49] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:50,270 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:50] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:50,351 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:50] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:52,455 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:52] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:53,940 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:53] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:54,496 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189032.4460151, 'since_last_heartbeat': 9.999284267425537, 'last_heartbeat': 1754189034.4966524}
+2025-08-03 10:43:54,497 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:54] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:54,720 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:43:54] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:43:55,254 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:55] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:56,239 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:56] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:57,303 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:57] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:43:57,413 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:57] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:43:57,708 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189035.6640685, 'since_last_heartbeat': 9.999928712844849, 'last_heartbeat': 1754189037.7081623}
+2025-08-03 10:43:57,708 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:57] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:43:59,501 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:43:59] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:00,649 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189038.5906088, 'since_last_heartbeat': 9.998815774917603, 'last_heartbeat': 1754189040.6490011}
+2025-08-03 10:44:00,649 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:00] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:00,983 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:00] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:02,331 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:02] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:03,284 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:03] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:04,363 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:04] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:04,488 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:04] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:05,716 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:44:05] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:44:06,550 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189044.4985883, 'since_last_heartbeat': 9.9998037815094, 'last_heartbeat': 1754189046.5508695}
+2025-08-03 10:44:06,552 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:06] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:06,553 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:06] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:08,031 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:08] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:09,391 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:09] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:09,761 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189047.7099261, 'since_last_heartbeat': 9.999252796173096, 'last_heartbeat': 1754189049.761162}
+2025-08-03 10:44:09,762 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:09] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:10,332 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:10] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:11,408 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:11] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:11,548 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:11] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:12,686 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189050.6518698, 'since_last_heartbeat': 10.000065803527832, 'last_heartbeat': 1754189052.6866915}
+2025-08-03 10:44:12,687 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:12] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:13,600 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:13] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:15,081 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:15] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:16,444 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:16] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:16,718 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:44:16] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:44:17,386 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:17] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:17,598 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:44:17,599 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:44:17,601 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:17] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:44:18,475 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:18] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:18,583 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189056.5533414, 'since_last_heartbeat': 9.999119281768799, 'last_heartbeat': 1754189058.5831733}
+2025-08-03 10:44:18,583 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:18] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:18,598 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:18] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:20,438 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:44:20,440 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:44:20,440 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:20] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:44:20,632 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:20] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:21,803 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189059.763476, 'since_last_heartbeat': 9.99929666519165, 'last_heartbeat': 1754189061.803569}
+2025-08-03 10:44:21,804 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:21] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:22,111 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:22] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:23,449 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:44:23,452 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:44:23,452 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:23] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:44:23,483 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:23] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:24,427 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:24] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:24,731 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189062.6889122, 'since_last_heartbeat': 9.999758243560791, 'last_heartbeat': 1754189064.7317066}
+2025-08-03 10:44:24,732 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:24] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:25,532 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:25] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:25,642 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:25] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:27,696 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:27] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:27,723 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:44:27] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:44:29,155 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:29] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:30,533 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:30] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:30,622 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189068.584821, 'since_last_heartbeat': 9.998957633972168, 'last_heartbeat': 1754189070.6220834}
+2025-08-03 10:44:30,623 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:30] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:31,469 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:31] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:32,575 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:32] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:32,683 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:32] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:33,855 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189071.8059752, 'since_last_heartbeat': 9.99914264678955, 'last_heartbeat': 1754189073.855276}
+2025-08-03 10:44:33,856 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:33] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:34,738 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:34] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:36,216 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:36] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:36,772 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189074.7337284, 'since_last_heartbeat': 9.999751091003418, 'last_heartbeat': 1754189076.772095}
+2025-08-03 10:44:36,773 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:36] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:37,579 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:37] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:38,518 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:38] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:38,721 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:44:38] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:44:39,615 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:39] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:39,741 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:39] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:41,777 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:41] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:42,677 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189080.6240404, 'since_last_heartbeat': 9.999470710754395, 'last_heartbeat': 1754189082.6775756}
+2025-08-03 10:44:42,678 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:42] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:43,266 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:43] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:44,623 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:44] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:45,563 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:45] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:45,931 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189083.857606, 'since_last_heartbeat': 9.999337434768677, 'last_heartbeat': 1754189085.9314113}
+2025-08-03 10:44:45,931 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:45] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:46,661 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:46] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:46,784 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:46] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:48,828 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:48] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:48,840 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189086.7744143, 'since_last_heartbeat': 9.998998641967773, 'last_heartbeat': 1754189088.8402584}
+2025-08-03 10:44:48,841 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:48] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:49,714 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:44:49] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:44:50,308 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:50] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:51,679 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:51] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:52,624 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:52] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:53,724 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:53] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:53,847 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:53] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:54,726 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189092.6805446, 'since_last_heartbeat': 9.999314308166504, 'last_heartbeat': 1754189094.726073}
+2025-08-03 10:44:54,727 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:54] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:55,876 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:55] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:57,346 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:57] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:44:57,978 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189095.9325652, 'since_last_heartbeat': 9.998806715011597, 'last_heartbeat': 1754189097.9784758}
+2025-08-03 10:44:57,979 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:57] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:44:58,744 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:58] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:44:59,688 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:44:59] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:00,712 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:45:00] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:45:00,769 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:00] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:00,878 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189098.841998, 'since_last_heartbeat': 9.999355554580688, 'last_heartbeat': 1754189100.8780508}
+2025-08-03 10:45:00,879 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:00] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:00,910 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:00] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:02,914 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:02] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:04,382 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:04] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:05,792 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:05] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:06,735 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:06] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:06,763 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189104.7286997, 'since_last_heartbeat': 10.000036716461182, 'last_heartbeat': 1754189106.7631505}
+2025-08-03 10:45:06,764 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:06] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:07,841 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:07] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:07,953 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:07] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:09,975 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:09] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:10,051 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189107.9802673, 'since_last_heartbeat': 9.999191761016846, 'last_heartbeat': 1754189110.0519738}
+2025-08-03 10:45:10,053 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:10] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:11,431 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:11] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:11,709 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:45:11] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:45:12,857 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:12] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:12,916 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189110.8812385, 'since_last_heartbeat': 9.999855041503906, 'last_heartbeat': 1754189112.9166045}
+2025-08-03 10:45:12,917 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:12] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:13,787 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:13] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:14,886 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:14] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:14,997 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:14] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:17,037 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:17] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:18,479 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:18] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:18,802 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189116.7645614, 'since_last_heartbeat': 10.000407695770264, 'last_heartbeat': 1754189118.80277}
+2025-08-03 10:45:18,803 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:18] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:19,640 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:45:19,641 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:45:19,642 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:19] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:45:19,917 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:19] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:20,833 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:20] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:21,959 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:21] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:22,057 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:22] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:22,101 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189120.0536468, 'since_last_heartbeat': 9.999560356140137, 'last_heartbeat': 1754189122.1016932}
+2025-08-03 10:45:22,102 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:22] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:22,508 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:45:22,510 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:45:22,511 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:22] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:45:22,710 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:45:22] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:45:24,095 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:24] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:24,987 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189122.9181972, 'since_last_heartbeat': 9.999377965927124, 'last_heartbeat': 1754189124.987201}
+2025-08-03 10:45:24,988 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:24] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:25,500 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:45:25,501 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:45:25,501 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:25] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:45:25,516 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:25] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:26,968 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:26] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:27,880 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:27] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:29,007 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:29] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:29,100 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:29] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:30,842 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189128.8064249, 'since_last_heartbeat': 10.001474857330322, 'last_heartbeat': 1754189130.8421733}
+2025-08-03 10:45:30,842 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:30] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:31,138 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:31] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:32,573 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:32] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:33,713 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:45:33] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:45:34,011 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:34] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:34,164 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189132.1033459, 'since_last_heartbeat': 9.999147176742554, 'last_heartbeat': 1754189134.1642933}
+2025-08-03 10:45:34,165 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:34] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:34,942 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:34] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:36,069 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:36] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:36,149 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:36] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:37,033 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189134.9898028, 'since_last_heartbeat': 9.999256134033203, 'last_heartbeat': 1754189137.0338848}
+2025-08-03 10:45:37,034 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:37] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:38,181 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:38] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:39,633 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:39] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:41,080 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:41] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:41,998 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:41] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:42,890 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189140.8437843, 'since_last_heartbeat': 9.998830318450928, 'last_heartbeat': 1754189142.890529}
+2025-08-03 10:45:42,891 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:42] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:43,107 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:43] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:43,206 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:43] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:44,727 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:45:44] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:45:45,235 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:45] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:46,228 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189144.1659346, 'since_last_heartbeat': 9.999506711959839, 'last_heartbeat': 1754189146.2288156}
+2025-08-03 10:45:46,230 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:46] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:46,678 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:46] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:48,117 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:48] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:49,076 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:49] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:49,089 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189147.0355034, 'since_last_heartbeat': 9.999456644058228, 'last_heartbeat': 1754189149.0893185}
+2025-08-03 10:45:49,089 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:49] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:50,158 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:50] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:50,254 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:50] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:52,277 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:52] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:53,732 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:53] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:54,942 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189152.892373, 'since_last_heartbeat': 9.999979019165039, 'last_heartbeat': 1754189154.9429939}
+2025-08-03 10:45:54,944 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:54] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:55,161 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:55] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:55,709 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:45:55] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:45:56,138 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:56] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:57,219 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:57] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:45:57,298 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:57] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:45:58,287 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189156.2307026, 'since_last_heartbeat': 9.999424695968628, 'last_heartbeat': 1754189158.2872667}
+2025-08-03 10:45:58,297 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:58] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:45:59,341 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:45:59] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:00,779 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:00] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:01,148 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189159.0899873, 'since_last_heartbeat': 9.999457597732544, 'last_heartbeat': 1754189161.148287}
+2025-08-03 10:46:01,149 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:01] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:46:02,207 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:02] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:03,188 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:03] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:04,269 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:04] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:04,346 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:04] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:06,400 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:06] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:06,708 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:46:06] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:46:06,991 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189164.945358, 'since_last_heartbeat': 10.000307083129883, 'last_heartbeat': 1754189166.9912822}
+2025-08-03 10:46:06,991 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:06] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:46:07,819 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:07] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:09,256 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:09] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:10,229 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:10] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:10,351 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189168.298443, 'since_last_heartbeat': 9.999858856201172, 'last_heartbeat': 1754189170.3513615}
+2025-08-03 10:46:10,352 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:10] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:46:11,305 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:11] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:11,383 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:11] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:13,190 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189171.1530414, 'since_last_heartbeat': 9.999757051467896, 'last_heartbeat': 1754189173.19049}
+2025-08-03 10:46:13,190 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:13] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:46:13,436 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:13] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:14,872 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:14] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:16,310 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:16] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:17,263 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:17] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:17,703 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:46:17] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:46:18,353 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:18] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:18,435 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:18] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:19,033 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189176.9925861, 'since_last_heartbeat': 9.999160289764404, 'last_heartbeat': 1754189179.0338361}
+2025-08-03 10:46:19,035 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:19] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:46:20,463 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:20] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:21,680 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:46:21,681 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:46:21,682 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:21] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:46:21,912 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:21] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:22,421 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189180.353614, 'since_last_heartbeat': 9.999431848526001, 'last_heartbeat': 1754189182.4218268}
+2025-08-03 10:46:22,421 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:22] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:46:23,353 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:23] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:24,330 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:24] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:24,566 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:46:24,567 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:46:24,567 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:24] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:46:25,237 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189183.191893, 'since_last_heartbeat': 9.999301433563232, 'last_heartbeat': 1754189185.2370784}
+2025-08-03 10:46:25,237 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:25] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:46:25,422 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:25] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:25,469 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:25] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:27,519 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:27] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:27,535 INFO octopus_server where is the plugin path : C:\Users\aries\PycharmProjects\octopus\octopus_server\plugins
+2025-08-03 10:46:27,535 INFO octopus_server Plugins list requested: [{'filename': 'create_incident.py', 'md5': 'e76f333395e767edfc33d32fe236b0b3'}, {'filename': 'create_incident_copy.py', 'md5': '832f39a7c7c74c76290e870a3ecee7b1'}, {'filename': '__init__.py', 'md5': '01876a491029159d9d5d4e1feff266b0'}]
+2025-08-03 10:46:27,535 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:27] "GET /plugins HTTP/1.1" 200 -
+2025-08-03 10:46:28,704 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:46:28] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:46:28,960 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:28] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:30,388 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:30] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:31,101 INFO octopus_server Heartbeat received: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189189.036085, 'since_last_heartbeat': 9.999737024307251, 'last_heartbeat': 1754189191.1018722}
+2025-08-03 10:46:31,101 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:31] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:46:31,383 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:31] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:32,499 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:32] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:32,546 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:32] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:34,470 INFO octopus_server Heartbeat received: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189192.4236107, 'since_last_heartbeat': 9.999126195907593, 'last_heartbeat': 1754189194.4700289}
+2025-08-03 10:46:34,471 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:34] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:46:34,548 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:34] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:36,018 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:36] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:37,276 INFO octopus_server Heartbeat received: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189195.2375014, 'since_last_heartbeat': 9.999385356903076, 'last_heartbeat': 1754189197.2768288}
+2025-08-03 10:46:37,276 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:37] "POST /heartbeat HTTP/1.1" 200 -
+2025-08-03 10:46:37,435 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:37] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:38,436 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:38] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:39,554 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:39] "GET /commands/AriesPC HTTP/1.1" 200 -
+2025-08-03 10:46:39,602 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:39] "GET /tasks HTTP/1.1" 200 -
+2025-08-03 10:46:39,713 INFO werkzeug 10.0.0.5 - - [03/Aug/2025 10:46:39] "GET /dashboard HTTP/1.1" 200 -
+2025-08-03 10:46:41,589 INFO werkzeug 127.0.0.1 - - [03/Aug/2025 10:46:41] "GET /commands/AriesPC HTTP/1.1" 200 -

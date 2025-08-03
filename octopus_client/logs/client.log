@@ -2878,3 +2878,127 @@
 2025-08-03 10:41:17,291 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
 2025-08-03 10:41:17,830 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188875.7833035, 'since_last_heartbeat': 9.999249696731567}
 2025-08-03 10:41:21,124 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188879.069778, 'since_last_heartbeat': 9.999454498291016}
+2025-08-03 10:41:23,969 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188881.922223, 'since_last_heartbeat': 9.999297380447388}
+2025-08-03 10:41:29,871 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188887.830646, 'since_last_heartbeat': 9.99978494644165}
+2025-08-03 10:41:33,168 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188891.1247172, 'since_last_heartbeat': 9.998841762542725}
+2025-08-03 10:41:36,035 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188893.968671, 'since_last_heartbeat': 9.999587297439575}
+2025-08-03 10:41:41,928 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188899.8710334, 'since_last_heartbeat': 9.999446392059326}
+2025-08-03 10:41:45,213 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188903.167657, 'since_last_heartbeat': 9.999320268630981}
+2025-08-03 10:41:48,095 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188906.0370066, 'since_last_heartbeat': 9.999994277954102}
+2025-08-03 10:41:53,968 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188911.928761, 'since_last_heartbeat': 10.000146865844727}
+2025-08-03 10:41:57,248 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188915.2135782, 'since_last_heartbeat': 9.99988317489624}
+2025-08-03 10:42:00,136 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188918.0955114, 'since_last_heartbeat': 9.999879121780396}
+2025-08-03 10:42:06,032 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188923.9682698, 'since_last_heartbeat': 9.99928903579712}
+2025-08-03 10:42:09,300 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188927.2477248, 'since_last_heartbeat': 9.999558448791504}
+2025-08-03 10:42:12,186 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188930.1365962, 'since_last_heartbeat': 9.999614715576172}
+2025-08-03 10:42:13,477 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:42:13,482 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:42:13,483 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:42:16,357 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:42:16,358 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:42:16,359 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:42:18,081 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188936.0325012, 'since_last_heartbeat': 10.000086545944214}
+2025-08-03 10:42:19,336 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:42:19,338 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:42:19,338 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:42:21,352 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188939.3004115, 'since_last_heartbeat': 9.999781608581543}
+2025-08-03 10:42:24,249 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188942.1861477, 'since_last_heartbeat': 10.000115156173706}
+2025-08-03 10:42:30,130 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188948.0811589, 'since_last_heartbeat': 10.000115633010864}
+2025-08-03 10:42:33,415 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188951.3526258, 'since_last_heartbeat': 9.999011754989624}
+2025-08-03 10:42:36,302 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188954.249242, 'since_last_heartbeat': 9.999496459960938}
+2025-08-03 10:42:42,178 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188960.1306434, 'since_last_heartbeat': 9.9992835521698}
+2025-08-03 10:42:45,455 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188963.4153903, 'since_last_heartbeat': 9.99949836730957}
+2025-08-03 10:42:48,346 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188966.3027163, 'since_last_heartbeat': 10.000174283981323}
+2025-08-03 10:42:54,242 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188972.1782212, 'since_last_heartbeat': 9.99984097480774}
+2025-08-03 10:42:57,493 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188975.456517, 'since_last_heartbeat': 9.999298334121704}
+2025-08-03 10:43:00,390 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188978.3462236, 'since_last_heartbeat': 10.00012993812561}
+2025-08-03 10:43:06,301 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188984.2421203, 'since_last_heartbeat': 9.99958848953247}
+2025-08-03 10:43:09,531 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188987.4932802, 'since_last_heartbeat': 9.998924732208252}
+2025-08-03 10:43:12,438 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188990.3896244, 'since_last_heartbeat': 9.999620914459229}
+2025-08-03 10:43:15,548 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:43:15,550 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:43:15,551 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:43:18,338 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188996.3020265, 'since_last_heartbeat': 10.000672817230225}
+2025-08-03 10:43:18,401 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:43:18,402 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:43:18,403 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:43:21,400 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:43:21,401 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:43:21,403 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:43:21,569 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754188999.5308526, 'since_last_heartbeat': 9.999546527862549}
+2025-08-03 10:43:24,478 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189002.438318, 'since_last_heartbeat': 10.000073909759521}
+2025-08-03 10:43:30,384 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189008.3389425, 'since_last_heartbeat': 9.998867511749268}
+2025-08-03 10:43:33,624 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189011.5690653, 'since_last_heartbeat': 9.999492168426514}
+2025-08-03 10:43:36,549 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189014.4786496, 'since_last_heartbeat': 9.999118566513062}
+2025-08-03 10:43:42,446 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189020.3847516, 'since_last_heartbeat': 9.99975872039795}
+2025-08-03 10:43:45,664 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189023.624606, 'since_last_heartbeat': 9.99910283088684}
+2025-08-03 10:43:48,590 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189026.549613, 'since_last_heartbeat': 9.999417304992676}
+2025-08-03 10:43:54,498 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189032.4460151, 'since_last_heartbeat': 9.999284267425537}
+2025-08-03 10:43:57,709 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189035.6640685, 'since_last_heartbeat': 9.999928712844849}
+2025-08-03 10:44:00,650 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189038.5906088, 'since_last_heartbeat': 9.998815774917603}
+2025-08-03 10:44:06,553 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189044.4985883, 'since_last_heartbeat': 9.9998037815094}
+2025-08-03 10:44:09,763 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189047.7099261, 'since_last_heartbeat': 9.999252796173096}
+2025-08-03 10:44:12,689 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189050.6518698, 'since_last_heartbeat': 10.000065803527832}
+2025-08-03 10:44:17,602 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:44:17,603 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:44:17,604 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:44:18,584 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189056.5533414, 'since_last_heartbeat': 9.999119281768799}
+2025-08-03 10:44:20,442 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:44:20,445 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:44:20,451 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:44:21,805 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189059.763476, 'since_last_heartbeat': 9.99929666519165}
+2025-08-03 10:44:23,454 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:44:23,455 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:44:23,456 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:44:24,733 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189062.6889122, 'since_last_heartbeat': 9.999758243560791}
+2025-08-03 10:44:30,624 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189068.584821, 'since_last_heartbeat': 9.998957633972168}
+2025-08-03 10:44:33,857 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189071.8059752, 'since_last_heartbeat': 9.99914264678955}
+2025-08-03 10:44:36,774 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189074.7337284, 'since_last_heartbeat': 9.999751091003418}
+2025-08-03 10:44:42,679 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189080.6240404, 'since_last_heartbeat': 9.999470710754395}
+2025-08-03 10:44:45,932 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189083.857606, 'since_last_heartbeat': 9.999337434768677}
+2025-08-03 10:44:48,841 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189086.7744143, 'since_last_heartbeat': 9.998998641967773}
+2025-08-03 10:44:54,728 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189092.6805446, 'since_last_heartbeat': 9.999314308166504}
+2025-08-03 10:44:57,981 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189095.9325652, 'since_last_heartbeat': 9.998806715011597}
+2025-08-03 10:45:00,881 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189098.841998, 'since_last_heartbeat': 9.999355554580688}
+2025-08-03 10:45:06,764 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189104.7286997, 'since_last_heartbeat': 10.000036716461182}
+2025-08-03 10:45:10,054 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189107.9802673, 'since_last_heartbeat': 9.999191761016846}
+2025-08-03 10:45:12,918 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189110.8812385, 'since_last_heartbeat': 9.999855041503906}
+2025-08-03 10:45:18,804 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189116.7645614, 'since_last_heartbeat': 10.000407695770264}
+2025-08-03 10:45:19,644 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:45:19,648 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:45:19,648 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:45:22,102 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189120.0536468, 'since_last_heartbeat': 9.999560356140137}
+2025-08-03 10:45:22,513 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:45:22,514 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:45:22,515 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:45:24,989 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189122.9181972, 'since_last_heartbeat': 9.999377965927124}
+2025-08-03 10:45:25,503 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:45:25,505 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:45:25,507 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:45:30,843 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189128.8064249, 'since_last_heartbeat': 10.001474857330322}
+2025-08-03 10:45:34,166 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189132.1033459, 'since_last_heartbeat': 9.999147176742554}
+2025-08-03 10:45:37,036 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189134.9898028, 'since_last_heartbeat': 9.999256134033203}
+2025-08-03 10:45:42,892 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189140.8437843, 'since_last_heartbeat': 9.998830318450928}
+2025-08-03 10:45:46,231 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189144.1659346, 'since_last_heartbeat': 9.999506711959839}
+2025-08-03 10:45:49,090 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189147.0355034, 'since_last_heartbeat': 9.999456644058228}
+2025-08-03 10:45:54,945 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189152.892373, 'since_last_heartbeat': 9.999979019165039}
+2025-08-03 10:45:58,298 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189156.2307026, 'since_last_heartbeat': 9.999424695968628}
+2025-08-03 10:46:01,150 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189159.0899873, 'since_last_heartbeat': 9.999457597732544}
+2025-08-03 10:46:06,992 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189164.945358, 'since_last_heartbeat': 10.000307083129883}
+2025-08-03 10:46:10,354 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189168.298443, 'since_last_heartbeat': 9.999858856201172}
+2025-08-03 10:46:13,191 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189171.1530414, 'since_last_heartbeat': 9.999757051467896}
+2025-08-03 10:46:19,036 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189176.9925861, 'since_last_heartbeat': 9.999160289764404}
+2025-08-03 10:46:21,683 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:46:21,690 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:46:21,691 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:46:22,424 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189180.353614, 'since_last_heartbeat': 9.999431848526001}
+2025-08-03 10:46:24,569 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:46:24,570 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:46:24,571 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:46:25,238 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189183.191893, 'since_last_heartbeat': 9.999301433563232}
+2025-08-03 10:46:27,537 INFO octopus_client Checked plugin updates: ['create_incident.py', 'create_incident_copy.py', '__init__.py'], updated: []
+2025-08-03 10:46:27,538 INFO octopus_client Plugin create_incident loaded/reloaded.
+2025-08-03 10:46:27,538 INFO octopus_client Plugin create_incident_copy loaded/reloaded.
+2025-08-03 10:46:31,102 INFO octopus_client Heartbeat sent: {'username': 'aries-21020', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189189.036085, 'since_last_heartbeat': 9.999737024307251}
+2025-08-03 10:46:34,471 INFO octopus_client Heartbeat sent: {'username': 'aries-17592', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189192.4236107, 'since_last_heartbeat': 9.999126195907593}
+2025-08-03 10:46:37,278 INFO octopus_client Heartbeat sent: {'username': 'aries-6236', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754189195.2375014, 'since_last_heartbeat': 9.999385356903076}
