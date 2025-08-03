@@ -3,16 +3,21 @@ import socket
 import getpass
 import time
 import logging
+import os
 from cache import Cache
 from config import SERVER_URL
 
 cache = Cache()
 logger = logging.getLogger("octopus_client")
 
+USERNAME = f"{getpass.getuser()}-{os.getpid()}"
+HOSTNAME = socket.gethostname()
+IP_ADDRESS = socket.gethostbyname(HOSTNAME)
+
 def send_heartbeat():
     data = {
-        "username": getpass.getuser(),
-        "hostname": socket.gethostname(),
+        "username": USERNAME,
+        "hostname": HOSTNAME,
         "ip": socket.gethostbyname(socket.gethostname()),
         "login_time": cache.get("login_time") or time.time(),
         "since_last_heartbeat": time.time() - (cache.get("last_heartbeat") or time.time())

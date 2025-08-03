@@ -1,0 +1,5 @@
+flask
+requests
+# For SQLite, no extra package is needed (Python standard library)
+# If you use Redis in the future, uncomment the next line:
+# redis

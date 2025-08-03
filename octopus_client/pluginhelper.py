@@ -2,6 +2,7 @@ import requests
 import os
 import hashlib
 import logging
+import importlib
 from config import SERVER_URL, PLUGINS_FOLDER
 
 logger = logging.getLogger("octopus_client")
@@ -44,5 +45,24 @@ def check_plugin_updates():
                 except Exception as e:
                     logger.error(f"Failed to download plugin {plugin_name}: {e}")
         logger.info(f"Checked plugin updates: {[p['filename'] for p in plugins]}, updated: {updated}")
+        reload_plugins()
     except Exception as e:
         logger.error(f"Plugin update failed: {e}")
+
+def reload_plugins():
+    import sys
+    import importlib
+    plugins_path = os.path.abspath(PLUGINS_FOLDER)
+    if plugins_path not in sys.path:
+        sys.path.insert(0, plugins_path)
+    for filename in os.listdir(PLUGINS_FOLDER):
+        if filename.endswith(".py") and not filename.startswith("__"):
+            module_name = filename[:-3]
+            try:
+                if module_name in sys.modules:
+                    importlib.reload(sys.modules[module_name])
+                else:
+                    importlib.import_module(module_name)
+                logger.info(f"Plugin {module_name} loaded/reloaded.")
+            except Exception as e:
+                logger.error(f"Failed to load/reload plugin {module_name}: {e}")

@@ -1,0 +1,63 @@
+2025-08-02 20:33:18,548 ERROR octopus_client Command polling failed: name 'SERVER_URL' is not defined
+2025-08-02 20:33:18,562 INFO werkzeug [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-02 20:33:18,562 INFO werkzeug [33mPress CTRL+C to quit[0m
+2025-08-02 20:33:20,598 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754137998.5510242, 'since_last_heartbeat': 0.0}
+2025-08-02 20:33:20,599 INFO octopus_client Checked plugin updates: [], updated: []
+2025-08-02 20:33:23,549 ERROR octopus_client Command polling failed: name 'SERVER_URL' is not defined
+2025-08-02 20:33:28,550 ERROR octopus_client Command polling failed: name 'SERVER_URL' is not defined
+2025-08-02 20:33:32,638 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138010.6004124, 'since_last_heartbeat': 10.000718832015991}
+2025-08-02 20:33:33,551 ERROR octopus_client Command polling failed: name 'SERVER_URL' is not defined
+2025-08-02 20:33:38,552 ERROR octopus_client Command polling failed: name 'SERVER_URL' is not defined
+2025-08-02 20:34:29,229 INFO werkzeug [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-02 20:34:29,229 INFO werkzeug [33mPress CTRL+C to quit[0m
+2025-08-02 20:34:31,257 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138069.214066, 'since_last_heartbeat': 0.0}
+2025-08-02 20:34:31,259 INFO octopus_client Checked plugin updates: [], updated: []
+2025-08-02 20:34:43,307 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138081.2591178, 'since_last_heartbeat': 10.001649379730225}
+2025-08-02 20:34:55,354 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138093.310435, 'since_last_heartbeat': 10.001750707626343}
+2025-08-02 20:35:07,395 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138105.3567338, 'since_last_heartbeat': 10.000915765762329}
+2025-08-02 20:35:19,461 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138117.3976018, 'since_last_heartbeat': 10.000901460647583}
+2025-08-02 20:35:31,522 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138129.4633436, 'since_last_heartbeat': 10.001099348068237}
+2025-08-02 20:35:33,306 INFO octopus_client Checked plugin updates: [], updated: []
+2025-08-02 20:35:43,560 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138141.5235093, 'since_last_heartbeat': 10.000694036483765}
+2025-08-02 20:35:55,628 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138153.5616038, 'since_last_heartbeat': 10.001550197601318}
+2025-08-02 20:36:07,677 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138165.629334, 'since_last_heartbeat': 10.000827312469482}
+2025-08-02 20:36:19,722 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138177.6794562, 'since_last_heartbeat': 10.000827550888062}
+2025-08-02 20:36:31,773 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138189.7237878, 'since_last_heartbeat': 10.001088619232178}
+2025-08-02 20:36:35,351 INFO octopus_client Checked plugin updates: [], updated: []
+2025-08-02 20:36:43,817 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138201.773899, 'since_last_heartbeat': 10.000366449356079}
+2025-08-02 20:36:55,857 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138213.8196027, 'since_last_heartbeat': 10.000648260116577}
+2025-08-02 20:37:15,264 INFO werkzeug [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-02 20:37:15,271 INFO werkzeug [33mPress CTRL+C to quit[0m
+2025-08-02 20:37:17,313 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138235.2506742, 'since_last_heartbeat': 0.0}
+2025-08-02 20:37:17,313 INFO octopus_client Checked plugin updates: [], updated: []
+2025-08-02 20:37:29,357 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138247.3152347, 'since_last_heartbeat': 10.001076698303223}
+2025-08-02 20:37:41,390 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138259.3580136, 'since_last_heartbeat': 10.000573635101318}
+2025-08-02 20:37:53,438 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138271.3912733, 'since_last_heartbeat': 10.000020265579224}
+2025-08-02 20:38:05,466 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138283.4404824, 'since_last_heartbeat': 10.001949310302734}
+2025-08-02 20:38:17,495 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138295.4680083, 'since_last_heartbeat': 10.001361608505249}
+2025-08-02 20:38:19,378 INFO octopus_client Checked plugin updates: [], updated: []
+2025-08-02 20:38:29,557 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138307.4968503, 'since_last_heartbeat': 10.001251220703125}
+2025-08-02 20:38:41,603 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138319.5586913, 'since_last_heartbeat': 10.00061297416687}
+2025-08-02 20:38:53,652 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138331.6047614, 'since_last_heartbeat': 10.000406265258789}
+2025-08-02 20:39:05,712 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138343.6546686, 'since_last_heartbeat': 10.001464128494263}
+2025-08-02 20:39:17,761 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138355.7136827, 'since_last_heartbeat': 10.00108790397644}
+2025-08-02 20:39:21,447 INFO octopus_client Checked plugin updates: [], updated: []
+2025-08-02 20:39:29,799 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138367.7627978, 'since_last_heartbeat': 10.001308917999268}
+2025-08-02 20:39:41,827 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138379.799964, 'since_last_heartbeat': 10.00088381767273}
+2025-08-02 20:39:53,862 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138391.8301039, 'since_last_heartbeat': 10.001104354858398}
+2025-08-02 20:40:05,905 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138403.8636713, 'since_last_heartbeat': 10.000799179077148}
+2025-08-02 20:40:17,985 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138415.9073253, 'since_last_heartbeat': 10.000407218933105}
+2025-08-02 20:40:23,513 INFO octopus_client Checked plugin updates: [], updated: []
+2025-08-02 20:40:30,016 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138427.9864266, 'since_last_heartbeat': 10.001022338867188}
+2025-08-02 20:40:42,089 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138440.0180764, 'since_last_heartbeat': 10.001404762268066}
+2025-08-02 20:40:54,135 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138452.0910494, 'since_last_heartbeat': 10.001312494277954}
+2025-08-02 20:41:06,178 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138464.1361542, 'since_last_heartbeat': 10.000725030899048}
+2025-08-02 20:41:18,254 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138476.1793683, 'since_last_heartbeat': 10.000945806503296}
+2025-08-02 20:41:25,582 INFO octopus_client Checked plugin updates: [], updated: []
+2025-08-02 20:41:30,312 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138488.2552686, 'since_last_heartbeat': 10.000749826431274}
+2025-08-02 20:41:42,345 INFO octopus_client Heartbeat sent: {'username': 'aries', 'hostname': 'AriesPC', 'ip': '10.0.0.5', 'login_time': 1754138500.3131025, 'since_last_heartbeat': 10.00058627128601}
+2025-08-02 20:41:54,200 ERROR octopus_client Command polling failed: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /commands/AriesPC (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000269A443E6D0>: Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ý¼«¾Ü¾ø£¬ÎÞ·¨Á¬½Ó¡£'))
+2025-08-02 20:41:56,453 ERROR octopus_client Heartbeat failed: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /heartbeat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000269A4486710>: Failed to establish a new connection: [WinError 10061] ÓÉÓÚÄ¿±ê¼ÆËã»ú»ý¼«¾Ü¾ø£¬ÎÞ·¨Á¬½Ó¡£'))
