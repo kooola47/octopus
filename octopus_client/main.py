@@ -1,36 +1,60 @@
+#!/usr/bin/env python3
+"""
+🐙 OCTOPUS CLIENT - Distributed Task Execution Agent
+===================================================
+
+Client agent that connects to the Octopus server to:
+- Receive and execute tasks
+- Send heartbeat signals
+- Manage plugin synchronization
+- Report execution results
+"""
+
 import os
 import time
 import logging
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from cache import Cache
-from config import HEARTBEAT_INTERVAL,SERVER_URL
+from config import *
 from scheduler import Scheduler
 from flask import Flask, request, jsonify
-from taskmanager import sync_tasks, get_tasks, add_task, update_task, delete_task
+from taskmanager import get_tasks, add_task, update_task, delete_task
 
 from heartbeat import send_heartbeat
 from pluginhelper import check_plugin_updates
 import socket
-import requests
+import requests   
 import importlib
 import json
 
+# Initialize components
 cache = Cache()
 scheduler = Scheduler()
 app = Flask(__name__)
 
 # Setup logs folder and logging
-os.makedirs("logs", exist_ok=True)
+os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, LOG_LEVEL),
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
     handlers=[
-        logging.FileHandler("logs/client.log"),
+        logging.FileHandler(LOG_FILE, encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger("octopus_client")
+
+# Log client startup information
+logger.info("Octopus Client starting")
+logger.info(f"Server URL: {SERVER_URL}")
+logger.info(f"Heartbeat interval: {HEARTBEAT_INTERVAL}s")
+logger.info(f"Task check interval: {TASK_CHECK_INTERVAL}s")
+logger.info(f"Plugins folder: {PLUGINS_FOLDER}")
+
+# =============================================================================
+# CLIENT STATE MANAGEMENT
+# =============================================================================
 
 # Track latest scheduled task and status
 latest_task_info = {
@@ -101,107 +125,219 @@ def handle_server_commands():
                             logger.error(f"Action {action} not found in plugin {plugin_name}")
                     except Exception as e:
                         logger.error(f"Failed to execute plugin {plugin_name}: {e}")
-            # Poll every 5 seconds
-            time.sleep(5)
+            # Poll for new tasks
+            time.sleep(TASK_CHECK_INTERVAL)
         except Exception as e:
             logger.error(f"Command polling failed: {e}")
-            time.sleep(5)
+            time.sleep(RETRY_DELAY)
 
-def task_sync_loop():
-    while True:
-        sync_tasks()
-        time.sleep(5)
+
+def is_task_done(task):
+    """
+    Returns True if the task is considered Done.
+    """
+    import datetime, time
+    
+    status = task.get("status")
+    task_type = task.get("type")
+    
+    # If status is already Done, return True
+    if status in ("Done", "success", "failed"):
+        return True
+    
+    # For Adhoc tasks, check if there are successful/failed executions
+    if task_type == "Adhoc":
+        executions = task.get("executions", [])
+        # For non-ALL tasks, if any execution is done, task is done
+        if task.get("owner") != "ALL":
+            return any(exec.get("status") in ("success", "failed") for exec in executions)
+        # For ALL tasks, they remain active until server marks them done
+        return False
+        
+    # For Schedule tasks, check if past end time
+    elif task_type == "Schedule":
+        end_time = task.get("execution_end_time")
+        if end_time:
+            try:
+                if isinstance(end_time, str) and end_time:
+                    if end_time.isdigit():
+                        end_ts = float(end_time)
+                    else:
+                        end_ts = datetime.datetime.fromisoformat(end_time).timestamp()
+                else:
+                    end_ts = float(end_time)
+                if time.time() > end_ts:
+                    return True
+            except Exception:
+                pass
+    
+    return False
+
+def should_client_execute(task, username):
+    """
+    Returns True if this client should execute the task.
+    Logic:
+    - ALL tasks with status=Active: all clients execute
+    - Tasks with executor=username and status=Active: only this client executes
+    - Tasks with owner=username and status=Active: this client executes
+    """
+    owner = task.get("owner")
+    executor = task.get("executor")
+    status = task.get("status")
+    
+    # For ALL tasks, every client should execute if status is Active
+    if owner == "ALL" and status == "Active":
+        return True
+    
+    # For tasks specifically assigned to this client (executor = username)
+    if executor == username and status == "Active":
+        return True
+    
+    # For tasks owned by this user (fallback)
+    if owner == username and status == "Active":
+        return True
+        
+    return False
+
+def claim_all_task(task, username):
+    """
+    Claim an ALL task if status is Created or executor is empty.
+    """
+    owner = task.get("owner")
+    executor = task.get("executor")
+    status = task.get("status")
+    if owner == "ALL" and (not executor or status == "Created"):
+        return True
+    return False
+
+def post_execution_result(server_url, tid, username, exec_status, result):
+    """
+    Post execution result for ALL tasks to the executions table.
+    """
+    try:
+        requests.post(
+            f"{server_url}/dashboard",
+            data={
+                "add_execution": "1",
+                "task_id": tid,
+                "client": username,
+                "exec_status": exec_status,
+                "exec_result": result
+            },
+            timeout=5
+        )
+        logger.info(f"Posted execution result for ALL task {tid} by {username}")
+    except Exception as e:
+        logger.error(f"Failed to post execution for ALL task {tid}: {e}")
+
+def update_task_status(server_url, tid, username, result, status="Done"):
+    """
+    Update the task status for direct user tasks.
+    """
+    update = {
+        "status": status,
+        "result": result,
+        "executor": username,
+        "updated_at": time.time()
+    }
+    try:
+        requests.put(f"{server_url}/tasks/{tid}", json=update, timeout=5)
+    except Exception as e:
+        logger.error(f"Failed to update task {tid} status: {e}")
+
+def execute_task(task, tid, username, server_url):
+    """
+    Execute the given task and report result.
+    """
+    import importlib, ast
+    plugin = task.get("plugin")
+    action = task.get("action", "run")
+    args = task.get("args", [])
+    kwargs = task.get("kwargs", {})
+    if isinstance(args, str):
+        try:
+            args = ast.literal_eval(args)
+        except Exception:
+            args = []
+    if isinstance(kwargs, str):
+        try:
+            kwargs = ast.literal_eval(kwargs)
+        except Exception:
+            kwargs = {}
+    try:
+        module = importlib.import_module(f"plugins.{plugin}")
+        func = getattr(module, action, None)
+        if callable(func):
+            logger.info(f"Executing task {tid}: {plugin}.{action} args={args} kwargs={kwargs}")
+            result = func(*args, **kwargs)
+            exec_status = "success"
+        else:
+            result = f"Action {action} not found"
+            exec_status = "failed"
+    except Exception as e:
+        result = str(e)
+        exec_status = "failed"
+    return exec_status, result
 
 def task_execution_loop():
     """
     Periodically fetch tasks from the server and execute if assigned to this client.
-    Executes if:
-      - owner == "ALL"
-      - owner == <this username>
-      - owner == "Anyone" and executor == <this username>
-    Only executes if status is not 'success' or 'failed'.
     """
-    import getpass
-    import importlib
-    import ast
-    from heartbeat import USERNAME as username, HOSTNAME as hostname
-    # Get username and hostname from heartbeat module to keep in sync
+    from heartbeat import USERNAME as username
+    logger.info(f"Starting task execution loop for client: {username}")
+    
     while True:
         try:
             resp = requests.get(f"{SERVER_URL}/tasks", timeout=10)
             if resp.status_code == 200:
                 tasks = resp.json()
+                logger.info(f"Fetched {len(tasks)} tasks from server")
+                
                 for tid, task in tasks.items():
                     owner = task.get("owner")
-                    executor = task.get("executor")
+                    executor = task.get("executor") 
                     status = task.get("status")
-                    plugin = task.get("plugin")
-                    action = task.get("action", "run")
-                    args = task.get("args", [])
-                    kwargs = task.get("kwargs", {})
-                    # Parse args/kwargs if they are strings
-                    if isinstance(args, str):
-                        try:
-                            args = ast.literal_eval(args)
-                        except Exception:
-                            args = []
-                    if isinstance(kwargs, str):
-                        try:
-                            kwargs = ast.literal_eval(kwargs)
-                        except Exception:
-                            kwargs = {}
-                    should_execute = False
-                    if owner == "ALL":
-                        should_execute = True
-                    elif owner == username:
-                        should_execute = True
-                    elif owner == "Anyone" and executor == username:
-                        should_execute = True
-                    if should_execute and status not in ("success", "failed"):
-                        try:
-                            module = importlib.import_module(f"plugins.{plugin}")
-                            func = getattr(module, action, None)
-                            if callable(func):
-                                logger.info(f"Executing task {tid}: {plugin}.{action} args={args} kwargs={kwargs}")
-                                result = func(*args, **kwargs)
-                                update = {
-                                    "status": "success",
-                                    "result": result,
-                                    "executor": username,
-                                    "updated_at": time.time()
-                                }
-                            else:
-                                update = {
-                                    "status": "failed",
-                                    "result": f"Action {action} not found",
-                                    "executor": username,
-                                    "updated_at": time.time()
-                                }
-                        except Exception as e:
-                            update = {
-                                "status": "failed",
-                                "result": str(e),
-                                "executor": username,
-                                "updated_at": time.time()
-                            }
+                    
+                    logger.debug(f"Checking task {tid}: owner={owner}, executor={executor}, status={status}")
+                    
+                    if is_task_done(task):
+                        logger.debug(f"Task {tid} is already done, skipping")
+                        continue
+                        
+                    # Claim ALL tasks if needed
+                    if claim_all_task(task, username):
+                        update = {
+                            "executor": username,
+                            "status": "Active",
+                            "updated_at": time.time()
+                        }
                         try:
                             requests.put(f"{SERVER_URL}/tasks/{tid}", json=update, timeout=5)
+                            logger.info(f"Picked up ALL task {tid} as executor {username}")
                         except Exception as e:
-                            logger.error(f"Failed to update task {tid} status: {e}")
-            time.sleep(5)
+                            logger.error(f"Failed to pick up ALL task {tid}: {e}")
+                        continue  # Will execute on next poll as Active
+                        
+                    # Should this client execute?
+                    if should_client_execute(task, username):
+                        logger.info(f"Executing task {tid} assigned to {username}")
+                        exec_status, result = execute_task(task, tid, username, SERVER_URL)
+                        
+                        if task.get("owner") == "ALL":
+                            post_execution_result(SERVER_URL, tid, username, exec_status, result)
+                        else:
+                            update_task_status(SERVER_URL, tid, username, result)
+                            
+                        logger.info(f"Task {tid} execution completed: {exec_status}")
+                    else:
+                        logger.debug(f"Task {tid} not assigned to this client ({username})")
+                        
+            time.sleep(TASK_CHECK_INTERVAL)
         except Exception as e:
             logger.error(f"Task execution polling failed: {e}")
-            time.sleep(5)
+            time.sleep(RETRY_DELAY)
 
-def run():
-    cache.set("login_time", time.time())
-    # Wrap tasks to track their status
-    scheduler.add_task(tracked_task(send_heartbeat, "send_heartbeat"), HEARTBEAT_INTERVAL)
-    scheduler.add_task(tracked_task(check_plugin_updates, "check_plugin_updates"), 60)
-    threading.Thread(target=handle_server_commands, daemon=True).start()
-    threading.Thread(target=task_sync_loop, daemon=True).start()
-    threading.Thread(target=task_execution_loop, daemon=True).start()
-    app.run(port=5001)  # Client UI/API
+
 
 @app.route("/tasks", methods=["GET", "POST"])
 def tasks():
@@ -210,6 +346,7 @@ def tasks():
         task_id = add_task(task)
         return jsonify({"id": task_id})
     return jsonify(get_tasks())
+
 
 @app.route("/tasks/<task_id>", methods=["PUT", "DELETE"])
 def task_ops(task_id):
@@ -220,6 +357,18 @@ def task_ops(task_id):
     elif request.method == "DELETE":
         ok = delete_task(task_id)
         return jsonify({"success": ok})
+    # Ensure a response is always returned
+    return jsonify({"error": "Method not allowed"}), 405
+
+
+def run():
+    cache.set("login_time", time.time())
+    # Wrap tasks to track their status
+    scheduler.add_task(tracked_task(send_heartbeat, "send_heartbeat"), HEARTBEAT_INTERVAL)
+    scheduler.add_task(tracked_task(check_plugin_updates, "check_plugin_updates"), 60)
+    threading.Thread(target=handle_server_commands, daemon=True).start()
+    threading.Thread(target=task_execution_loop, daemon=True).start()
+    app.run(port=5001)  # Client UI/API
 
 if __name__ == "__main__":
     run()

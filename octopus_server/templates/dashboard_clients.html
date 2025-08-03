@@ -1,0 +1,137 @@
+<!-- Client Statistics -->
+<div class="stats-grid">
+    {% set active_clients = [] %}
+    {% set offline_clients = [] %}
+    {% for key, client in clients.items() %}
+        {% if client['last_heartbeat'] and (now - client['last_heartbeat']) <= 30 %}
+            {% set _ = active_clients.append(1) %}
+        {% else %}
+            {% set _ = offline_clients.append(1) %}
+        {% endif %}
+    {% endfor %}
+    
+    <div class="stat-card">
+        <div class="stat-number">{{ clients|length }}</div>
+        <div class="stat-label">Total Clients</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ active_clients|length }}</div>
+        <div class="stat-label">Online</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ offline_clients|length }}</div>
+        <div class="stat-label">Offline</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ "%.1f"|format((active_clients|length / (clients|length or 1)) * 100) }}%</div>
+        <div class="stat-label">Uptime</div>
+    </div>
+</div>
+
+<div class="octopus-card">
+    <h3 class="octopus-section-title">
+        <i class="bi bi-people"></i>
+        Connected Clients
+    </h3>
+    
+    <div class="table-responsive">
+        <table class="table octopus-table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th><i class="bi bi-person"></i> Username</th>
+                    <th><i class="bi bi-pc-display"></i> Hostname</th>
+                    <th><i class="bi bi-globe"></i> IP Address</th>
+                    <th><i class="bi bi-heart-pulse"></i> Last Heartbeat</th>
+                    <th><i class="bi bi-clock"></i> Offline For</th>
+                    <th><i class="bi bi-door-open"></i> Login Time</th>
+                    <th><i class="bi bi-info-circle"></i> Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for key, client in clients.items() %}
+            <tr>
+                <td>
+                    <span class="badge bg-primary">
+                        <i class="bi bi-person"></i> {{ client['username'] }}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-secondary">
+                        <i class="bi bi-pc-display"></i> {{ client['hostname'] }}
+                    </span>
+                </td>
+                <td>
+                    <code>{{ client['ip'] }}</code>
+                </td>
+                <td>
+                    {% if client['last_heartbeat'] %}
+                        <small class="text-muted">
+                            <i class="bi bi-clock"></i>
+                            {{ client['last_heartbeat'] | datetimeformat }}
+                        </small>
+                    {% else %}
+                        <span class="text-muted">Never</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if client['last_heartbeat'] %}
+                        {% set time_diff = now - client['last_heartbeat'] %}
+                        {% if time_diff <= 30 %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-wifi"></i> {{ time_diff | seconds_to_human }}
+                            </span>
+                        {% elif time_diff <= 120 %}
+                            <span class="badge bg-warning">
+                                <i class="bi bi-wifi-1"></i> {{ time_diff | seconds_to_human }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-danger">
+                                <i class="bi bi-wifi-off"></i> {{ time_diff | seconds_to_human }}
+                            </span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-question"></i> Unknown
+                        </span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if client['login_time'] %}
+                        <small class="text-muted">
+                            <i class="bi bi-calendar3"></i>
+                            {{ client['login_time'] | datetimeformat }}
+                        </small>
+                    {% else %}
+                        <span class="text-muted">Unknown</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if client['last_heartbeat'] and (now - client['last_heartbeat']) <= 30 %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> Online
+                        </span>
+                    {% elif client['last_heartbeat'] and (now - client['last_heartbeat']) <= 120 %}
+                        <span class="badge bg-warning">
+                            <i class="bi bi-exclamation-triangle"></i> Warning
+                        </span>
+                    {% else %}
+                        <span class="badge bg-danger">
+                            <i class="bi bi-x-circle"></i> Offline
+                        </span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            {% if clients|length == 0 %}
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                    <i class="bi bi-people display-4"></i>
+                    <div class="mt-2">No clients connected</div>
+                    <small>Start a client to see it appear here</small>
+                </td>
+            </tr>
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>

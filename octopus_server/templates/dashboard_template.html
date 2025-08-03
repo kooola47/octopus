@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🐙 Octopus Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --octopus-primary: #6366f1;
+            --octopus-primary-dark: #4f46e5;
+            --octopus-secondary: #8b5cf6;
+            --octopus-success: #10b981;
+            --octopus-warning: #f59e0b;
+            --octopus-danger: #ef4444;
+            --octopus-info: #3b82f6;
+            --octopus-light: #f8fafc;
+            --octopus-dark: #1e293b;
+            --octopus-border: #e2e8f0;
+            --octopus-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --octopus-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header Styles */
+        .octopus-header {
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--octopus-shadow-lg);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .octopus-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--octopus-primary), var(--octopus-secondary), var(--octopus-info));
+        }
+
+        .octopus-header h1 {
+            margin: 0;
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .octopus-subtitle {
+            color: #64748b;
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+            font-weight: 400;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            background: rgba(255,255,255,0.9);
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--octopus-shadow);
+            border: none;
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            margin: 0 0.25rem;
+            color: #64748b;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-tabs .nav-link:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--octopus-primary);
+            transform: translateY(-2px);
+        }
+
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-primary-dark));
+            color: white;
+            box-shadow: var(--octopus-shadow);
+            transform: translateY(-2px);
+        }
+
+        .nav-tabs .nav-link i {
+            margin-right: 0.5rem;
+        }
+
+        /* Card Styles */
+        .octopus-card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--octopus-shadow-lg);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .octopus-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .octopus-section-title {
+            color: var(--octopus-dark);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .octopus-section-title i {
+            margin-right: 0.75rem;
+            color: var(--octopus-primary);
+        }
+
+        /* Table Styles */
+        .octopus-table {
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: var(--octopus-shadow);
+            margin-bottom: 0;
+        }
+
+        .octopus-table thead th {
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-primary-dark));
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            padding: 1rem;
+            border: none;
+        }
+
+        .octopus-table tbody tr {
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .octopus-table tbody tr:nth-child(even) {
+            background: rgba(248, 250, 252, 0.8);
+        }
+
+        .octopus-table tbody tr:hover {
+            background: rgba(99, 102, 241, 0.1);
+            transform: scale(1.01);
+        }
+
+        .octopus-table td {
+            padding: 1rem;
+            border: none;
+            vertical-align: middle;
+        }
+
+        /* Button Styles */
+        .octopus-btn {
+            border-radius: 0.5rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .octopus-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--octopus-shadow);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-primary-dark));
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--octopus-success), #059669);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--octopus-danger), #dc2626);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--octopus-warning), #d97706);
+        }
+
+        /* Form Styles */
+        .form-control, .form-select {
+            border: 2px solid var(--octopus-border);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.9);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--octopus-primary);
+            box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+            background: white;
+        }
+
+        /* Status Badges */
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+        }
+
+        .bg-success {
+            background: linear-gradient(135deg, var(--octopus-success), #059669) !important;
+        }
+
+        .bg-danger {
+            background: linear-gradient(135deg, var(--octopus-danger), #dc2626) !important;
+        }
+
+        .bg-warning {
+            background: linear-gradient(135deg, var(--octopus-warning), #d97706) !important;
+        }
+
+        .bg-secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--octopus-shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--octopus-primary);
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+
+        /* Auto-refresh indicator */
+        .refresh-indicator {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(255,255,255,0.9);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            color: #64748b;
+            box-shadow: var(--octopus-shadow);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .refresh-indicator i {
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+
+            .octopus-header {
+                padding: 1.5rem;
+            }
+
+            .octopus-header h1 {
+                font-size: 2rem;
+            }
+
+            .octopus-card {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .refresh-indicator {
+                position: static;
+                margin-bottom: 1rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--octopus-border);
+            border-top: 4px solid var(--octopus-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+    </style>
+    <script>
+        let refreshInterval = null;
+        let refreshCountdown = 10;
+        let countdownInterval = null;
+        let currentData = null;
+
+        function startAutoRefresh() {
+            if (refreshInterval) return;
+            
+            refreshInterval = setInterval(function() {
+                if (!document.activeElement || document.activeElement.tagName === "BODY") {
+                    refreshDashboardData();
+                }
+            }, 10000);
+
+            startCountdown();
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            updateRefreshIndicator("Paused");
+        }
+
+        function startCountdown() {
+            refreshCountdown = 10;
+            countdownInterval = setInterval(function() {
+                refreshCountdown--;
+                updateRefreshIndicator(`Refresh in ${refreshCountdown}s`);
+                if (refreshCountdown <= 0) {
+                    refreshCountdown = 10;
+                }
+            }, 1000);
+        }
+
+        function updateRefreshIndicator(text) {
+            const indicator = document.querySelector('.refresh-text');
+            if (indicator) indicator.textContent = text;
+        }
+
+        function refreshDashboardData() {
+            showLoading();
+            fetch('/api/dashboard-data')
+                .then(response => response.json())
+                .then(data => {
+                    currentData = data;
+                    updateDashboardViews(data);
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error refreshing dashboard:', error);
+                    hideLoading();
+                });
+        }
+
+        function updateDashboardViews(data) {
+            updateClientsView(data.clients, data.now);
+            updateTasksView(data.tasks);
+            updateExecutionsView(data.executions);
+        }
+
+        function updateClientsView(clients, now) {
+            const activeClients = [];
+            const offlineClients = [];
+            
+            for (const [key, client] of Object.entries(clients)) {
+                if (client.last_heartbeat && (now - client.last_heartbeat) <= 30) {
+                    activeClients.push(client);
+                } else {
+                    offlineClients.push(client);
+                }
+            }
+
+            // Update statistics
+            const totalClients = Object.keys(clients).length;
+            const activeCount = activeClients.length;
+            const offlineCount = offlineClients.length;
+            const uptime = totalClients > 0 ? ((activeCount / totalClients) * 100).toFixed(1) : '0.0';
+
+            updateStatCard('clients', 0, totalClients);
+            updateStatCard('clients', 1, activeCount);
+            updateStatCard('clients', 2, offlineCount);
+            updateStatCard('clients', 3, uptime + '%');
+
+            // Update table
+            updateClientsTable(clients, now);
+        }
+
+        function updateTasksView(tasks) {
+            const totalTasks = Object.keys(tasks).length;
+            let activeTasks = 0, completedTasks = 0, pendingTasks = 0;
+
+            for (const [id, task] of Object.entries(tasks)) {
+                const status = task.status || '';
+                if (status === 'Running' || status === 'Assigned') {
+                    activeTasks++;
+                } else if (status === 'Done' || status === 'completed' || status === 'success') {
+                    completedTasks++;
+                } else {
+                    pendingTasks++;
+                }
+            }
+
+            updateStatCard('tasks', 0, totalTasks);
+            updateStatCard('tasks', 1, activeTasks);
+            updateStatCard('tasks', 2, completedTasks);
+            updateStatCard('tasks', 3, pendingTasks);
+
+            updateTasksTable(tasks);
+        }
+
+        function updateExecutionsView(executions) {
+            const totalExecutions = executions.length;
+            let successCount = 0, failedCount = 0;
+
+            executions.forEach(exec => {
+                const status = exec.status.toLowerCase();
+                if (status === 'success' || status === 'completed' || status === 'done') {
+                    successCount++;
+                } else if (status === 'failed' || status === 'error') {
+                    failedCount++;
+                }
+            });
+
+            const successRate = totalExecutions > 0 ? ((successCount / totalExecutions) * 100).toFixed(1) : '0.0';
+
+            updateStatCard('executions', 0, totalExecutions);
+            updateStatCard('executions', 1, successCount);
+            updateStatCard('executions', 2, failedCount);
+            updateStatCard('executions', 3, successRate + '%');
+
+            updateExecutionsTable(executions);
+        }
+
+        function updateStatCard(viewId, index, value) {
+            const view = document.getElementById(viewId);
+            if (view) {
+                const statCards = view.querySelectorAll('.stat-card .stat-number');
+                if (statCards[index]) {
+                    statCards[index].textContent = value;
+                }
+            }
+        }
+
+        function updateClientsTable(clients, now) {
+            const tbody = document.querySelector('#clients tbody');
+            if (!tbody) return;
+
+            let html = '';
+            const clientEntries = Object.entries(clients);
+            
+            if (clientEntries.length === 0) {
+                html = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-people display-4"></i>
+                            <div class="mt-2">No clients connected</div>
+                            <small>Start a client to see it appear here</small>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                clientEntries.forEach(([key, client]) => {
+                    const timeDiff = client.last_heartbeat ? now - client.last_heartbeat : null;
+                    const lastHeartbeat = client.last_heartbeat ? 
+                        new Date(client.last_heartbeat * 1000).toLocaleString() : 'Never';
+                    const loginTime = client.login_time ? 
+                        new Date(client.login_time * 1000).toLocaleString() : 'Unknown';
+                    
+                    let offlineBadge, statusBadge;
+                    if (timeDiff !== null) {
+                        if (timeDiff <= 30) {
+                            offlineBadge = `<span class="badge bg-success"><i class="bi bi-wifi"></i> ${formatTimeDiff(timeDiff)}</span>`;
+                            statusBadge = `<span class="badge bg-success"><i class="bi bi-check-circle"></i> Online</span>`;
+                        } else if (timeDiff <= 120) {
+                            offlineBadge = `<span class="badge bg-warning"><i class="bi bi-wifi-1"></i> ${formatTimeDiff(timeDiff)}</span>`;
+                            statusBadge = `<span class="badge bg-warning"><i class="bi bi-exclamation-triangle"></i> Warning</span>`;
+                        } else {
+                            offlineBadge = `<span class="badge bg-danger"><i class="bi bi-wifi-off"></i> ${formatTimeDiff(timeDiff)}</span>`;
+                            statusBadge = `<span class="badge bg-danger"><i class="bi bi-x-circle"></i> Offline</span>`;
+                        }
+                    } else {
+                        offlineBadge = `<span class="badge bg-secondary"><i class="bi bi-question"></i> Unknown</span>`;
+                        statusBadge = `<span class="badge bg-danger"><i class="bi bi-x-circle"></i> Offline</span>`;
+                    }
+
+                    html += `
+                        <tr>
+                            <td><span class="badge bg-primary"><i class="bi bi-person"></i> ${client.username}</span></td>
+                            <td><span class="badge bg-secondary"><i class="bi bi-pc-display"></i> ${client.hostname}</span></td>
+                            <td><code>${client.ip}</code></td>
+                            <td><small class="text-muted"><i class="bi bi-clock"></i> ${lastHeartbeat}</small></td>
+                            <td>${offlineBadge}</td>
+                            <td><small class="text-muted"><i class="bi bi-calendar3"></i> ${loginTime}</small></td>
+                            <td>${statusBadge}</td>
+                        </tr>
+                    `;
+                });
+            }
+            tbody.innerHTML = html;
+        }
+
+        function updateTasksTable(tasks) {
+            // This would update the tasks table - implementation depends on the tasks view structure
+            console.log('Tasks updated:', Object.keys(tasks).length);
+        }
+
+        function updateExecutionsTable(executions) {
+            // Update statistics
+            const successfulExecs = executions.filter(exec => {
+                const status = exec.status.toLowerCase();
+                return status === 'success' || status === 'completed' || status === 'done';
+            }).length;
+            const failedExecs = executions.filter(exec => {
+                const status = exec.status.toLowerCase();
+                return status === 'failed' || status === 'error';
+            }).length;
+            const totalExecs = executions.length;
+            const successRate = totalExecs > 0 ? ((successfulExecs / totalExecs) * 100).toFixed(1) : 0;
+
+            // Update stat cards within the executions view specifically
+            const executionsView = document.getElementById('executions');
+            if (executionsView) {
+                const statCards = executionsView.querySelectorAll('.stat-card .stat-number');
+                if (statCards.length >= 4) {
+                    statCards[0].textContent = totalExecs;
+                    statCards[1].textContent = successfulExecs;
+                    statCards[2].textContent = failedExecs;
+                    statCards[3].textContent = successRate + '%';
+                }
+            }
+
+            // Update executions table
+            const executionsTableBody = document.querySelector('#executions .octopus-table tbody');
+            if (executionsTableBody) {
+                let html = '';
+                
+                if (executions.length === 0) {
+                    html = `
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox display-4"></i>
+                                <div class="mt-2">No execution records found</div>
+                                <small>Execute some tasks to see results here</small>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    executions.forEach((exec, index) => {
+                        let statusBadge;
+                        let resultClass;
+                        const status = exec.status.toLowerCase();
+                        
+                        if (status === 'success' || status === 'completed' || status === 'done') {
+                            statusBadge = '<span class="badge bg-success"><i class="bi bi-check-lg"></i> ' + 
+                                        exec.status.charAt(0).toUpperCase() + exec.status.slice(1) + '</span>';
+                            resultClass = 'text-success';
+                        } else if (status === 'failed' || status === 'error') {
+                            statusBadge = '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> ' + 
+                                        exec.status.charAt(0).toUpperCase() + exec.status.slice(1) + '</span>';
+                            resultClass = 'text-danger';
+                        } else {
+                            statusBadge = '<span class="badge bg-secondary"><i class="bi bi-clock"></i> ' + 
+                                        exec.status.charAt(0).toUpperCase() + exec.status.slice(1) + '</span>';
+                            resultClass = 'text-muted';
+                        }
+                        
+                        const updatedAt = exec.updated_at ? new Date(exec.updated_at * 1000).toLocaleString() : 'Unknown';
+                        
+                        html += `
+                            <tr>
+                                <td>
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-key"></i> ${exec.id}
+                                    </span>
+                                </td>
+                                <td>
+                                    <code class="text-muted">${exec.task_id.substring(0, 8)}...</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">
+                                        <i class="bi bi-person"></i> ${exec.client}
+                                    </span>
+                                </td>
+                                <td>${statusBadge}</td>
+                                <td style="max-width:300px;">
+                                    <div class="text-truncate" title="${exec.result || ''}">
+                                        <small class="${resultClass}">${exec.result || 'No result'}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock"></i>
+                                        ${updatedAt}
+                                    </small>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+                executionsTableBody.innerHTML = html;
+            }
+        }
+
+        function formatTimeDiff(seconds) {
+            if (seconds < 60) return `${Math.floor(seconds)}s`;
+            if (seconds < 3600) return `${Math.floor(seconds/60)}m ${Math.floor(seconds%60)}s`;
+            if (seconds < 86400) return `${Math.floor(seconds/3600)}h ${Math.floor((seconds%3600)/60)}m`;
+            const days = Math.floor(seconds/86400);
+            const hours = Math.floor((seconds%86400)/3600);
+            return `${days}d ${hours}h`;
+        }
+
+        function showTab(tabId) {
+            // Hide all views
+            document.querySelectorAll('.octopus-view').forEach(function(el) {
+                el.style.display = 'none';
+            });
+            
+            // Show selected view
+            document.getElementById(tabId).style.display = 'block';
+            
+            // Update tab active state
+            document.querySelectorAll('.nav-link').forEach(function(el) {
+                el.classList.remove('active');
+            });
+            document.getElementById(tabId + '-tab').classList.add('active');
+            
+            // Update URL
+            if (history.pushState) {
+                const url = new URL(window.location);
+                url.searchParams.set('tab', tabId);
+                window.history.replaceState({}, '', url);
+            }
+        }
+
+        function showLoading() {
+            document.querySelector('.loading-overlay').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.querySelector('.loading-overlay').classList.remove('show');
+        }
+
+        window.onload = function() {
+            hideLoading();
+            startAutoRefresh();
+            
+            // Pause refresh when focusing on form elements
+            document.querySelectorAll('input,select,textarea').forEach(function(el) {
+                el.addEventListener('focus', stopAutoRefresh);
+                el.addEventListener('blur', startAutoRefresh);
+            });
+            
+            // Show the correct tab
+            showTab("{{ active_tab|default('executions') }}");
+            
+            // Do initial data refresh
+            refreshDashboardData();
+        };
+    </script>
+</head>
+<body>
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="refresh-indicator">
+        <i class="bi bi-arrow-clockwise"></i>
+        <span class="refresh-text">Refresh in 10s</span>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="octopus-header">
+            <h1>🐙 Octopus Dashboard</h1>
+            <p class="octopus-subtitle">Distributed Task Orchestration System</p>
+        </div>
+
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link" id="clients-tab" href="javascript:void(0);" onclick="showTab('clients')">
+                    <i class="bi bi-people"></i>Clients
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="tasks-tab" href="javascript:void(0);" onclick="showTab('tasks')">
+                    <i class="bi bi-list-task"></i>Tasks
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" id="executions-tab" href="javascript:void(0);" onclick="showTab('executions')">
+                    <i class="bi bi-play-circle"></i>Executions
+                </a>
+            </li>
+        </ul>
+
+        <div id="clients" class="octopus-view" style="display:none;">
+            {% include "dashboard_clients.html" %}
+        </div>
+        <div id="tasks" class="octopus-view" style="display:none;">
+            {% include "dashboard_tasks.html" %}
+        </div>
+        <div id="executions" class="octopus-view" style="display:block;">
+            {% include "dashboard_executions.html" %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

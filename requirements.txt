@@ -1,5 +1,15 @@
-flask
-requests
-# For SQLite, no extra package is needed (Python standard library)
-# If you use Redis in the future, uncomment the next line:
-# redis
+# Core dependencies for Octopus distributed task management system
+flask>=2.3.0
+requests>=2.31.0
+sqlite-web>=0.4.0
+PyYAML>=6.0
+
+# Development dependencies (uncomment as needed)
+# pytest>=7.0.0
+# black>=23.0.0
+# flake8>=6.0.0
+
+# Future dependencies (uncomment when needed)
+# redis>=4.5.0
+# celery>=5.3.0
+# docker>=6.0.0
