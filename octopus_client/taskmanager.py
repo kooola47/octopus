@@ -87,12 +87,6 @@ def execute_task(conn, task_id, task):
     conn.execute("UPDATE tasks SET status=?, result=?, executor=?, updated_at=? WHERE id=?",
                  (status, str(result), HOSTNAME, time.time(), task_id))
     conn.commit()
-
-def add_task(task):
-    _init_db()
-    task_id = task.get("id") or str(int(time.time() * 1000))
-    with _get_conn() as conn:
-        conn.execute('''
             INSERT OR REPLACE INTO tasks (id, owner, plugin, action, args, kwargs, status, executor, result, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
