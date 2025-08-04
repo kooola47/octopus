@@ -378,6 +378,57 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+
+        /* Modal Styles */
+        .modal-content {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: var(--octopus-shadow-lg);
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--octopus-border);
+            border-radius: 1rem 1rem 0 0;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--octopus-border);
+            border-radius: 0 0 1rem 1rem;
+        }
+
+        .modal-title {
+            font-weight: 600;
+        }
+
+        /* Form validation styles */
+        .form-control.is-invalid,
+        .form-select.is-invalid {
+            border-color: var(--octopus-danger);
+            box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
+        }
+
+        .form-text {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .was-validated .form-control:invalid,
+        .was-validated .form-select:invalid {
+            border-color: var(--octopus-danger);
+            box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
+        }
+
+        .was-validated .form-control:valid,
+        .was-validated .form-select:valid {
+            border-color: var(--octopus-success);
+            box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25);
+        }
+
+        /* Enhance modal backdrop */
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+        }
     </style>
     <script>
         let refreshInterval = null;
@@ -475,14 +526,16 @@
 
         function updateTasksView(tasks) {
             const totalTasks = Object.keys(tasks).length;
-            let activeTasks = 0, completedTasks = 0, pendingTasks = 0;
+            let activeTasks = 0, completedTasks = 0, pendingTasks = 0, failedTasks = 0;
 
             for (const [id, task] of Object.entries(tasks)) {
                 const status = task.status || '';
-                if (status === 'Running' || status === 'Assigned') {
+                if (status === 'Running' || status === 'Assigned' || status === 'Active') {
                     activeTasks++;
                 } else if (status === 'Done' || status === 'completed' || status === 'success') {
                     completedTasks++;
+                } else if (status === 'failed' || status === 'error' || status === 'Failed') {
+                    failedTasks++;
                 } else {
                     pendingTasks++;
                 }
@@ -491,7 +544,7 @@
             updateStatCard('tasks', 0, totalTasks);
             updateStatCard('tasks', 1, activeTasks);
             updateStatCard('tasks', 2, completedTasks);
-            updateStatCard('tasks', 3, pendingTasks);
+            updateStatCard('tasks', 3, failedTasks);
 
             updateTasksTable(tasks);
         }
@@ -745,6 +798,188 @@
             // Do initial data refresh
             refreshDashboardData();
         };
+
+        // Modal handling for task creation
+        function setupTaskModal() {
+            const createTaskModal = document.getElementById('createTaskModal');
+            const createTaskForm = document.getElementById('createTaskForm');
+            
+            if (createTaskModal && createTaskForm) {
+                // Clear form when modal is closed
+                createTaskModal.addEventListener('hidden.bs.modal', function () {
+                    createTaskForm.reset();
+                    // Reset to default values
+                    const actionField = createTaskForm.querySelector('input[name="action"]');
+                    if (actionField) actionField.value = 'main';
+                    
+                    const argsField = createTaskForm.querySelector('textarea[name="args"]');
+                    if (argsField) argsField.value = '[]';
+                    
+                    const kwargsField = createTaskForm.querySelector('textarea[name="kwargs"]');
+                    if (kwargsField) kwargsField.value = '{}';
+                    
+                    // Clear validation states
+                    createTaskForm.classList.remove('was-validated');
+                    const invalidFields = createTaskForm.querySelectorAll('.is-invalid');
+                    invalidFields.forEach(field => field.classList.remove('is-invalid'));
+                });
+
+                // Form validation
+                createTaskForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    let isValid = true;
+                    const requiredFields = createTaskForm.querySelectorAll('[required]');
+                    
+                    requiredFields.forEach(field => {
+                        if (!field.value.trim()) {
+                            field.classList.add('is-invalid');
+                            isValid = false;
+                        } else {
+                            field.classList.remove('is-invalid');
+                        }
+                    });
+
+                    // Validate JSON fields
+                    const argsField = createTaskForm.querySelector('textarea[name="args"]');
+                    const kwargsField = createTaskForm.querySelector('textarea[name="kwargs"]');
+                    
+                    if (argsField) {
+                        try {
+                            JSON.parse(argsField.value || '[]');
+                            argsField.classList.remove('is-invalid');
+                        } catch (e) {
+                            argsField.classList.add('is-invalid');
+                            isValid = false;
+                        }
+                    }
+                    
+                    if (kwargsField) {
+                        try {
+                            JSON.parse(kwargsField.value || '{}');
+                            kwargsField.classList.remove('is-invalid');
+                        } catch (e) {
+                            kwargsField.classList.add('is-invalid');
+                            isValid = false;
+                        }
+                    }
+
+                    if (isValid) {
+                        // Submit the form
+                        createTaskForm.submit();
+                    } else {
+                        createTaskForm.classList.add('was-validated');
+                    }
+                });
+            }
+        }
+
+        // Initialize everything when the page loads
+        window.onload = function() {
+            hideLoading();
+            startAutoRefresh();
+            setupTaskModal();
+            
+            // Pause refresh when focusing on form elements
+            document.querySelectorAll('input,select,textarea').forEach(function(el) {
+                el.addEventListener('focus', stopAutoRefresh);
+                el.addEventListener('blur', startAutoRefresh);
+            });
+            
+            // Show the correct tab
+            showTab("{{ active_tab|default('executions') }}");
+            
+            // Do initial data refresh
+            refreshDashboardData();
+        };
+
+        // Helper function to format timestamp
+        function formatTimestamp(timestamp) {
+            if (!timestamp || timestamp === 'Unknown' || timestamp === '') {
+                return 'Unknown';
+            }
+            
+            try {
+                // Convert Unix timestamp (seconds) to milliseconds for JavaScript Date
+                const date = new Date(parseFloat(timestamp) * 1000);
+                
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                    return timestamp; // Return original if can't parse
+                }
+                
+                // Format as readable date and time
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                });
+            } catch (error) {
+                console.error('Error formatting timestamp:', timestamp, error);
+                return timestamp; // Return original if error
+            }
+        }
+
+        // Task Details Modal Functions
+        function viewTaskDetails(button) {
+            console.log('viewTaskDetails called', button);
+            
+            try {
+                // Get data from button attributes
+                const taskId = button.getAttribute('data-task-id');
+                console.log('Task ID:', taskId);
+                
+                document.getElementById('detailTaskId').textContent = taskId;
+                document.getElementById('detailType').textContent = button.getAttribute('data-task-type');
+                document.getElementById('detailOwner').textContent = button.getAttribute('data-task-owner');
+                document.getElementById('detailPlugin').textContent = button.getAttribute('data-task-plugin');
+                document.getElementById('detailAction').textContent = button.getAttribute('data-task-action');
+                document.getElementById('detailStatus').textContent = button.getAttribute('data-task-status');
+                document.getElementById('detailExecutor').textContent = button.getAttribute('data-task-executor') || 'Unassigned';
+                
+                // Format the timestamp for better readability
+                const rawTimestamp = button.getAttribute('data-task-updated');
+                document.getElementById('detailUpdated').textContent = formatTimestamp(rawTimestamp);
+                
+                document.getElementById('detailArgs').textContent = button.getAttribute('data-task-args') || '[]';
+                document.getElementById('detailKwargs').textContent = button.getAttribute('data-task-kwargs') || '{}';
+                
+                // Format start and end times if they exist
+                const startTime = button.getAttribute('data-task-start');
+                const endTime = button.getAttribute('data-task-end');
+                document.getElementById('detailStartTime').textContent = formatTimestamp(startTime) || 'Not set';
+                document.getElementById('detailEndTime').textContent = formatTimestamp(endTime) || 'Not set';
+                document.getElementById('detailInterval').textContent = button.getAttribute('data-task-interval') || 'Not set';
+                
+                console.log('Data populated successfully');
+                // Modal will be shown by Bootstrap automatically due to data-bs-toggle and data-bs-target
+            } catch (error) {
+                console.error('Error in viewTaskDetails:', error);
+                alert('Error opening task details: ' + error.message);
+            }
+        }
+
+        function editTaskDetails(button) {
+            const modal = new bootstrap.Modal(document.getElementById('editTaskModal'));
+            
+            // Populate edit form with current values
+            document.getElementById('editTaskId').value = button.getAttribute('data-task-id');
+            document.getElementById('editType').value = button.getAttribute('data-task-type');
+            document.getElementById('editOwner').value = button.getAttribute('data-task-owner');
+            document.getElementById('editPlugin').value = button.getAttribute('data-task-plugin');
+            document.getElementById('editAction').value = button.getAttribute('data-task-action');
+            document.getElementById('editArgs').value = button.getAttribute('data-task-args') || '[]';
+            document.getElementById('editKwargs').value = button.getAttribute('data-task-kwargs') || '{}';
+            document.getElementById('editStartTime').value = button.getAttribute('data-task-start') || '';
+            document.getElementById('editEndTime').value = button.getAttribute('data-task-end') || '';
+            document.getElementById('editInterval').value = button.getAttribute('data-task-interval') || '';
+            
+            modal.show();
+        }
     </script>
 </head>
 <body>
@@ -770,12 +1005,12 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" id="tasks-tab" href="javascript:void(0);" onclick="showTab('tasks')">
+                <a class="nav-link active" id="tasks-tab" href="javascript:void(0);" onclick="showTab('tasks')">
                     <i class="bi bi-list-task"></i>Tasks
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link active" id="executions-tab" href="javascript:void(0);" onclick="showTab('executions')">
+                <a class="nav-link" id="executions-tab" href="javascript:void(0);" onclick="showTab('executions')">
                     <i class="bi bi-play-circle"></i>Executions
                 </a>
             </li>
@@ -784,11 +1019,305 @@
         <div id="clients" class="octopus-view" style="display:none;">
             {% include "dashboard_clients.html" %}
         </div>
-        <div id="tasks" class="octopus-view" style="display:none;">
+        <div id="tasks" class="octopus-view" style="display:block;">
             {% include "dashboard_tasks.html" %}
         </div>
-        <div id="executions" class="octopus-view" style="display:block;">
+        <div id="executions" class="octopus-view" style="display:none;">
             {% include "dashboard_executions.html" %}
+        </div>
+    </div>
+
+    <!-- Create Task Modal -->
+    <div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));">
+                    <h5 class="modal-title" id="createTaskModalLabel">
+                        <i class="bi bi-plus-circle text-primary"></i>
+                        Create New Task
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{{ url_for('dashboard') }}" id="createTaskForm">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <!-- Basic Task Information -->
+                            <div class="col-12">
+                                <h6 class="text-muted mb-3">
+                                    <i class="bi bi-gear"></i> Basic Configuration
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Owner</label>
+                                <select name="owner" class="form-select" required>
+                                    <option value="">Select Owner</option>
+                                    {% for option in owner_options %}
+                                        <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Who should execute this task</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Type</label>
+                                <select name="type" class="form-select">
+                                    <option value="Adhoc">Adhoc (One-time)</option>
+                                    <option value="Schedule">Schedule (Recurring)</option>
+                                </select>
+                                <div class="form-text">Task execution pattern</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Plugin</label>
+                                <select name="plugin" class="form-select" required>
+                                    <option value="">Select Plugin</option>
+                                    {% for plugin in plugin_names %}
+                                        <option value="{{ plugin }}">{{ plugin }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Plugin containing the functionality</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Action</label>
+                                <input name="action" type="text" class="form-control" placeholder="main" value="main">
+                                <div class="form-text">Function to execute (usually 'main')</div>
+                            </div>
+                            
+                            <!-- Arguments Section -->
+                            <div class="col-12">
+                                <hr class="my-3">
+                                <h6 class="text-muted mb-3">
+                                    <i class="bi bi-list"></i> Arguments & Parameters
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Arguments (JSON Array)</label>
+                                <textarea name="args" class="form-control" placeholder='["arg1", "arg2"]' rows="3">[]</textarea>
+                                <div class="form-text">Positional arguments as JSON array</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Keyword Arguments (JSON Object)</label>
+                                <textarea name="kwargs" class="form-control" placeholder='{"key": "value"}' rows="3">{}</textarea>
+                                <div class="form-text">Named parameters as JSON object</div>
+                            </div>
+                            
+                            <!-- Scheduling Options -->
+                            <div class="col-12">
+                                <hr class="my-3">
+                                <h6 class="text-muted mb-3">
+                                    <i class="bi bi-clock"></i> Scheduling Options <small class="text-muted">(Optional)</small>
+                                </h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Start Time</label>
+                                <input name="execution_start_time" type="datetime-local" class="form-control" 
+                                       title="When to start executing this task">
+                                <div class="form-text">When to begin execution</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">End Time</label>
+                                <input name="execution_end_time" type="datetime-local" class="form-control" 
+                                       title="When to stop executing this task">
+                                <div class="form-text">When to stop execution</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Interval (seconds)</label>
+                                <input name="interval" type="number" class="form-control" placeholder="3600" 
+                                       title="Repeat interval in seconds (e.g., 3600 for hourly)" min="1">
+                                <div class="form-text">Repeat every X seconds</div>
+                            </div>
+                            
+                            <!-- Examples Section -->
+                            <div class="col-12">
+                                <div class="alert alert-info mt-3">
+                                    <h6 class="mb-2">
+                                        <i class="bi bi-lightbulb"></i> Example Configurations
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>Simple Task:</strong><br>
+                                            <small>
+                                                Owner: <code>Anyone</code>, Plugin: <code>create_incident</code><br>
+                                                Args: <code>["P1", "Database issue"]</code>
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Scheduled Task:</strong><br>
+                                            <small>
+                                                Type: <code>Schedule</code>, Interval: <code>3600</code><br>
+                                                For hourly execution
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-success octopus-btn">
+                            <i class="bi bi-plus"></i> Create Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Details Modal -->
+    <div class="modal fade" id="taskDetailsModal" tabindex="-1" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));">
+                    <h5 class="modal-title" id="taskDetailsModalLabel">
+                        <i class="bi bi-eye text-info"></i>
+                        Task Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Task ID</label>
+                            <div class="form-control-plaintext"><code id="detailTaskId"></code></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Type</label>
+                            <div class="form-control-plaintext" id="detailType"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Owner</label>
+                            <div class="form-control-plaintext" id="detailOwner"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Plugin</label>
+                            <div class="form-control-plaintext" id="detailPlugin"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Action</label>
+                            <div class="form-control-plaintext"><code id="detailAction"></code></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Status</label>
+                            <div class="form-control-plaintext" id="detailStatus"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Executor</label>
+                            <div class="form-control-plaintext" id="detailExecutor"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Last Updated</label>
+                            <div class="form-control-plaintext" id="detailUpdated"></div>
+                        </div>
+                        <div class="col-12">
+                            <hr>
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-list"></i> Arguments & Parameters
+                            </h6>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Arguments</label>
+                            <pre class="form-control-plaintext bg-light p-2 rounded"><code id="detailArgs"></code></pre>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Keyword Arguments</label>
+                            <pre class="form-control-plaintext bg-light p-2 rounded"><code id="detailKwargs"></code></pre>
+                        </div>
+                        <div class="col-12">
+                            <hr>
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-clock"></i> Scheduling Information
+                            </h6>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Start Time</label>
+                            <div class="form-control-plaintext" id="detailStartTime"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">End Time</label>
+                            <div class="form-control-plaintext" id="detailEndTime"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Interval</label>
+                            <div class="form-control-plaintext" id="detailInterval"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x"></i> Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));">
+                    <h5 class="modal-title" id="editTaskModalLabel">
+                        <i class="bi bi-pencil text-primary"></i>
+                        Edit Task
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{{ url_for('dashboard') }}" id="editTaskForm">
+                    <input type="hidden" id="editTaskId" name="id">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Type</label>
+                                <select id="editType" name="type" class="form-select">
+                                    <option value="Adhoc">Adhoc (One-time)</option>
+                                    <option value="Schedule">Schedule (Recurring)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Owner</label>
+                                <input id="editOwner" name="owner" type="text" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Plugin</label>
+                                <input id="editPlugin" name="plugin" type="text" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Action</label>
+                                <input id="editAction" name="action" type="text" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Arguments (JSON Array)</label>
+                                <textarea id="editArgs" name="args" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Keyword Arguments (JSON Object)</label>
+                                <textarea id="editKwargs" name="kwargs" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Start Time</label>
+                                <input id="editStartTime" name="execution_start_time" type="datetime-local" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">End Time</label>
+                                <input id="editEndTime" name="execution_end_time" type="datetime-local" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Interval (seconds)</label>
+                                <input id="editInterval" name="interval" type="number" class="form-control" min="1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary octopus-btn">
+                            <i class="bi bi-save"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 

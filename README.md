@@ -291,7 +291,6 @@ sqlite3 octopus_server/octopus.db "SELECT * FROM executions;"
 ```
 octopus/
 ├── constants.py           # Shared constants
-├── utils.py              # Shared utilities
 ├── requirements.txt      # Dependencies
 ├── README.md            # This file
 ├── ARCHITECTURE.md      # Detailed architecture guide
@@ -303,6 +302,7 @@ octopus/
 │   ├── heartbeat.py    # Client heartbeat handling
 │   ├── pluginhelper.py # Plugin management
 │   ├── cache.py        # Caching system
+│   ├── utils.py        # Server utilities
 │   ├── templates/      # HTML templates
 │   ├── plugins/        # Server plugins
 │   └── logs/          # Server logs
@@ -313,6 +313,7 @@ octopus/
     ├── taskmanager.py # Task management
     ├── heartbeat.py   # Heartbeat service
     ├── pluginhelper.py # Plugin sync
+    ├── utils.py       # Client utilities
     ├── plugins/       # Client plugins
     └── logs/         # Client logs
 ```

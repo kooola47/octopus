@@ -13,162 +13,21 @@
         <div class="stat-label">Completed</div>
     </div>
     <div class="stat-card">
-        <div class="stat-number">{{ tasks.values()|selectattr('status', 'equalto', 'Created')|list|length }}</div>
-        <div class="stat-label">Pending</div>
+        <div class="stat-number">{{ tasks.values()|selectattr('status', 'in', ['failed', 'error', 'Failed'])|list|length }}</div>
+        <div class="stat-label">Failed</div>
     </div>
 </div>
 
 <div class="octopus-card">
-    <h3 class="octopus-section-title">
-        <i class="bi bi-list-task"></i>
-        Task Management
-    </h3>
-    
-    <!-- Quick Create Form -->
-    <div class="card mb-4" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1)); border: none;">
-        <div class="card-header" style="background: transparent; border: none;">
-            <h5 class="mb-0">
-                <i class="bi bi-plus-circle"></i>
-                Create New Task
-            </h5>
-        </div>
-        <div class="card-body">
-            <form method="post" action="{{ url_for('dashboard') }}" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Owner</label>
-                    <select name="owner" class="form-select" required>
-                        <option value="">Select Owner</option>
-                        {% for option in owner_options %}
-                            <option value="{{ option }}">{{ option }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Plugin</label>
-                    <select name="plugin" class="form-select" required>
-                        <option value="">Select Plugin</option>
-                        {% for plugin in plugin_names %}
-                            <option value="{{ plugin }}">{{ plugin }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Action</label>
-                    <input name="action" type="text" class="form-control" placeholder="main" value="main">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Type</label>
-                    <select name="type" class="form-select">
-                        <option value="Adhoc">Adhoc</option>
-                        <option value="Schedule">Schedule</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">&nbsp;</label>
-                    <button type="submit" class="btn btn-success octopus-btn d-block w-100">
-                        <i class="bi bi-plus"></i> Create Task
-                    </button>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Arguments (JSON Array)</label>
-                    <textarea name="args" class="form-control" placeholder='["arg1", "arg2"]' rows="2">[]</textarea>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Keyword Arguments (JSON Object)</label>
-                    <textarea name="kwargs" class="form-control" placeholder='{"key": "value"}' rows="2">{}</textarea>
-                </div>
-                
-                <!-- Scheduling Options -->
-                <div class="col-12">
-                    <hr class="my-3">
-                    <h6 class="text-muted mb-3">
-                        <i class="bi bi-clock"></i> Scheduling Options
-                    </h6>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Start Time</label>
-                    <input name="execution_start_time" type="datetime-local" class="form-control" 
-                           title="When to start executing this task">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">End Time</label>
-                    <input name="execution_end_time" type="datetime-local" class="form-control" 
-                           title="When to stop executing this task">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Interval (seconds)</label>
-                    <input name="interval" type="number" class="form-control" placeholder="3600" 
-                           title="Repeat interval in seconds (e.g., 3600 for hourly)" min="1">
-                    <div class="form-text">Leave empty for one-time execution</div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Task Creation Instructions -->
-    <div class="card mb-4" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1)); border: none;">
-        <div class="card-header" style="background: transparent; border: none;">
-            <h5 class="mb-0">
-                <i class="bi bi-info-circle"></i>
-                How to Create a Task
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <ul class="list-unstyled">
-                        <li class="mb-2">
-                            <strong><i class="bi bi-tag text-primary"></i> Type:</strong> 
-                            Choose <code>Adhoc</code> for one-time tasks or <code>Schedule</code> for recurring tasks.
-                        </li>
-                        <li class="mb-2">
-                            <strong><i class="bi bi-person text-primary"></i> Owner:</strong> 
-                            Select a specific user, <code>Anyone</code>, or <code>ALL</code> for all clients.
-                        </li>
-                        <li class="mb-2">
-                            <strong><i class="bi bi-plugin text-primary"></i> Plugin:</strong> 
-                            Select the plugin that contains the functionality you want to execute.
-                        </li>
-                        <li class="mb-2">
-                            <strong><i class="bi bi-play text-primary"></i> Action:</strong> 
-                            The function/method to run (usually <code>main</code> or <code>run</code>).
-                        </li>
-                    </ul>
-                </div>
-                <div class="col-md-6">
-                    <ul class="list-unstyled">
-                        <li class="mb-2">
-                            <strong><i class="bi bi-list text-primary"></i> Arguments:</strong> 
-                            JSON array format: <code>["arg1", "arg2", 123]</code>
-                        </li>
-                        <li class="mb-2">
-                            <strong><i class="bi bi-gear text-primary"></i> Keyword Arguments:</strong> 
-                            JSON object format: <code>{"key": "value", "count": 5}</code>
-                        </li>
-                        <li class="mb-2">
-                            <strong><i class="bi bi-clock text-primary"></i> Scheduling (Optional):</strong> 
-                            Set start/end times and interval in seconds for recurring tasks.
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="alert alert-success mt-3 mb-0">
-                <strong><i class="bi bi-lightbulb"></i> Example Task:</strong>
-                <div class="mt-2">
-                    <div class="row">
-                        <div class="col-sm-2"><strong>Type:</strong> <code>Adhoc</code></div>
-                        <div class="col-sm-2"><strong>Owner:</strong> <code>ALL</code></div>
-                        <div class="col-sm-3"><strong>Plugin:</strong> <code>create_incident</code></div>
-                        <div class="col-sm-2"><strong>Action:</strong> <code>main</code></div>
-                    </div>
-                    <div class="row mt-1">
-                        <div class="col-sm-6"><strong>Args:</strong> <code>[]</code></div>
-                        <div class="col-sm-6"><strong>Kwargs:</strong> <code>{"incident_type": "network", "priority": "high"}</code></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="octopus-section-title mb-0">
+            <i class="bi bi-list-task"></i>
+            Task Management
+        </h3>
+        <button type="button" class="btn btn-success octopus-btn" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+            <i class="bi bi-plus-circle"></i>
+            Create New Task
+        </button>
     </div>
 
     <!-- Tasks Table -->
@@ -184,116 +43,117 @@
                     <th><i class="bi bi-info-circle"></i> Status</th>
                     <th><i class="bi bi-cpu"></i> Executor</th>
                     <th><i class="bi bi-calendar3"></i> Updated</th>
-                    <th><i class="bi bi-list"></i> Args</th>
-                    <th><i class="bi bi-list"></i> Kwargs</th>
-                    <th><i class="bi bi-clock"></i> Start</th>
-                    <th><i class="bi bi-clock-history"></i> End</th>
-                    <th><i class="bi bi-arrow-repeat"></i> Interval</th>
                     <th><i class="bi bi-gear"></i> Actions</th>
                 </tr>
             </thead>
             <tbody>
             {% for tid, task in tasks.items() %}
             <tr>
-                <form method="post" action="{{ url_for('dashboard') }}" class="task-form">
-                    <td>
-                        <code class="text-muted">{{ tid[:8] }}...</code>
-                        <input name="id" value="{{ tid }}" type="hidden">
-                    </td>
-                    <td>
-                        <select name="type" class="form-select form-select-sm">
-                            <option value="Adhoc" {% if task.get('type') == 'Adhoc' %}selected{% endif %}>
-                                <i class="bi bi-lightning"></i> Adhoc
-                            </option>
-                            <option value="Schedule" {% if task.get('type') == 'Schedule' %}selected{% endif %}>
-                                <i class="bi bi-calendar-event"></i> Schedule
-                            </option>
-                        </select>
-                    </td>
-                    <td>
-                        <input name="owner" value="{{ task['owner'] }}" class="form-control form-control-sm" 
-                               style="min-width: 100px;">
-                    </td>
-                    <td>
-                        <input name="plugin" value="{{ task['plugin'] }}" class="form-control form-control-sm"
-                               style="min-width: 120px;">
-                    </td>
-                    <td>
-                        <input name="action" value="{{ task['action'] }}" class="form-control form-control-sm"
-                               style="min-width: 80px;">
-                    </td>
-                    <td>
-                        {% set status = task['status'] %}
-                        {% if status == 'Active' %}
-                            <span class="badge bg-info">
-                                <i class="bi bi-play-fill"></i> {{ status }}
-                            </span>
-                        {% elif status == 'Done' %}
-                            <span class="badge bg-success">
-                                <i class="bi bi-check-lg"></i> {{ status }}
-                            </span>
-                        {% elif status == 'Created' %}
-                            <span class="badge bg-secondary">
-                                <i class="bi bi-clock"></i> {{ status }}
-                            </span>
-                        {% else %}
-                            <span class="badge bg-warning">
-                                <i class="bi bi-exclamation-triangle"></i> {{ status }}
-                            </span>
+                <td>
+                    <code class="text-muted">{{ tid[:8] }}...</code>
+                </td>
+                <td>
+                    <span class="badge bg-info">
+                        <i class="bi bi-{{ 'lightning' if task.get('type') == 'Adhoc' else 'calendar-event' }}"></i>
+                        {{ task.get('type', 'Adhoc') }}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-primary">
+                        <i class="bi bi-person"></i> {{ task['owner'] }}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-secondary">
+                        <i class="bi bi-plugin"></i> {{ task['plugin'] }}
+                    </span>
+                </td>
+                <td>
+                    <code>{{ task['action'] }}</code>
+                </td>
+                <td>
+                    {% set status = task['status'] %}
+                    {% if status == 'Active' %}
+                        <span class="badge bg-info">
+                            <i class="bi bi-play-fill"></i> {{ status }}
+                        </span>
+                    {% elif status == 'Done' %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-lg"></i> {{ status }}
+                        </span>
+                    {% elif status == 'Created' %}
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-clock"></i> {{ status }}
+                        </span>
+                    {% elif status in ['failed', 'error', 'Failed'] %}
+                        <span class="badge bg-danger">
+                            <i class="bi bi-x-circle"></i> {{ status }}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning">
+                            <i class="bi bi-exclamation-triangle"></i> {{ status }}
+                        </span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if task['executor'] %}
+                        <span class="badge bg-primary">
+                            <i class="bi bi-person-check"></i> {{ task['executor'] }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">Unassigned</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <small class="text-muted">{{ task['updated_at'] | datetimeformat }}</small>
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-info octopus-btn" 
+                                title="View Details" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#taskDetailsModal"
+                                onclick="viewTaskDetails(this)"
+                                data-task-id="{{ tid | e }}"
+                                data-task-type="{{ task.get('type', 'Adhoc') | e }}"
+                                data-task-owner="{{ task['owner'] | e }}"
+                                data-task-plugin="{{ task['plugin'] | e }}"
+                                data-task-action="{{ task['action'] | e }}"
+                                data-task-status="{{ task['status'] | e }}"
+                                data-task-executor="{{ task.get('executor', '') | e }}"
+                                data-task-updated="{{ task['updated_at'] | e }}"
+                                data-task-args="{{ task.get('args', '[]') | e }}"
+                                data-task-kwargs="{{ task.get('kwargs', '{}') | e }}"
+                                data-task-start="{{ task.get('execution_start_time', '') | e }}"
+                                data-task-end="{{ task.get('execution_end_time', '') | e }}"
+                                data-task-interval="{{ task.get('interval', '') | e }}">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        {% if task['status'] != 'Created' %}
+                            <button type="button" class="btn btn-sm btn-primary octopus-btn" 
+                                    title="Edit Task"
+                                    onclick="editTaskDetails(this)"
+                                    data-task-id="{{ tid | e }}"
+                                    data-task-type="{{ task.get('type', 'Adhoc') | e }}"
+                                    data-task-owner="{{ task['owner'] | e }}"
+                                    data-task-plugin="{{ task['plugin'] | e }}"
+                                    data-task-action="{{ task['action'] | e }}"
+                                    data-task-args="{{ task.get('args', '[]') | e }}"
+                                    data-task-kwargs="{{ task.get('kwargs', '{}') | e }}"
+                                    data-task-start="{{ task.get('execution_start_time', '') | e }}"
+                                    data-task-end="{{ task.get('execution_end_time', '') | e }}"
+                                    data-task-interval="{{ task.get('interval', '') | e }}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
                         {% endif %}
-                    </td>
-                    <td>
-                        {% if task['executor'] %}
-                            <span class="badge bg-primary">
-                                <i class="bi bi-person-check"></i> {{ task['executor'] }}
-                            </span>
-                        {% else %}
-                            <span class="text-muted">Unassigned</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <small class="text-muted">{{ task['updated_at'] | datetimeformat }}</small>
-                    </td>
-                    <td>
-                        <textarea name="args" class="form-control form-control-sm" rows="1" 
-                                  style="min-width: 150px;">{{ task['args'] }}</textarea>
-                    </td>
-                    <td>
-                        <textarea name="kwargs" class="form-control form-control-sm" rows="1"
-                                  style="min-width: 150px;">{{ task['kwargs'] }}</textarea>
-                    </td>
-                    <td>
-                        <input name="execution_start_time" type="datetime-local"
-                            value="{{ task.get('execution_start_time', '') }}"
-                            class="form-control form-control-sm" style="min-width: 180px;">
-                    </td>
-                    <td>
-                        <input name="execution_end_time" type="datetime-local"
-                            value="{{ task.get('execution_end_time', '') }}"
-                            class="form-control form-control-sm" style="min-width: 180px;">
-                    </td>
-                    <td>
-                        <input name="interval" value="{{ task.get('interval', '') }}" 
-                               class="form-control form-control-sm" placeholder="seconds"
-                               style="min-width: 80px;">
-                    </td>
-                    <td>
-                        <div class="btn-group" role="group">
-                            {% if task['status'] != 'Created' %}
-                                <button type="submit" class="btn btn-sm btn-primary octopus-btn" 
-                                        title="Save Changes">
-                                    <i class="bi bi-save"></i>
-                                </button>
-                            {% endif %}
-                            <a href="{{ url_for('delete_task_ui', task_id=tid, tab='tasks') }}" 
-                               class="btn btn-sm btn-danger octopus-btn"
-                               title="Delete Task"
-                               onclick="return confirm('Are you sure you want to delete this task?')">
-                                <i class="bi bi-trash"></i>
-                            </a>
-                        </div>
-                    </td>
-                </form>
+                        <a href="{{ url_for('delete_task_ui', task_id=tid, tab='tasks') }}" 
+                           class="btn btn-sm btn-danger octopus-btn"
+                           title="Delete Task"
+                           onclick="return confirm('Are you sure you want to delete this task?')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </div>
+                </td>
             </tr>
         {% endfor %}
         </tbody>

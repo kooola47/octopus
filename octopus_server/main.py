@@ -121,7 +121,45 @@ def tasks():
         task = request.json
         task_id = add_task(task)
         return jsonify({"id": task_id})
-    return jsonify(get_tasks())
+    
+    # Handle GET request with optional filtering
+    exclude_finished = request.args.get('exclude_finished', 'false').lower() == 'true'
+    all_tasks = get_tasks()
+    
+    logger.info(f"Tasks endpoint called. exclude_finished={exclude_finished}, total_tasks={len(all_tasks) if isinstance(all_tasks, (dict, list)) else 'unknown'}")
+    
+    if exclude_finished:
+        # Filter out finished tasks - be more comprehensive with status checking
+        finished_statuses = ['Done', 'done', 'Failed', 'failed', 'error', 'Error', 'Completed', 'completed', 'success', 'Success']
+        
+        if isinstance(all_tasks, dict):
+            original_count = len(all_tasks)
+            filtered_tasks = {}
+            for task_id, task in all_tasks.items():
+                task_status = task.get('status', '')
+                logger.debug(f"Task {task_id}: status='{task_status}', finished={task_status in finished_statuses}")
+                if task_status not in finished_statuses:
+                    filtered_tasks[task_id] = task
+                else:
+                    logger.debug(f"Filtering out finished task {task_id} with status '{task_status}'")
+            logger.info(f"Filtered tasks: {original_count} -> {len(filtered_tasks)} (removed {original_count - len(filtered_tasks)} finished tasks)")
+            return jsonify(filtered_tasks)
+        elif isinstance(all_tasks, list):
+            original_count = len(all_tasks)
+            filtered_tasks = []
+            for task in all_tasks:
+                task_status = task.get('status', '')
+                task_id = task.get('id', 'unknown')
+                logger.debug(f"Task {task_id}: status='{task_status}', finished={task_status in finished_statuses}")
+                if task_status not in finished_statuses:
+                    filtered_tasks.append(task)
+                else:
+                    logger.debug(f"Filtering out finished task {task_id} with status '{task_status}'")
+            logger.info(f"Filtered tasks: {original_count} -> {len(filtered_tasks)} (removed {original_count - len(filtered_tasks)} finished tasks)")
+            return jsonify(filtered_tasks)
+    
+    logger.info(f"Returning all {len(all_tasks) if isinstance(all_tasks, (dict, list)) else 'unknown'} tasks (no filtering)")
+    return jsonify(all_tasks)
 
 
 @app.route("/tasks/<task_id>", methods=["PUT", "DELETE"])

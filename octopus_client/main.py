@@ -23,6 +23,7 @@ from taskmanager import get_tasks, add_task, update_task, delete_task
 
 from heartbeat import send_heartbeat
 from pluginhelper import check_plugin_updates
+from utils import get_hostname, get_local_ip, get_client_id
 import socket
 import requests   
 import importlib
@@ -104,7 +105,7 @@ def start_status_server():
     logger.info("Status page available at http://localhost:8080/status")
 
 def handle_server_commands():
-    hostname = socket.gethostname()
+    hostname = get_hostname()
     while True:
         try:
             resp = requests.get(f"{SERVER_URL}/commands/{hostname}", timeout=5)
@@ -288,12 +289,21 @@ def task_execution_loop():
     
     while True:
         try:
-            resp = requests.get(f"{SERVER_URL}/tasks", timeout=10)
-            if resp.status_code == 200:
-                tasks = resp.json()
-                logger.info(f"Fetched {len(tasks)} tasks from server")
+            # Use the taskmanager function which includes filtering
+            tasks = get_tasks()
+            logger.info(f"Fetched {len(tasks)} tasks from server")
+            
+            # Handle both dict and list formats
+            if isinstance(tasks, dict):
+                task_items = tasks.items()
+            elif isinstance(tasks, list):
+                # Convert list to dict-like items
+                task_items = [(task.get('id', i), task) for i, task in enumerate(tasks)]
+            else:
+                logger.warning(f"Unexpected tasks format: {type(tasks)}")
+                continue
                 
-                for tid, task in tasks.items():
+            for tid, task in task_items:
                     owner = task.get("owner")
                     executor = task.get("executor") 
                     status = task.get("status")
