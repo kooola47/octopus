@@ -32,131 +32,472 @@
 
     <!-- Tasks Table -->
     <div class="table-responsive">
-        <table class="table octopus-table table-hover align-middle">
+        <!-- Filter Controls -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>
+                    <i class="bi bi-funnel"></i> Filters 
+                    <small class="text-muted ms-2" id="taskFilterStatus"></small>
+                </span>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-warning me-1" onclick="resetTaskFiltersToDefault()" title="Reset to default filters">
+                        <i class="bi bi-arrow-clockwise"></i> Reset
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearTaskFilters()">
+                        <i class="bi bi-x-circle"></i> Clear All
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleTaskFilters()">
+                        <i class="bi bi-chevron-down" id="taskFilterToggle"></i> Toggle
+                    </button>
+                </div>
+            </div>
+            <div class="card-body" id="taskFilterControls" style="display: none;">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Type</label>
+                        <select class="form-select form-select-sm" id="filterTaskType" onchange="applyTaskFilters()">
+                            <option value="">All Types</option>
+                            <option value="Adhoc">Adhoc</option>
+                            <option value="Schedule">Schedule</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Owner</label>
+                        <input type="text" class="form-control form-control-sm" id="filterTaskOwner" placeholder="Filter by owner..." onkeyup="applyTaskFilters()">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Plugin</label>
+                        <input type="text" class="form-control form-control-sm" id="filterTaskPlugin" placeholder="Filter by plugin..." onkeyup="applyTaskFilters()">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Action</label>
+                        <input type="text" class="form-control form-control-sm" id="filterTaskAction" placeholder="Filter by action..." onkeyup="applyTaskFilters()">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        <select class="form-select form-select-sm" id="filterTaskStatus" onchange="applyTaskFilters()">
+                            <option value="">All Status</option>
+                            <option value="Active" selected>Active</option>
+                            <option value="Created">Created</option>
+                            <option value="Done">Done</option>
+                            <option value="failed">Failed</option>
+                            <option value="error">Error</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Executor</label>
+                        <input type="text" class="form-control form-control-sm" id="filterTaskExecutor" placeholder="Filter by executor..." onkeyup="applyTaskFilters()">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <table class="table octopus-table table-hover align-middle" id="tasksTable">
             <thead>
                 <tr>
-                    <th><i class="bi bi-hash"></i> ID</th>
-                    <th><i class="bi bi-tag"></i> Type</th>
-                    <th><i class="bi bi-person"></i> Owner</th>
-                    <th><i class="bi bi-plugin"></i> Plugin</th>
-                    <th><i class="bi bi-play"></i> Action</th>
-                    <th><i class="bi bi-info-circle"></i> Status</th>
-                    <th><i class="bi bi-cpu"></i> Executor</th>
-                    <th><i class="bi bi-calendar3"></i> Updated</th>
+                    <th class="sortable" onclick="sortTasksTable('id')">
+                        <i class="bi bi-hash"></i> ID 
+                        <i class="bi bi-chevron-expand sort-icon" id="sort-id"></i>
+                    </th>
+                    <th class="sortable" onclick="sortTasksTable('type')">
+                        <i class="bi bi-tag"></i> Type 
+                        <i class="bi bi-chevron-expand sort-icon" id="sort-type"></i>
+                    </th>
+                    <th class="sortable" onclick="sortTasksTable('owner')">
+                        <i class="bi bi-person"></i> Owner 
+                        <i class="bi bi-chevron-expand sort-icon" id="sort-owner"></i>
+                    </th>
+                    <th class="sortable" onclick="sortTasksTable('plugin')">
+                        <i class="bi bi-plugin"></i> Plugin 
+                        <i class="bi bi-chevron-expand sort-icon" id="sort-plugin"></i>
+                    </th>
+                    <th class="sortable" onclick="sortTasksTable('action')">
+                        <i class="bi bi-play"></i> Action 
+                        <i class="bi bi-chevron-expand sort-icon" id="sort-action"></i>
+                    </th>
+                    <th class="sortable" onclick="sortTasksTable('status')">
+                        <i class="bi bi-info-circle"></i> Status 
+                        <i class="bi bi-chevron-expand sort-icon" id="sort-status"></i>
+                    </th>
+                    <th class="sortable" onclick="sortTasksTable('executor')">
+                        <i class="bi bi-cpu"></i> Executor 
+                        <i class="bi bi-chevron-expand sort-icon" id="sort-executor"></i>
+                    </th>
+                    <th class="sortable" onclick="sortTasksTable('updated_at')">
+                        <i class="bi bi-calendar3"></i> Updated 
+                        <i class="bi bi-chevron-expand sort-icon" id="sort-updated_at"></i>
+                    </th>
                     <th><i class="bi bi-gear"></i> Actions</th>
                 </tr>
             </thead>
-            <tbody>
-            {% for tid, task in tasks.items() %}
-            <tr>
-                <td>
-                    <code class="text-muted">{{ tid[:8] }}...</code>
-                </td>
-                <td>
-                    <span class="badge bg-info">
-                        <i class="bi bi-{{ 'lightning' if task.get('type') == 'Adhoc' else 'calendar-event' }}"></i>
-                        {{ task.get('type', 'Adhoc') }}
-                    </span>
-                </td>
-                <td>
-                    <span class="badge bg-primary">
-                        <i class="bi bi-person"></i> {{ task['owner'] }}
-                    </span>
-                </td>
-                <td>
-                    <span class="badge bg-secondary">
-                        <i class="bi bi-plugin"></i> {{ task['plugin'] }}
-                    </span>
-                </td>
-                <td>
-                    <code>{{ task['action'] }}</code>
-                </td>
-                <td>
-                    {% set status = task['status'] %}
-                    {% if status == 'Active' %}
-                        <span class="badge bg-info">
-                            <i class="bi bi-play-fill"></i> {{ status }}
-                        </span>
-                    {% elif status == 'Done' %}
-                        <span class="badge bg-success">
-                            <i class="bi bi-check-lg"></i> {{ status }}
-                        </span>
-                    {% elif status == 'Created' %}
-                        <span class="badge bg-secondary">
-                            <i class="bi bi-clock"></i> {{ status }}
-                        </span>
-                    {% elif status in ['failed', 'error', 'Failed'] %}
-                        <span class="badge bg-danger">
-                            <i class="bi bi-x-circle"></i> {{ status }}
-                        </span>
-                    {% else %}
-                        <span class="badge bg-warning">
-                            <i class="bi bi-exclamation-triangle"></i> {{ status }}
-                        </span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if task['executor'] %}
-                        <span class="badge bg-primary">
-                            <i class="bi bi-person-check"></i> {{ task['executor'] }}
-                        </span>
-                    {% else %}
-                        <span class="text-muted">Unassigned</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <small class="text-muted">{{ task['updated_at'] | datetimeformat }}</small>
-                </td>
-                <td>
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-sm btn-info octopus-btn" 
-                                title="View Details" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#taskDetailsModal"
-                                onclick="viewTaskDetails(this)"
-                                data-task-id="{{ tid | e }}"
-                                data-task-type="{{ task.get('type', 'Adhoc') | e }}"
-                                data-task-owner="{{ task['owner'] | e }}"
-                                data-task-plugin="{{ task['plugin'] | e }}"
-                                data-task-action="{{ task['action'] | e }}"
-                                data-task-status="{{ task['status'] | e }}"
-                                data-task-executor="{{ task.get('executor', '') | e }}"
-                                data-task-updated="{{ task['updated_at'] | e }}"
-                                data-task-args="{{ task.get('args', '[]') | e }}"
-                                data-task-kwargs="{{ task.get('kwargs', '{}') | e }}"
-                                data-task-start="{{ task.get('execution_start_time', '') | e }}"
-                                data-task-end="{{ task.get('execution_end_time', '') | e }}"
-                                data-task-interval="{{ task.get('interval', '') | e }}">
-                            <i class="bi bi-eye"></i>
+            <tbody id="tasksTableBody">
+            <!-- Content will be populated by JavaScript filtering -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Store all tasks data for filtering
+let allTasks = {{ tasks|tojson }};
+let tasksSortOrder = {}; // Track sort order for each column
+let currentTasksSortColumn = null;
+
+// Initialize filters on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadSavedTaskFilters(); // Load saved filter preferences
+    applyTaskFilters(); // Apply filters (with saved or default values)
+});
+
+function loadSavedTaskFilters() {
+    // Load saved filter values from localStorage
+    const savedFilters = {
+        type: localStorage.getItem('taskFilter_type') || '',
+        owner: localStorage.getItem('taskFilter_owner') || '',
+        plugin: localStorage.getItem('taskFilter_plugin') || '',
+        action: localStorage.getItem('taskFilter_action') || '',
+        status: localStorage.getItem('taskFilter_status') || 'Active', // Default to Active
+        executor: localStorage.getItem('taskFilter_executor') || ''
+    };
+    
+    // Apply saved values to filter controls
+    document.getElementById('filterTaskType').value = savedFilters.type;
+    document.getElementById('filterTaskOwner').value = savedFilters.owner;
+    document.getElementById('filterTaskPlugin').value = savedFilters.plugin;
+    document.getElementById('filterTaskAction').value = savedFilters.action;
+    document.getElementById('filterTaskStatus').value = savedFilters.status;
+    document.getElementById('filterTaskExecutor').value = savedFilters.executor;
+    
+    // Update filter status indicator
+    updateTaskFilterStatus();
+    
+    // Show/hide filter controls based on saved preference
+    const filterControlsVisible = localStorage.getItem('taskFilters_visible') === 'true';
+    const controls = document.getElementById('taskFilterControls');
+    const toggle = document.getElementById('taskFilterToggle');
+    
+    if (filterControlsVisible) {
+        controls.style.display = 'block';
+        toggle.className = 'bi bi-chevron-up';
+    } else {
+        controls.style.display = 'none';
+        toggle.className = 'bi bi-chevron-down';
+    }
+}
+
+function saveTaskFilters() {
+    // Save current filter values to localStorage
+    localStorage.setItem('taskFilter_type', document.getElementById('filterTaskType').value);
+    localStorage.setItem('taskFilter_owner', document.getElementById('filterTaskOwner').value);
+    localStorage.setItem('taskFilter_plugin', document.getElementById('filterTaskPlugin').value);
+    localStorage.setItem('taskFilter_action', document.getElementById('filterTaskAction').value);
+    localStorage.setItem('taskFilter_status', document.getElementById('filterTaskStatus').value);
+    localStorage.setItem('taskFilter_executor', document.getElementById('filterTaskExecutor').value);
+}
+
+function toggleTaskFilters() {
+    const controls = document.getElementById('taskFilterControls');
+    const toggle = document.getElementById('taskFilterToggle');
+    
+    if (controls.style.display === 'none') {
+        controls.style.display = 'block';
+        toggle.className = 'bi bi-chevron-up';
+        localStorage.setItem('taskFilters_visible', 'true');
+    } else {
+        controls.style.display = 'none';
+        toggle.className = 'bi bi-chevron-down';
+        localStorage.setItem('taskFilters_visible', 'false');
+    }
+}
+
+function clearTaskFilters() {
+    document.getElementById('filterTaskType').value = '';
+    document.getElementById('filterTaskOwner').value = '';
+    document.getElementById('filterTaskPlugin').value = '';
+    document.getElementById('filterTaskAction').value = '';
+    document.getElementById('filterTaskStatus').value = '';
+    document.getElementById('filterTaskExecutor').value = '';
+    saveTaskFilters(); // Save cleared filters
+    updateTaskFilterStatus();
+    applyTaskFilters();
+}
+
+function resetTaskFiltersToDefault() {
+    document.getElementById('filterTaskType').value = '';
+    document.getElementById('filterTaskOwner').value = '';
+    document.getElementById('filterTaskPlugin').value = '';
+    document.getElementById('filterTaskAction').value = '';
+    document.getElementById('filterTaskStatus').value = 'Active'; // Default to Active
+    document.getElementById('filterTaskExecutor').value = '';
+    saveTaskFilters(); // Save default filters
+    updateTaskFilterStatus();
+    applyTaskFilters();
+}
+
+function updateTaskFilterStatus() {
+    const statusElement = document.getElementById('taskFilterStatus');
+    const hasActiveFilters = 
+        document.getElementById('filterTaskType').value ||
+        document.getElementById('filterTaskOwner').value ||
+        document.getElementById('filterTaskPlugin').value ||
+        document.getElementById('filterTaskAction').value ||
+        document.getElementById('filterTaskStatus').value ||
+        document.getElementById('filterTaskExecutor').value;
+    
+    if (hasActiveFilters) {
+        statusElement.textContent = '(saved filters applied)';
+        statusElement.className = 'text-success ms-2';
+    } else {
+        statusElement.textContent = '(no filters)';
+        statusElement.className = 'text-muted ms-2';
+    }
+}
+
+function applyTaskFilters() {
+    const typeFilter = document.getElementById('filterTaskType').value.toLowerCase();
+    const ownerFilter = document.getElementById('filterTaskOwner').value.toLowerCase();
+    const pluginFilter = document.getElementById('filterTaskPlugin').value.toLowerCase();
+    const actionFilter = document.getElementById('filterTaskAction').value.toLowerCase();
+    const statusFilter = document.getElementById('filterTaskStatus').value.toLowerCase();
+    const executorFilter = document.getElementById('filterTaskExecutor').value.toLowerCase();
+    
+    // Save filters whenever they are applied
+    saveTaskFilters();
+    updateTaskFilterStatus();
+    
+    const tbody = document.getElementById('tasksTableBody');
+    tbody.innerHTML = '';
+    
+    let visibleCount = 0;
+    
+    // Filter tasks first
+    const filteredTasks = {};
+    Object.entries(allTasks).forEach(([tid, task]) => {
+        // Apply filters
+        if (typeFilter && !task.type?.toLowerCase().includes(typeFilter)) return;
+        if (ownerFilter && !task.owner?.toLowerCase().includes(ownerFilter)) return;
+        if (pluginFilter && !task.plugin?.toLowerCase().includes(pluginFilter)) return;
+        if (actionFilter && !task.action?.toLowerCase().includes(actionFilter)) return;
+        if (statusFilter && !task.status?.toLowerCase().includes(statusFilter)) return;
+        if (executorFilter && task.executor && !task.executor.toLowerCase().includes(executorFilter)) return;
+        
+        filteredTasks[tid] = task;
+    });
+    
+    // Sort filtered tasks if a sort column is selected
+    let sortedTasks;
+    if (currentTasksSortColumn && tasksSortOrder[currentTasksSortColumn]) {
+        sortedTasks = sortTasksData(filteredTasks, currentTasksSortColumn, tasksSortOrder[currentTasksSortColumn]);
+    } else {
+        sortedTasks = Object.entries(filteredTasks);
+    }
+    
+    sortedTasks.forEach(([tid, task]) => {
+        
+        visibleCount++;
+        
+        // Create table row
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="task-id-cell">
+                <code class="text-muted id-tooltip" onclick="copyToClipboard('${tid}')" title="${tid}">${tid}</code>
+            </td>
+            <td>
+                <span class="badge bg-info">
+                    <i class="bi bi-${task.type === 'Adhoc' ? 'lightning' : 'calendar-event'}"></i>
+                    ${task.type || 'Adhoc'}
+                </span>
+            </td>
+            <td>
+                <span class="badge bg-primary">
+                    <i class="bi bi-person"></i> ${task.owner}
+                </span>
+            </td>
+            <td>
+                <span class="badge bg-secondary">
+                    <i class="bi bi-plugin"></i> ${task.plugin}
+                </span>
+            </td>
+            <td><code>${task.action}</code></td>
+            <td>${getStatusBadge(task.status)}</td>
+            <td>
+                ${task.executor ? 
+                    `<span class="badge bg-primary"><i class="bi bi-person-check"></i> ${task.executor}</span>` : 
+                    '<span class="text-muted">Unassigned</span>'
+                }
+            </td>
+            <td>
+                <small class="text-muted">${formatTimestamp(task.updated_at)}</small>
+            </td>
+            <td>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-info octopus-btn" 
+                            title="View Details" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#taskDetailsModal"
+                            onclick="viewTaskDetails(this)"
+                            data-task-id="${escapeHtml(tid)}"
+                            data-task-type="${escapeHtml(task.type || 'Adhoc')}"
+                            data-task-owner="${escapeHtml(task.owner)}"
+                            data-task-plugin="${escapeHtml(task.plugin)}"
+                            data-task-action="${escapeHtml(task.action)}"
+                            data-task-status="${escapeHtml(task.status)}"
+                            data-task-executor="${escapeHtml(task.executor || '')}"
+                            data-task-updated="${escapeHtml(task.updated_at)}"
+                            data-task-args="${escapeHtml(task.args || '[]')}"
+                            data-task-kwargs="${escapeHtml(task.kwargs || '{}')}"
+                            data-task-start="${escapeHtml(task.execution_start_time || '')}"
+                            data-task-end="${escapeHtml(task.execution_end_time || '')}"
+                            data-task-interval="${escapeHtml(task.interval || '')}">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    ${task.status !== 'Created' ? `
+                        <button type="button" class="btn btn-sm btn-primary octopus-btn" 
+                                title="Edit Task"
+                                onclick="editTaskDetails(this)"
+                                data-task-id="${escapeHtml(tid)}"
+                                data-task-type="${escapeHtml(task.type || 'Adhoc')}"
+                                data-task-owner="${escapeHtml(task.owner)}"
+                                data-task-plugin="${escapeHtml(task.plugin)}"
+                                data-task-action="${escapeHtml(task.action)}"
+                                data-task-args="${escapeHtml(task.args || '[]')}"
+                                data-task-kwargs="${escapeHtml(task.kwargs || '{}')}"
+                                data-task-start="${escapeHtml(task.execution_start_time || '')}"
+                                data-task-end="${escapeHtml(task.execution_end_time || '')}"
+                                data-task-interval="${escapeHtml(task.interval || '')}">
+                            <i class="bi bi-pencil"></i>
                         </button>
-                        {% if task['status'] != 'Created' %}
-                            <button type="button" class="btn btn-sm btn-primary octopus-btn" 
-                                    title="Edit Task"
-                                    onclick="editTaskDetails(this)"
-                                    data-task-id="{{ tid | e }}"
-                                    data-task-type="{{ task.get('type', 'Adhoc') | e }}"
-                                    data-task-owner="{{ task['owner'] | e }}"
-                                    data-task-plugin="{{ task['plugin'] | e }}"
-                                    data-task-action="{{ task['action'] | e }}"
-                                    data-task-args="{{ task.get('args', '[]') | e }}"
-                                    data-task-kwargs="{{ task.get('kwargs', '{}') | e }}"
-                                    data-task-start="{{ task.get('execution_start_time', '') | e }}"
-                                    data-task-end="{{ task.get('execution_end_time', '') | e }}"
-                                    data-task-interval="{{ task.get('interval', '') | e }}">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                        {% endif %}
-                        <a href="{{ url_for('delete_task_ui', task_id=tid, tab='tasks') }}" 
-                           class="btn btn-sm btn-danger octopus-btn"
-                           title="Delete Task"
-                           onclick="return confirm('Are you sure you want to delete this task?')">
-                            <i class="bi bi-trash"></i>
-                        </a>
-                    </div>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
-</div>
+                    ` : ''}
+                    <button class="btn btn-sm btn-danger octopus-btn" 
+                            title="Delete Task"
+                            onclick="deleteTaskFromFilter('${tid}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    // Show message if no results
+    if (visibleCount === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td colspan="9" class="text-center text-muted py-4">
+                <i class="bi bi-search display-4"></i>
+                <div class="mt-2">No tasks match the current filters</div>
+                <small>Try adjusting your filter criteria</small>
+            </td>
+        `;
+        tbody.appendChild(row);
+    }
+}
+
+function getStatusBadge(status) {
+    if (status === 'Active') {
+        return '<span class="badge bg-info"><i class="bi bi-play-fill"></i> Active</span>';
+    } else if (status === 'Done') {
+        return '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Done</span>';
+    } else if (status === 'Created') {
+        return '<span class="badge bg-secondary"><i class="bi bi-clock"></i> Created</span>';
+    } else if (['failed', 'error', 'Failed'].includes(status)) {
+        return '<span class="badge bg-danger"><i class="bi bi-x-circle"></i> ' + status + '</span>';
+    } else {
+        return '<span class="badge bg-warning"><i class="bi bi-exclamation-triangle"></i> ' + status + '</span>';
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function deleteTaskFromFilter(taskId) {
+    if (confirm('Are you sure you want to delete this task?')) {
+        window.location.href = `/tasks-ui/delete/${taskId}?tab=tasks`;
+    }
+}
+
+function sortTasksTable(column) {
+    // Toggle sort order
+    if (currentTasksSortColumn === column) {
+        tasksSortOrder[column] = tasksSortOrder[column] === 'asc' ? 'desc' : 'asc';
+    } else {
+        tasksSortOrder[column] = 'asc';
+        currentTasksSortColumn = column;
+    }
+    
+    // Update sort icons
+    updateTasksSortIcons(column);
+    
+    // Sort and re-render table
+    applyTaskFilters();
+}
+
+function updateTasksSortIcons(activeColumn) {
+    // Reset all sort icons
+    document.querySelectorAll('.sort-icon').forEach(icon => {
+        icon.className = 'bi bi-chevron-expand sort-icon';
+    });
+    
+    // Set active column icon
+    const activeIcon = document.getElementById(`sort-${activeColumn}`);
+    if (activeIcon) {
+        const order = tasksSortOrder[activeColumn];
+        activeIcon.className = `bi bi-chevron-${order === 'asc' ? 'up' : 'down'} sort-icon`;
+    }
+}
+
+function sortTasksData(tasks, column, order) {
+    return Object.entries(tasks).sort(([tidA, taskA], [tidB, taskB]) => {
+        let valueA, valueB;
+        
+        switch (column) {
+            case 'id':
+                valueA = tidA;
+                valueB = tidB;
+                break;
+            case 'type':
+                valueA = taskA.type || 'Adhoc';
+                valueB = taskB.type || 'Adhoc';
+                break;
+            case 'owner':
+                valueA = taskA.owner || '';
+                valueB = taskB.owner || '';
+                break;
+            case 'plugin':
+                valueA = taskA.plugin || '';
+                valueB = taskB.plugin || '';
+                break;
+            case 'action':
+                valueA = taskA.action || '';
+                valueB = taskB.action || '';
+                break;
+            case 'status':
+                valueA = taskA.status || '';
+                valueB = taskB.status || '';
+                break;
+            case 'executor':
+                valueA = taskA.executor || '';
+                valueB = taskB.executor || '';
+                break;
+            case 'updated_at':
+                valueA = parseFloat(taskA.updated_at || taskA.created_at || 0);
+                valueB = parseFloat(taskB.updated_at || taskB.created_at || 0);
+                break;
+            default:
+                return 0;
+        }
+        
+        // Handle numeric vs string comparison
+        if (column === 'updated_at') {
+            return order === 'asc' ? valueA - valueB : valueB - valueA;
+        } else {
+            const result = String(valueA).localeCompare(String(valueB));
+            return order === 'asc' ? result : -result;
+        }
+    });
+}
+</script>

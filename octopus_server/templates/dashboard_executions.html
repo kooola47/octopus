@@ -1,19 +1,19 @@
 <!-- Executions Dashboard -->
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-number">0</div>
+        <div class="stat-number" id="totalExecutions">0</div>
         <div class="stat-label">Total Executions</div>
     </div>
     <div class="stat-card">
-        <div class="stat-number">0</div>
+        <div class="stat-number" id="successfulExecutions">0</div>
         <div class="stat-label">Successful</div>
     </div>
     <div class="stat-card">
-        <div class="stat-number">0</div>
+        <div class="stat-number" id="failedExecutions">0</div>
         <div class="stat-label">Failed</div>
     </div>
     <div class="stat-card">
-        <div class="stat-number">0.0%</div>
+        <div class="stat-number" id="successRate">0.0%</div>
         <div class="stat-label">Success Rate</div>
     </div>
 </div>
@@ -24,27 +24,516 @@
         Execution History
     </h3>
     
+    <!-- Filter Controls -->
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-funnel"></i> Filters 
+                <small class="text-muted ms-2" id="executionFilterStatus"></small>
+            </span>
+            <div>
+                <button type="button" class="btn btn-sm btn-outline-warning me-1" onclick="resetExecutionFiltersToDefault()" title="Reset to default filters">
+                    <i class="bi bi-arrow-clockwise"></i> Reset
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearExecutionFilters()">
+                    <i class="bi bi-x-circle"></i> Clear All
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleExecutionFilters()">
+                    <i class="bi bi-chevron-down" id="executionFilterToggle"></i> Toggle
+                </button>
+            </div>
+        </div>
+        <div class="card-body" id="executionFilterControls" style="display: none;">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Task ID</label>
+                    <input type="text" class="form-control form-control-sm" id="filterExecutionTaskId" placeholder="Filter by task ID..." onkeyup="applyExecutionFilters()">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Client</label>
+                    <input type="text" class="form-control form-control-sm" id="filterExecutionClient" placeholder="Filter by client..." onkeyup="applyExecutionFilters()">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select form-select-sm" id="filterExecutionStatus" onchange="applyExecutionFilters()">
+                        <option value="">All Status</option>
+                        <option value="success" selected>Success</option>
+                        <option value="failed">Failed</option>
+                        <option value="error">Error</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Result</label>
+                    <input type="text" class="form-control form-control-sm" id="filterExecutionResult" placeholder="Filter by result..." onkeyup="applyExecutionFilters()">
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="table-responsive">
-        <table class="table octopus-table table-hover align-middle">
+        <table class="table octopus-table table-hover align-middle" id="executionsTable">
             <thead>
                 <tr>
-                    <th><i class="bi bi-hash"></i> Execution ID</th>
-                    <th><i class="bi bi-key"></i> Task ID</th>
-                    <th><i class="bi bi-person"></i> Client</th>
-                    <th><i class="bi bi-info-circle"></i> Status</th>
-                    <th><i class="bi bi-file-text"></i> Result</th>
-                    <th><i class="bi bi-calendar3"></i> Updated</th>
+                    <th class="sortable" onclick="sortExecutionsTable('execution_id')">
+                        <i class="bi bi-hash"></i> Execution ID 
+                        <i class="bi bi-chevron-down sort-icon" id="sort-execution_id"></i>
+                    </th>
+                    <th class="sortable" onclick="sortExecutionsTable('task_id')">
+                        <i class="bi bi-key"></i> Task ID 
+                        <i class="bi bi-chevron-down sort-icon" id="sort-task_id"></i>
+                    </th>
+                    <th class="sortable" onclick="sortExecutionsTable('client')">
+                        <i class="bi bi-person"></i> Client 
+                        <i class="bi bi-chevron-down sort-icon" id="sort-client"></i>
+                    </th>
+                    <th class="sortable" onclick="sortExecutionsTable('status')">
+                        <i class="bi bi-info-circle"></i> Status 
+                        <i class="bi bi-chevron-down sort-icon" id="sort-status"></i>
+                    </th>
+                    <th class="sortable" onclick="sortExecutionsTable('result')">
+                        <i class="bi bi-file-text"></i> Result 
+                        <i class="bi bi-chevron-down sort-icon" id="sort-result"></i>
+                    </th>
+                    <th class="sortable" onclick="sortExecutionsTable('last_update')">
+                        <i class="bi bi-calendar3"></i> Updated 
+                        <i class="bi bi-chevron-down sort-icon" id="sort-last_update"></i>
+                    </th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="executionsTableBody">
                 <tr>
                     <td colspan="6" class="text-center text-muted py-4">
-                        <i class="bi bi-inbox display-4"></i>
+                        <i class="bi bi-hourglass-split display-4"></i>
                         <div class="mt-2">Loading execution records...</div>
-                        <small>JavaScript will update this content with real data</small>
+                        <small>Please wait while execution data is fetched</small>
                     </td>
                 </tr>
             </tbody>
         </table>
     </div>
 </div>
+
+<script>
+// Store all execution data for filtering
+let allExecutions = [];
+
+// Sorting state for executions
+let executionsSortOrder = {};
+let currentExecutionsSortColumn = null;
+
+// Helper function to copy text to clipboard (for executions)
+function copyToClipboard(text) {
+    if (!text || text === 'N/A') return;
+    
+    navigator.clipboard.writeText(text).then(function() {
+        // Show success feedback
+        showExecutionNotification('ID copied to clipboard!', 'success');
+    }).catch(function(err) {
+        console.error('Failed to copy to clipboard:', err);
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            showExecutionNotification('ID copied to clipboard!', 'success');
+        } catch (err) {
+            showExecutionNotification('Failed to copy ID', 'error');
+        }
+        document.body.removeChild(textArea);
+    });
+}
+
+// Helper function to show notifications (for executions)
+function showExecutionNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 10000;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        opacity: 0;
+        transform: translateX(100%);
+    `;
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Helper function to escape HTML (for executions)
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Helper function to format timestamp (for executions)
+function formatTimestamp(timestamp) {
+    if (!timestamp || timestamp === 'Unknown' || timestamp === '') {
+        return 'Unknown';
+    }
+    
+    try {
+        // Convert Unix timestamp (seconds) to milliseconds for JavaScript Date
+        const date = new Date(parseFloat(timestamp) * 1000);
+        
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+            return timestamp; // Return original if can't parse
+        }
+        
+        // Format as readable date and time
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    } catch (error) {
+        console.error('Error formatting timestamp:', timestamp, error);
+        return timestamp;
+    }
+}
+
+// Sorting functions for executions table
+function sortExecutionsTable(column) {
+    // Toggle sort order for the clicked column
+    if (currentExecutionsSortColumn === column) {
+        executionsSortOrder[column] = executionsSortOrder[column] === 'asc' ? 'desc' : 'asc';
+    } else {
+        executionsSortOrder[column] = 'asc';
+        currentExecutionsSortColumn = column;
+    }
+    
+    updateExecutionsSortIcons();
+    applyExecutionFilters(); // This will now include sorting
+}
+
+function updateExecutionsSortIcons() {
+    // Reset all icons
+    document.querySelectorAll('#executionsTable .sort-icon').forEach(icon => {
+        icon.className = 'bi bi-chevron-down sort-icon';
+    });
+    
+    // Update current sort column icon
+    if (currentExecutionsSortColumn && executionsSortOrder[currentExecutionsSortColumn]) {
+        const icon = document.getElementById('sort-' + currentExecutionsSortColumn);
+        if (icon) {
+            icon.className = executionsSortOrder[currentExecutionsSortColumn] === 'asc' 
+                ? 'bi bi-chevron-up sort-icon' 
+                : 'bi bi-chevron-down sort-icon';
+        }
+    }
+}
+
+function sortExecutionsData(executions, column, order) {
+    const executionsArray = Object.entries(executions);
+    
+    return executionsArray.sort((a, b) => {
+        let aVal = a[1][column];
+        let bVal = b[1][column];
+        
+        // Handle different data types
+        if (column === 'last_update') {
+            // Convert timestamps to numbers for comparison
+            aVal = parseInt(aVal) || 0;
+            bVal = parseInt(bVal) || 0;
+        } else if (column === 'execution_id' || column === 'task_id') {
+            // Convert IDs to numbers for comparison
+            aVal = parseInt(aVal) || 0;
+            bVal = parseInt(bVal) || 0;
+        } else {
+            // String comparison (case-insensitive)
+            aVal = (aVal || '').toString().toLowerCase();
+            bVal = (bVal || '').toString().toLowerCase();
+        }
+        
+        if (order === 'asc') {
+            return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        } else {
+            return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+        }
+    });
+}
+
+// Initialize executions on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadSavedExecutionFilters(); // Load saved filter preferences
+    loadExecutions();
+});
+
+function loadSavedExecutionFilters() {
+    // Load saved filter values from localStorage
+    const savedFilters = {
+        taskId: localStorage.getItem('executionFilter_taskId') || '',
+        client: localStorage.getItem('executionFilter_client') || '',
+        status: localStorage.getItem('executionFilter_status') || 'success', // Default to success
+        result: localStorage.getItem('executionFilter_result') || ''
+    };
+    
+    // Apply saved values to filter controls
+    document.getElementById('filterExecutionTaskId').value = savedFilters.taskId;
+    document.getElementById('filterExecutionClient').value = savedFilters.client;
+    document.getElementById('filterExecutionStatus').value = savedFilters.status;
+    document.getElementById('filterExecutionResult').value = savedFilters.result;
+    
+    // Update filter status indicator
+    updateExecutionFilterStatus();
+    
+    // Show/hide filter controls based on saved preference
+    const filterControlsVisible = localStorage.getItem('executionFilters_visible') === 'true';
+    const controls = document.getElementById('executionFilterControls');
+    const toggle = document.getElementById('executionFilterToggle');
+    
+    if (filterControlsVisible) {
+        controls.style.display = 'block';
+        toggle.className = 'bi bi-chevron-up';
+    } else {
+        controls.style.display = 'none';
+        toggle.className = 'bi bi-chevron-down';
+    }
+}
+
+function saveExecutionFilters() {
+    // Save current filter values to localStorage
+    localStorage.setItem('executionFilter_taskId', document.getElementById('filterExecutionTaskId').value);
+    localStorage.setItem('executionFilter_client', document.getElementById('filterExecutionClient').value);
+    localStorage.setItem('executionFilter_status', document.getElementById('filterExecutionStatus').value);
+    localStorage.setItem('executionFilter_result', document.getElementById('filterExecutionResult').value);
+}
+
+function loadExecutions() {
+    fetch('/api/executions')
+        .then(response => response.json())
+        .then(data => {
+            allExecutions = data;
+            applyExecutionFilters(); // Apply saved filters (not default filter)
+            updateExecutionStats();
+        })
+        .catch(error => {
+            console.error('Error loading executions:', error);
+            const tbody = document.getElementById('executionsTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-danger py-4">
+                        <i class="bi bi-exclamation-triangle display-4"></i>
+                        <div class="mt-2">Failed to load execution records</div>
+                        <small>Error: ${error.message}</small>
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function toggleExecutionFilters() {
+    const controls = document.getElementById('executionFilterControls');
+    const toggle = document.getElementById('executionFilterToggle');
+    
+    if (controls.style.display === 'none') {
+        controls.style.display = 'block';
+        toggle.className = 'bi bi-chevron-up';
+        localStorage.setItem('executionFilters_visible', 'true');
+    } else {
+        controls.style.display = 'none';
+        toggle.className = 'bi bi-chevron-down';
+        localStorage.setItem('executionFilters_visible', 'false');
+    }
+}
+
+function clearExecutionFilters() {
+    document.getElementById('filterExecutionTaskId').value = '';
+    document.getElementById('filterExecutionClient').value = '';
+    document.getElementById('filterExecutionStatus').value = '';
+    document.getElementById('filterExecutionResult').value = '';
+    saveExecutionFilters(); // Save cleared filters
+    updateExecutionFilterStatus();
+    applyExecutionFilters();
+}
+
+function resetExecutionFiltersToDefault() {
+    document.getElementById('filterExecutionTaskId').value = '';
+    document.getElementById('filterExecutionClient').value = '';
+    document.getElementById('filterExecutionStatus').value = 'success'; // Default to success
+    document.getElementById('filterExecutionResult').value = '';
+    saveExecutionFilters(); // Save default filters
+    updateExecutionFilterStatus();
+    applyExecutionFilters();
+}
+
+function updateExecutionFilterStatus() {
+    const statusElement = document.getElementById('executionFilterStatus');
+    const hasActiveFilters = 
+        document.getElementById('filterExecutionTaskId').value ||
+        document.getElementById('filterExecutionClient').value ||
+        document.getElementById('filterExecutionStatus').value ||
+        document.getElementById('filterExecutionResult').value;
+    
+    if (hasActiveFilters) {
+        statusElement.textContent = '(saved filters applied)';
+        statusElement.className = 'text-success ms-2';
+    } else {
+        statusElement.textContent = '(no filters)';
+        statusElement.className = 'text-muted ms-2';
+    }
+}
+
+function applyExecutionFilters() {
+    const taskIdFilter = document.getElementById('filterExecutionTaskId').value.toLowerCase();
+    const clientFilter = document.getElementById('filterExecutionClient').value.toLowerCase();
+    const statusFilter = document.getElementById('filterExecutionStatus').value.toLowerCase();
+    const resultFilter = document.getElementById('filterExecutionResult').value.toLowerCase();
+    
+    // Save filters whenever they are applied
+    saveExecutionFilters();
+    updateExecutionFilterStatus();
+    
+    const tbody = document.getElementById('executionsTableBody');
+    tbody.innerHTML = '';
+    
+    let visibleCount = 0;
+    
+    // Filter executions first
+    const filteredExecutions = allExecutions.filter(execution => {
+        // Apply filters
+        if (taskIdFilter && !execution.task_id?.toLowerCase().includes(taskIdFilter)) return false;
+        if (clientFilter && !execution.client?.toLowerCase().includes(clientFilter)) return false;
+        if (statusFilter && !execution.exec_status?.toLowerCase().includes(statusFilter)) return false;
+        if (resultFilter && !execution.exec_result?.toLowerCase().includes(resultFilter)) return false;
+        return true;
+    });
+    
+    // Convert to object format for sorting
+    const executionsObj = {};
+    filteredExecutions.forEach((execution, index) => {
+        executionsObj[execution.id || index] = {
+            execution_id: execution.id,
+            task_id: execution.task_id,
+            client: execution.client,
+            status: execution.exec_status,
+            result: execution.exec_result,
+            last_update: execution.updated_at,
+            _original: execution
+        };
+    });
+    
+    // Sort filtered executions if a sort column is selected
+    let sortedExecutions;
+    if (currentExecutionsSortColumn && executionsSortOrder[currentExecutionsSortColumn]) {
+        sortedExecutions = sortExecutionsData(executionsObj, currentExecutionsSortColumn, executionsSortOrder[currentExecutionsSortColumn]);
+    } else {
+        sortedExecutions = Object.entries(executionsObj);
+    }
+    
+    sortedExecutions.forEach(([executionId, executionData]) => {
+        const execution = executionData._original;
+        visibleCount++;
+        
+        // Create table row
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="execution-id-cell">
+                <code class="text-muted id-tooltip" onclick="copyToClipboard('${execution.id}')" title="${execution.id}">${execution.id || 'N/A'}</code>
+            </td>
+            <td class="task-id-cell">
+                <code class="text-info id-tooltip" onclick="copyToClipboard('${execution.task_id}')" title="${execution.task_id}">${execution.task_id || 'N/A'}</code>
+            </td>
+            <td>
+                <span class="badge bg-primary">
+                    <i class="bi bi-person"></i> ${execution.client || 'Unknown'}
+                </span>
+            </td>
+            <td>${getExecutionStatusBadge(execution.exec_status)}</td>
+            <td>
+                <div class="text-truncate" style="max-width: 200px;" title="${escapeHtml(execution.exec_result || '')}">
+                    <small class="text-muted">${execution.exec_result || 'No result'}</small>
+                </div>
+            </td>
+            <td>
+                <small class="text-muted">
+                    <i class="bi bi-clock"></i>
+                    ${formatTimestamp(execution.updated_at)}
+                </small>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    // Show message if no results
+    if (visibleCount === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td colspan="6" class="text-center text-muted py-4">
+                <i class="bi bi-search display-4"></i>
+                <div class="mt-2">No executions match the current filters</div>
+                <small>Try adjusting your filter criteria</small>
+            </td>
+        `;
+        tbody.appendChild(row);
+    }
+    
+    updateExecutionStats(filteredExecutions);
+}
+
+function getExecutionStatusBadge(status) {
+    if (!status) {
+        return '<span class="badge bg-secondary"><i class="bi bi-question-circle"></i> Unknown</span>';
+    }
+    
+    const statusLower = status.toLowerCase();
+    
+    if (statusLower === 'success' || statusLower === 'completed' || statusLower === 'done') {
+        return '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Success</span>';
+    } else if (statusLower === 'failed' || statusLower === 'failure') {
+        return '<span class="badge bg-danger"><i class="bi bi-x-circle"></i> Failed</span>';
+    } else if (statusLower === 'error' || statusLower === 'exception') {
+        return '<span class="badge bg-warning"><i class="bi bi-exclamation-triangle"></i> Error</span>';
+    } else if (statusLower === 'pending' || statusLower === 'waiting' || statusLower === 'queued') {
+        return '<span class="badge bg-info"><i class="bi bi-clock"></i> Pending</span>';
+    } else if (statusLower === 'running' || statusLower === 'executing' || statusLower === 'active') {
+        return '<span class="badge bg-primary"><i class="bi bi-play-circle"></i> Running</span>';
+    } else {
+        return '<span class="badge bg-secondary"><i class="bi bi-question-circle"></i> ' + status + '</span>';
+    }
+}
+
+function updateExecutionStats(executions = allExecutions) {
+    const total = executions.length;
+    const successful = executions.filter(e => e.exec_status === 'success').length;
+    const failed = executions.filter(e => e.exec_status === 'failed' || e.exec_status === 'error').length;
+    const successRate = total > 0 ? ((successful / total) * 100).toFixed(1) : 0;
+    
+    document.getElementById('totalExecutions').textContent = total;
+    document.getElementById('successfulExecutions').textContent = successful;
+    document.getElementById('failedExecutions').textContent = failed;
+    document.getElementById('successRate').textContent = successRate + '%';
+}
+</script>

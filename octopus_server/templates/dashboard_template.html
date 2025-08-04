@@ -189,6 +189,48 @@
             vertical-align: middle;
         }
 
+        /* ID Column Styles */
+        .task-id-cell, .execution-id-cell {
+            min-width: 150px;
+            max-width: 300px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .task-id-cell code, .execution-id-cell code {
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            background: rgba(0,0,0,0.05);
+            transition: background-color 0.2s ease;
+            display: inline-block;
+            max-width: 100%;
+            word-break: break-all;
+            white-space: normal;
+        }
+
+        .task-id-cell code:hover, .execution-id-cell code:hover {
+            background: rgba(0,0,0,0.1);
+        }
+
+        .id-tooltip {
+            position: relative;
+        }
+
+        .id-tooltip:hover::after {
+            content: "Click to copy";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 1000;
+        }
+
         /* Button Styles */
         .octopus-btn {
             border-radius: 0.5rem;
@@ -714,8 +756,8 @@
                                         <i class="bi bi-key"></i> ${exec.id}
                                     </span>
                                 </td>
-                                <td>
-                                    <code class="text-muted">${exec.task_id.substring(0, 8)}...</code>
+                                <td class="task-id-cell">
+                                    <code class="text-info id-tooltip" onclick="copyToClipboard('${exec.task_id}')" title="${exec.task_id}">${exec.task_id}</code>
                                 </td>
                                 <td>
                                     <span class="badge bg-primary">
@@ -828,6 +870,9 @@
                 createTaskForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     
+                    // Generate args and kwargs from dynamic form
+                    generateArgsAndKwargs();
+                    
                     let isValid = true;
                     const requiredFields = createTaskForm.querySelectorAll('[required]');
                     
@@ -872,6 +917,181 @@
                     }
                 });
             }
+        }
+
+        // Dynamic form generation functions
+        let currentPluginFunctions = {};
+
+        function loadPluginFunctions() {
+            const pluginSelect = document.querySelector('select[name="plugin"]');
+            const actionSelect = document.querySelector('select[name="action"]');
+            const parametersContainer = document.getElementById('dynamicParametersContainer');
+            
+            if (!pluginSelect.value) {
+                actionSelect.innerHTML = '<option value="">Select Function</option>';
+                parametersContainer.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> Select a plugin and function to see available parameters</div>';
+                return;
+            }
+            
+            // Show loading state
+            actionSelect.innerHTML = '<option value="">Loading functions...</option>';
+            parametersContainer.innerHTML = '<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> Loading plugin functions...</div>';
+            
+            // Fetch plugin functions
+            fetch(`/api/plugin-functions?plugin=${encodeURIComponent(pluginSelect.value)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        actionSelect.innerHTML = '<option value="">Error loading functions</option>';
+                        parametersContainer.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${data.error}</div>`;
+                        return;
+                    }
+                    
+                    currentPluginFunctions = data.functions;
+                    
+                    // Populate action dropdown
+                    actionSelect.innerHTML = '<option value="">Select Function</option>';
+                    Object.keys(data.functions).forEach(funcName => {
+                        const option = document.createElement('option');
+                        option.value = funcName;
+                        option.textContent = funcName;
+                        actionSelect.appendChild(option);
+                    });
+                    
+                    // Clear parameters container
+                    parametersContainer.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> Select a function to see its parameters</div>';
+                })
+                .catch(error => {
+                    console.error('Error loading plugin functions:', error);
+                    actionSelect.innerHTML = '<option value="">Error loading functions</option>';
+                    parametersContainer.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Failed to load plugin functions</div>';
+                });
+        }
+
+        function loadFunctionParameters() {
+            const actionSelect = document.querySelector('select[name="action"]');
+            const parametersContainer = document.getElementById('dynamicParametersContainer');
+            
+            if (!actionSelect.value || !currentPluginFunctions[actionSelect.value]) {
+                parametersContainer.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> Select a function to see its parameters</div>';
+                return;
+            }
+            
+            const functionInfo = currentPluginFunctions[actionSelect.value];
+            const parameters = functionInfo.parameters;
+            
+            // Generate dynamic parameter form
+            let html = '';
+            
+            if (functionInfo.docstring && functionInfo.docstring !== 'No description available') {
+                html += `<div class="alert alert-light">
+                    <strong><i class="bi bi-info-circle"></i> Function Description:</strong><br>
+                    <small>${escapeHtml(functionInfo.docstring)}</small>
+                </div>`;
+            }
+            
+            if (Object.keys(parameters).length === 0) {
+                html += '<div class="alert alert-success"><i class="bi bi-check-circle"></i> This function requires no parameters</div>';
+            } else {
+                html += '<div class="row g-3">';
+                
+                Object.entries(parameters).forEach(([paramName, paramInfo]) => {
+                    const isRequired = paramInfo.required;
+                    const fieldId = `param_${paramName}`;
+                    
+                    html += `<div class="col-md-6">
+                        <label for="${fieldId}" class="form-label">
+                            ${paramName}
+                            ${isRequired ? '<span class="text-danger">*</span>' : ''}
+                            <small class="text-muted">(${paramInfo.type})</small>
+                        </label>`;
+                    
+                    // Generate appropriate input based on type
+                    if (paramInfo.type === 'bool') {
+                        html += `<select class="form-select" id="${fieldId}" data-param="${paramName}" ${isRequired ? 'required' : ''}>
+                            <option value="">Select...</option>
+                            <option value="true">True</option>
+                            <option value="false">False</option>
+                        </select>`;
+                    } else if (paramInfo.type === 'int') {
+                        html += `<input type="number" class="form-control" id="${fieldId}" 
+                                data-param="${paramName}" ${isRequired ? 'required' : ''} 
+                                placeholder="Enter integer value"`;
+                        if (paramInfo.default !== undefined) {
+                            html += ` value="${paramInfo.default}"`;
+                        }
+                        html += `>`;
+                    } else if (paramInfo.type === 'float') {
+                        html += `<input type="number" step="any" class="form-control" id="${fieldId}" 
+                                data-param="${paramName}" ${isRequired ? 'required' : ''} 
+                                placeholder="Enter decimal value"`;
+                        if (paramInfo.default !== undefined) {
+                            html += ` value="${paramInfo.default}"`;
+                        }
+                        html += `>`;
+                    } else {
+                        // Default to text input for str and other types
+                        html += `<input type="text" class="form-control" id="${fieldId}" 
+                                data-param="${paramName}" ${isRequired ? 'required' : ''} 
+                                placeholder="Enter ${paramInfo.type} value"`;
+                        if (paramInfo.default !== undefined) {
+                            html += ` value="${paramInfo.default}"`;
+                        }
+                        html += `>`;
+                    }
+                    
+                    if (paramInfo.default !== undefined) {
+                        html += `<div class="form-text">Default: ${paramInfo.default}</div>`;
+                    } else if (isRequired) {
+                        html += `<div class="form-text text-danger">Required parameter</div>`;
+                    } else {
+                        html += `<div class="form-text">Optional parameter</div>`;
+                    }
+                    
+                    html += `</div>`;
+                });
+                
+                html += '</div>';
+            }
+            
+            parametersContainer.innerHTML = html;
+        }
+
+        function generateArgsAndKwargs() {
+            const actionSelect = document.querySelector('select[name="action"]');
+            if (!actionSelect.value || !currentPluginFunctions[actionSelect.value]) {
+                return;
+            }
+            
+            const functionInfo = currentPluginFunctions[actionSelect.value];
+            const parameters = functionInfo.parameters;
+            
+            const args = [];
+            const kwargs = {};
+            
+            // Collect parameter values
+            Object.entries(parameters).forEach(([paramName, paramInfo]) => {
+                const field = document.getElementById(`param_${paramName}`);
+                if (field && field.value !== '') {
+                    let value = field.value;
+                    
+                    // Convert value to appropriate type
+                    if (paramInfo.type === 'bool') {
+                        value = value === 'true';
+                    } else if (paramInfo.type === 'int') {
+                        value = parseInt(value);
+                    } else if (paramInfo.type === 'float') {
+                        value = parseFloat(value);
+                    }
+                    // For str and others, keep as string
+                    
+                    kwargs[paramName] = value;
+                }
+            });
+            
+            // Update hidden fields
+            document.getElementById('hiddenArgs').value = JSON.stringify(args);
+            document.getElementById('hiddenKwargs').value = JSON.stringify(kwargs);
         }
 
         // Initialize everything when the page loads
@@ -920,8 +1140,80 @@
                 });
             } catch (error) {
                 console.error('Error formatting timestamp:', timestamp, error);
-                return timestamp; // Return original if error
+                return timestamp;
             }
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Helper function to copy text to clipboard
+        function copyToClipboard(text) {
+            if (!text || text === 'N/A') return;
+            
+            navigator.clipboard.writeText(text).then(function() {
+                // Show success feedback
+                showNotification('ID copied to clipboard!', 'success');
+            }).catch(function(err) {
+                console.error('Failed to copy to clipboard:', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showNotification('ID copied to clipboard!', 'success');
+                } catch (err) {
+                    showNotification('Failed to copy ID', 'error');
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+
+        // Helper function to show notifications
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 10000;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                opacity: 0;
+                transform: translateX(100%);
+            `;
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
         }
 
         // Task Details Modal Functions
@@ -1067,7 +1359,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Plugin</label>
-                                <select name="plugin" class="form-select" required>
+                                <select name="plugin" class="form-select" required onchange="loadPluginFunctions()">
                                     <option value="">Select Plugin</option>
                                     {% for plugin in plugin_names %}
                                         <option value="{{ plugin }}">{{ plugin }}</option>
@@ -1077,27 +1369,29 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Action</label>
-                                <input name="action" type="text" class="form-control" placeholder="main" value="main">
-                                <div class="form-text">Function to execute (usually 'main')</div>
+                                <select name="action" class="form-select" onchange="loadFunctionParameters()">
+                                    <option value="">Select Function</option>
+                                </select>
+                                <div class="form-text">Function to execute</div>
                             </div>
                             
-                            <!-- Arguments Section -->
+                            <!-- Dynamic Parameters Section -->
                             <div class="col-12">
                                 <hr class="my-3">
                                 <h6 class="text-muted mb-3">
-                                    <i class="bi bi-list"></i> Arguments & Parameters
+                                    <i class="bi bi-sliders"></i> Function Parameters
                                 </h6>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Arguments (JSON Array)</label>
-                                <textarea name="args" class="form-control" placeholder='["arg1", "arg2"]' rows="3">[]</textarea>
-                                <div class="form-text">Positional arguments as JSON array</div>
+                            <div class="col-12" id="dynamicParametersContainer">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    Select a plugin and function to see available parameters
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Keyword Arguments (JSON Object)</label>
-                                <textarea name="kwargs" class="form-control" placeholder='{"key": "value"}' rows="3">{}</textarea>
-                                <div class="form-text">Named parameters as JSON object</div>
-                            </div>
+                            
+                            <!-- Hidden fields for args/kwargs (will be populated automatically) -->
+                            <input type="hidden" name="args" id="hiddenArgs" value="[]">
+                            <input type="hidden" name="kwargs" id="hiddenKwargs" value="{}">
                             
                             <!-- Scheduling Options -->
                             <div class="col-12">

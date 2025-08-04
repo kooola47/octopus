@@ -64,6 +64,9 @@ latest_task_info = {
     "last_run": ""
 }
 
+# Track currently executing tasks to prevent duplicate executions
+executing_tasks = set()
+
 def tracked_task(task_func, task_name):
     def wrapper():
         try:
@@ -249,8 +252,9 @@ def update_task_status(server_url, tid, username, result, status="Done"):
 def execute_task(task, tid, username, server_url):
     """
     Execute the given task and report result.
+    Supports both synchronous and asynchronous plugin functions.
     """
-    import importlib, ast
+    import importlib, ast, asyncio, inspect
     plugin = task.get("plugin")
     action = task.get("action", "run")
     args = task.get("args", [])
@@ -270,12 +274,29 @@ def execute_task(task, tid, username, server_url):
         func = getattr(module, action, None)
         if callable(func):
             logger.info(f"Executing task {tid}: {plugin}.{action} args={args} kwargs={kwargs}")
-            result = func(*args, **kwargs)
+            
+            # Check if the function is async (coroutine)
+            if inspect.iscoroutinefunction(func):
+                logger.debug(f"Function {plugin}.{action} is async, using asyncio.run()")
+                try:
+                    # Run async function
+                    result = asyncio.run(func(*args, **kwargs))
+                except Exception as e:
+                    logger.error(f"Async execution failed for {plugin}.{action}: {e}")
+                    result = str(e)
+                    exec_status = "failed"
+                    return exec_status, result
+            else:
+                logger.debug(f"Function {plugin}.{action} is sync, calling directly")
+                # Run sync function normally
+                result = func(*args, **kwargs)
+            
             exec_status = "success"
         else:
             result = f"Action {action} not found"
             exec_status = "failed"
     except Exception as e:
+        logger.error(f"Plugin execution failed for {plugin}.{action}: {e}")
         result = str(e)
         exec_status = "failed"
     return exec_status, result
@@ -330,15 +351,28 @@ def task_execution_loop():
                         
                     # Should this client execute?
                     if should_client_execute(task, username):
-                        logger.info(f"Executing task {tid} assigned to {username}")
-                        exec_status, result = execute_task(task, tid, username, SERVER_URL)
-                        
-                        if task.get("owner") == "ALL":
-                            post_execution_result(SERVER_URL, tid, username, exec_status, result)
-                        else:
-                            update_task_status(SERVER_URL, tid, username, result)
+                        # Check if task is already being executed to prevent duplicates
+                        if tid in executing_tasks:
+                            logger.debug(f"Task {tid} is already being executed, skipping duplicate")
+                            continue
                             
-                        logger.info(f"Task {tid} execution completed: {exec_status}")
+                        logger.info(f"Executing task {tid} assigned to {username}")
+                        
+                        # Mark task as executing before starting
+                        executing_tasks.add(tid)
+                        
+                        try:
+                            exec_status, result = execute_task(task, tid, username, SERVER_URL)
+                            
+                            if task.get("owner") == "ALL":
+                                post_execution_result(SERVER_URL, tid, username, exec_status, result)
+                            else:
+                                update_task_status(SERVER_URL, tid, username, result)
+                                
+                            logger.info(f"Task {tid} execution completed: {exec_status}")
+                        finally:
+                            # Always remove from executing set when done
+                            executing_tasks.discard(tid)
                     else:
                         logger.debug(f"Task {tid} not assigned to this client ({username})")
                         

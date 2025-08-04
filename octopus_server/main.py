@@ -15,6 +15,8 @@ from cache import Cache
 from config import *
 import os
 import logging
+import inspect
+import importlib
 from flask import request, jsonify
 from dbhelper import (
     get_tasks, add_task, update_task, delete_task,
@@ -331,8 +333,16 @@ def dashboard():
 
 @app.route("/tasks-ui/delete/<task_id>")
 def delete_task_ui(task_id):
-    delete_task(task_id)
-    return redirect(url_for("dashboard", tab="tasks"))
+    """Delete a task and redirect back to the dashboard with the appropriate tab."""
+    try:
+        delete_task(task_id)
+        logger.info(f"Task {task_id} deleted successfully")
+    except Exception as e:
+        logger.error(f"Failed to delete task {task_id}: {e}")
+    
+    # Get the tab parameter, default to 'tasks'
+    tab = request.args.get('tab', 'tasks')
+    return redirect(url_for("dashboard", tab=tab))
 
 @app.route("/client-tasks", methods=["GET"])
 def client_tasks():
@@ -340,6 +350,36 @@ def client_tasks():
     Returns a list of all tasks (for clients).
     """
     return jsonify(list(get_tasks().values()))
+
+@app.route("/api/executions", methods=["GET"])
+def api_executions():
+    """
+    Returns execution data for the dashboard with proper field names.
+    """
+    import sqlite3
+
+    def get_db_file():
+        return DB_FILE
+
+    db_file = get_db_file()
+    executions = []
+    try:
+        with sqlite3.connect(db_file) as conn:
+            cur = conn.execute("SELECT id, task_id, client, status, result, updated_at FROM executions ORDER BY updated_at DESC")
+            for row in cur.fetchall():
+                executions.append({
+                    "id": row[0],
+                    "task_id": row[1],
+                    "client": row[2],
+                    "exec_status": row[3],  # Match the frontend field name
+                    "exec_result": row[4],  # Match the frontend field name
+                    "updated_at": row[5],
+                })
+    except sqlite3.Error as e:
+        logger.error(f"Database error in api_executions: {e}")
+        return jsonify([])  # Return empty list on error
+    
+    return jsonify(executions)
 
 @app.route("/client-executions", methods=["GET"])
 def client_executions():
@@ -452,6 +492,68 @@ def api_dashboard_data():
         "now": now,
         "timestamp": time.time()
     })
+
+@app.route("/api/plugin-functions", methods=["GET"])
+def api_plugin_functions():
+    """
+    API endpoint to get function signatures for plugins
+    """
+    plugin_name = request.args.get('plugin')
+    if not plugin_name:
+        return jsonify({"error": "Plugin parameter required"}), 400
+    
+    try:
+        # Import the plugin module
+        module = importlib.import_module(f"plugins.{plugin_name}")
+        
+        # Get all callable functions from the module
+        functions = {}
+        for name, obj in inspect.getmembers(module, inspect.isfunction):
+            # Skip private functions
+            if name.startswith('_'):
+                continue
+                
+            try:
+                # Get function signature
+                sig = inspect.signature(obj)
+                parameters = {}
+                
+                for param_name, param in sig.parameters.items():
+                    param_info = {
+                        "name": param_name,
+                        "required": param.default == inspect.Parameter.empty,
+                        "type": "str"  # Default type
+                    }
+                    
+                    # Try to get type hints
+                    if param.annotation != inspect.Parameter.empty:
+                        param_info["type"] = getattr(param.annotation, '__name__', str(param.annotation))
+                    
+                    # Get default value
+                    if param.default != inspect.Parameter.empty:
+                        param_info["default"] = param.default
+                    
+                    parameters[param_name] = param_info
+                
+                functions[name] = {
+                    "parameters": parameters,
+                    "docstring": inspect.getdoc(obj) or "No description available"
+                }
+                
+            except Exception as e:
+                logger.warning(f"Could not inspect function {name}: {e}")
+                functions[name] = {
+                    "parameters": {},
+                    "docstring": "Function signature could not be determined"
+                }
+        
+        return jsonify({"functions": functions})
+        
+    except ImportError:
+        return jsonify({"error": f"Plugin '{plugin_name}' not found"}), 404
+    except Exception as e:
+        logger.error(f"Error inspecting plugin {plugin_name}: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 # ...existing code...
 if __name__ == "__main__":
