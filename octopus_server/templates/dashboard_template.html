@@ -1272,6 +1272,57 @@
             
             modal.show();
         }
+
+        // Handle URL parameters for NLP task creation
+        function handleUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const createTask = urlParams.get('createTask');
+            const editTask = urlParams.get('editTask');
+            
+            if (createTask) {
+                try {
+                    const taskData = JSON.parse(decodeURIComponent(createTask));
+                    populateCreateTaskForm(taskData);
+                    showTab('tasks');
+                    setTimeout(() => {
+                        const modal = new bootstrap.Modal(document.getElementById('createTaskModal'));
+                        modal.show();
+                    }, 500);
+                } catch (error) {
+                    console.error('Error parsing task data from URL:', error);
+                }
+            } else if (editTask) {
+                try {
+                    const taskData = JSON.parse(decodeURIComponent(editTask));
+                    populateCreateTaskForm(taskData);
+                    showTab('tasks');
+                    setTimeout(() => {
+                        const modal = new bootstrap.Modal(document.getElementById('createTaskModal'));
+                        modal.show();
+                    }, 500);
+                } catch (error) {
+                    console.error('Error parsing task data from URL:', error);
+                }
+            }
+        }
+
+        function populateCreateTaskForm(taskData) {
+            if (taskData.owner) document.getElementById('createOwner').value = taskData.owner;
+            if (taskData.plugin) document.getElementById('createPlugin').value = taskData.plugin;
+            if (taskData.action) document.getElementById('createAction').value = taskData.action;
+            if (taskData.type) document.getElementById('createType').value = taskData.type;
+            if (taskData.priority) document.getElementById('createPriority').value = taskData.priority;
+            if (taskData.args) document.getElementById('createArgs').value = JSON.stringify(taskData.args);
+            if (taskData.kwargs) document.getElementById('createKwargs').value = JSON.stringify(taskData.kwargs);
+            if (taskData.execution_start_time) document.getElementById('createStartTime').value = taskData.execution_start_time.slice(0, 16);
+            if (taskData.execution_end_time) document.getElementById('createEndTime').value = taskData.execution_end_time.slice(0, 16);
+            if (taskData.interval) document.getElementById('createInterval').value = taskData.interval;
+        }
+
+        // Initialize page
+        window.addEventListener('load', function() {
+            handleUrlParameters();
+        });
     </script>
 </head>
 <body>
@@ -1286,8 +1337,17 @@
 
     <div class="dashboard-container">
         <div class="octopus-header">
-            <h1>🐙 Octopus Dashboard</h1>
-            <p class="octopus-subtitle">Distributed Task Orchestration System</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1>🐙 Octopus Dashboard</h1>
+                    <p class="octopus-subtitle">Distributed Task Orchestration System</p>
+                </div>
+                <div>
+                    <a href="/nlp-test" class="btn btn-outline-primary">
+                        <i class="bi bi-brain"></i> NLP Task Creator
+                    </a>
+                </div>
+            </div>
         </div>
 
         <ul class="nav nav-tabs">

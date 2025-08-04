@@ -596,6 +596,12 @@ def api_nlp_parse():
         logger.error(f"Error in NLP parsing: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
-# ...existing code...
+@app.route("/nlp-test")
+def nlp_test_page():
+    """
+    NLP test page for natural language task creation
+    """
+    return render_template("nlp_test.html")
+
 if __name__ == "__main__":
     app.run(host=SERVER_HOST, port=SERVER_PORT)
