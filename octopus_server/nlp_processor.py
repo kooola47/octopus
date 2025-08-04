@@ -22,8 +22,8 @@ class TaskNLPProcessor:
     Natural Language Processor for converting text to task definitions
     """
     
-    def __init__(self):
-        """Initialize the NLP processor with spaCy model"""
+    def __init__(self, static_data_file: Optional[str] = None, plugins_folder: str = "plugins"):
+        """Initialize the NLP processor with spaCy model and optional static data"""
         try:
             # Try to load the English model
             self.nlp = spacy.load("en_core_web_sm")
@@ -32,22 +32,34 @@ class TaskNLPProcessor:
             logger.warning("spaCy English model not found. Install with: python -m spacy download en_core_web_sm")
             self.nlp = None
         
-        # Define patterns for extracting task components
+        # Load static data mappings for shortcuts
+        self.static_mappings = self._load_static_data(static_data_file)
+        
+        # Load plugin comments for better understanding
+        self.plugin_metadata = self._load_plugin_metadata(plugins_folder)
+        
+        # Define patterns for extracting task components with enhanced coverage
         self.action_patterns = {
             'create_incident': [
                 r'create.*incident', r'report.*issue', r'file.*ticket', r'log.*problem',
-                r'raise.*alert', r'submit.*bug', r'open.*case'
+                r'raise.*alert', r'submit.*bug', r'open.*case', r'incident.*report',
+                r'new.*incident', r'issue.*creation', r'problem.*report', r'alert.*creation',
+                r'ticket.*creation', r'bug.*report', r'case.*opening'
             ],
             'send_email': [
                 r'send.*email', r'email.*to', r'mail.*notification', r'notify.*via.*email',
-                r'send.*message', r'alert.*email'
+                r'send.*message', r'alert.*email', r'email.*alert', r'notification.*email',
+                r'message.*sending', r'mail.*to', r'email.*notification', r'send.*notification'
             ],
             'backup_database': [
                 r'backup.*database', r'backup.*db', r'create.*backup', r'dump.*database',
-                r'export.*data', r'archive.*database'
+                r'export.*data', r'archive.*database', r'database.*backup', r'db.*backup',
+                r'data.*backup', r'backup.*data', r'database.*dump', r'db.*dump'
             ],
             'cleanup_logs': [
                 r'clean.*logs?', r'delete.*logs?', r'remove.*old.*files?', r'purge.*logs?',
+                r'cleanup.*logs?', r'clear.*logs?', r'log.*cleanup', r'log.*removal',
+                r'delete.*old.*logs?', r'remove.*log.*files?', r'purge.*old.*files?',
                 r'cleanup.*files?', r'clear.*logs?'
             ],
             'monitor_system': [
@@ -102,8 +114,13 @@ class TaskNLPProcessor:
         
         logger.info(f"Processing natural language input: {text}")
         
+        # Expand shortcuts using static data mappings
+        expanded_text = self._expand_shortcuts(text)
+        if expanded_text != text.lower():
+            logger.info(f"Expanded shortcuts: '{text}' → '{expanded_text}'")
+        
         # Process text with spaCy
-        doc = self.nlp(text.lower())
+        doc = self.nlp(expanded_text)
         
         # Initialize result structure
         result = {
@@ -119,7 +136,8 @@ class TaskNLPProcessor:
             },
             "confidence": 0.0,
             "extracted_entities": [],
-            "suggestions": []
+            "suggestions": [],
+            "expanded_text": expanded_text if expanded_text != text.lower() else None
         }
         
         # Extract entities
@@ -127,22 +145,31 @@ class TaskNLPProcessor:
         result["extracted_entities"] = entities
         
         # Determine action/plugin
-        plugin, action, confidence = self._determine_action(text)
+        plugin, action, confidence = self._determine_action(expanded_text)
         if plugin:
             result["task"]["plugin"] = plugin
             result["task"]["action"] = action
-            result["confidence"] += confidence * 0.4
+            
+            # Enhance confidence with plugin metadata
+            confidence = self._enhance_confidence_with_plugin_metadata(expanded_text, plugin, confidence)
+            
+            result["confidence"] += confidence * 0.5  # Increased weight for action detection
         
         # Extract priority
         priority = self._extract_priority(text)
         if priority:
             result["task"]["priority"] = priority
-            result["confidence"] += 0.1
+            result["confidence"] += 0.15  # Increased from 0.1
         
         # Extract parameters from entities and text
         args, kwargs = self._extract_parameters(entities, text, plugin)
         result["task"]["args"] = args
         result["task"]["kwargs"] = kwargs
+        
+        # Boost confidence based on parameter completeness
+        if kwargs:
+            param_score = len(kwargs) * 0.05  # 5% per parameter
+            result["confidence"] += min(0.2, param_score)
         
         # Determine owner/assignee
         owner = self._extract_owner(text)
@@ -154,7 +181,19 @@ class TaskNLPProcessor:
         schedule_info = self._extract_schedule(text)
         if schedule_info:
             result["task"].update(schedule_info)
-            result["confidence"] += 0.2
+            result["confidence"] += 0.15  # Increased from 0.2
+        
+        # Boost confidence for entity recognition
+        if entities:
+            entity_score = len(entities) * 0.03  # 3% per entity
+            result["confidence"] += min(0.15, entity_score)
+        
+        # Penalty for very short or very long texts
+        text_length = len(text.split())
+        if text_length < 3:
+            result["confidence"] *= 0.8  # 20% penalty for very short text
+        elif text_length > 50:
+            result["confidence"] *= 0.9  # 10% penalty for very long text
         
         # Generate suggestions
         result["suggestions"] = self._generate_suggestions(text, entities)
@@ -215,19 +254,48 @@ class TaskNLPProcessor:
         return entities
 
     def _determine_action(self, text: str) -> Tuple[Optional[str], str, float]:
-        """Determine the most likely plugin and action from text"""
+        """Determine the most likely plugin and action from text with improved confidence scoring"""
         text_lower = text.lower()
         best_match = None
         best_score = 0.0
+        match_count = 0
         
         for plugin, patterns in self.action_patterns.items():
+            plugin_score = 0.0
+            plugin_matches = 0
+            
             for pattern in patterns:
                 if re.search(pattern, text_lower):
-                    # Score based on pattern specificity and length
-                    score = len(pattern) / len(text_lower) + 0.5
-                    if score > best_score:
-                        best_score = score
-                        best_match = plugin
+                    plugin_matches += 1
+                    match_count += 1
+                    
+                    # Improved scoring system:
+                    # 1. Base score for pattern match
+                    base_score = 0.3
+                    
+                    # 2. Bonus for exact keyword matches
+                    if pattern in text_lower:
+                        base_score += 0.2
+                    
+                    # 3. Bonus for pattern specificity (longer patterns are more specific)
+                    specificity_bonus = min(0.3, len(pattern) / 20)
+                    
+                    # 4. Bonus for multiple pattern matches in same plugin
+                    multi_match_bonus = min(0.2, plugin_matches * 0.05)
+                    
+                    current_score = base_score + specificity_bonus + multi_match_bonus
+                    plugin_score = max(plugin_score, current_score)
+            
+            if plugin_score > best_score:
+                best_score = plugin_score
+                best_match = plugin
+        
+        # Additional confidence boost for clear action words
+        action_words = ['create', 'send', 'backup', 'cleanup', 'generate', 'run', 'execute', 'schedule']
+        for word in action_words:
+            if word in text_lower:
+                best_score += 0.1
+                break
         
         if best_match:
             return best_match, "main", min(1.0, best_score)
@@ -427,9 +495,156 @@ class TaskNLPProcessor:
         
         return suggestions
 
+    def _load_static_data(self, static_data_file: Optional[str]) -> Dict:
+        """Load static data mappings from JSON file"""
+        if not static_data_file:
+            # Return default static mappings
+            return {
+                "database_shortcuts": {
+                    "prod db": "production database",
+                    "dev db": "development database", 
+                    "test db": "testing database",
+                    "staging db": "staging database",
+                    "orders db": "orders database",
+                    "users db": "users database",
+                    "logs db": "logs database"
+                },
+                "server_shortcuts": {
+                    "prod server": "production server",
+                    "dev server": "development server",
+                    "web server": "web application server",
+                    "api server": "API gateway server",
+                    "db server": "database server",
+                    "cache server": "redis cache server"
+                },
+                "email_shortcuts": {
+                    "admin": "admin@company.com",
+                    "ops": "ops@company.com", 
+                    "devops": "devops@company.com",
+                    "security": "security@company.com",
+                    "support": "support@company.com"
+                },
+                "path_shortcuts": {
+                    "app logs": "/var/log/app",
+                    "system logs": "/var/log/system",
+                    "access logs": "/var/log/nginx/access.log",
+                    "error logs": "/var/log/nginx/error.log",
+                    "backup dir": "/backup",
+                    "temp dir": "/tmp"
+                },
+                "priority_shortcuts": {
+                    "asap": "P1",
+                    "urgent": "P1", 
+                    "high": "P2",
+                    "normal": "P3",
+                    "low": "P4"
+                }
+            }
+        
+        try:
+            with open(static_data_file, 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            logger.warning(f"Static data file {static_data_file} not found. Using defaults.")
+            return self._load_static_data(None)
+        except json.JSONDecodeError:
+            logger.error(f"Invalid JSON in static data file {static_data_file}")
+            return self._load_static_data(None)
 
-def get_nlp_processor() -> TaskNLPProcessor:
+    def _load_plugin_metadata(self, plugins_folder: str) -> Dict:
+        """Load plugin metadata from plugin files for better understanding"""
+        import os
+        import importlib.util
+        
+        plugin_metadata = {}
+        
+        if not os.path.exists(plugins_folder):
+            logger.warning(f"Plugins folder {plugins_folder} not found")
+            return plugin_metadata
+        
+        for filename in os.listdir(plugins_folder):
+            if filename.endswith('.py') and not filename.startswith('_'):
+                plugin_name = filename[:-3]  # Remove .py extension
+                plugin_path = os.path.join(plugins_folder, filename)
+                
+                try:
+                    # Read the plugin file to extract comments and docstrings
+                    with open(plugin_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    metadata = {
+                        'description': '',
+                        'keywords': [],
+                        'examples': [],
+                        'parameters': {}
+                    }
+                    
+                    # Extract module docstring
+                    if '"""' in content:
+                        start = content.find('"""') + 3
+                        end = content.find('"""', start)
+                        if end > start:
+                            metadata['description'] = content[start:end].strip()
+                    
+                    # Extract NLP comments (comments starting with # NLP:)
+                    for line in content.split('\n'):
+                        line = line.strip()
+                        if line.startswith('# NLP:'):
+                            nlp_info = line[6:].strip()
+                            if nlp_info.startswith('keywords:'):
+                                keywords = nlp_info[9:].split(',')
+                                metadata['keywords'].extend([k.strip() for k in keywords])
+                            elif nlp_info.startswith('example:'):
+                                metadata['examples'].append(nlp_info[8:].strip())
+                    
+                    plugin_metadata[plugin_name] = metadata
+                    logger.debug(f"Loaded metadata for plugin {plugin_name}")
+                    
+                except Exception as e:
+                    logger.warning(f"Could not load metadata for plugin {plugin_name}: {e}")
+        
+        return plugin_metadata
+
+    def _expand_shortcuts(self, text: str) -> str:
+        """Expand shortcuts in text using static data mappings"""
+        expanded_text = text.lower()
+        
+        # Apply all shortcut mappings
+        for category, mappings in self.static_mappings.items():
+            for shortcut, full_form in mappings.items():
+                # Use word boundaries to avoid partial matches
+                pattern = r'\b' + re.escape(shortcut) + r'\b'
+                expanded_text = re.sub(pattern, full_form, expanded_text, flags=re.IGNORECASE)
+        
+        logger.debug(f"Expanded '{text}' to '{expanded_text}'")
+        return expanded_text
+
+    def _enhance_confidence_with_plugin_metadata(self, text: str, plugin: str, confidence: float) -> float:
+        """Enhance confidence using plugin metadata"""
+        if plugin not in self.plugin_metadata:
+            return confidence
+        
+        metadata = self.plugin_metadata[plugin]
+        text_lower = text.lower()
+        
+        # Boost confidence for keyword matches
+        for keyword in metadata.get('keywords', []):
+            if keyword.lower() in text_lower:
+                confidence += 0.05  # 5% boost per keyword match
+        
+        # Boost confidence if text matches examples
+        for example in metadata.get('examples', []):
+            # Simple similarity check
+            example_words = set(example.lower().split())
+            text_words = set(text_lower.split())
+            overlap = len(example_words.intersection(text_words))
+            if overlap > 0:
+                similarity_boost = min(0.1, overlap * 0.02)  # Up to 10% boost
+                confidence += similarity_boost
+        
+        return min(1.0, confidence)
+def get_nlp_processor(static_data_file: Optional[str] = "static_mappings.json", plugins_folder: str = "plugins") -> TaskNLPProcessor:
     """Get a singleton instance of the NLP processor"""
     if not hasattr(get_nlp_processor, '_instance'):
-        get_nlp_processor._instance = TaskNLPProcessor()
+        get_nlp_processor._instance = TaskNLPProcessor(static_data_file, plugins_folder)
     return get_nlp_processor._instance

@@ -603,5 +603,12 @@ def nlp_test_page():
     """
     return render_template("nlp_test.html")
 
+@app.route("/confidence-guide")
+def confidence_guide():
+    """
+    Guide for improving NLP confidence levels
+    """
+    return render_template("confidence_guide.html")
+
 if __name__ == "__main__":
     app.run(host=SERVER_HOST, port=SERVER_PORT)

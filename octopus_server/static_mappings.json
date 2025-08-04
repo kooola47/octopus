@@ -1,0 +1,75 @@
+{
+  "database_shortcuts": {
+    "prod db": "production database",
+    "dev db": "development database", 
+    "test db": "testing database",
+    "staging db": "staging database",
+    "orders db": "orders database",
+    "users db": "users database",
+    "logs db": "logs database",
+    "customer db": "customer database",
+    "inventory db": "inventory database",
+    "analytics db": "analytics database"
+  },
+  "server_shortcuts": {
+    "prod server": "production server",
+    "dev server": "development server",
+    "web server": "web application server",
+    "api server": "API gateway server",
+    "db server": "database server",
+    "cache server": "redis cache server",
+    "mail server": "email server",
+    "file server": "file storage server"
+  },
+  "email_shortcuts": {
+    "admin": "admin@company.com",
+    "ops": "ops@company.com", 
+    "devops": "devops@company.com",
+    "security": "security@company.com",
+    "support": "support@company.com",
+    "dba": "dba@company.com",
+    "manager": "manager@company.com",
+    "team": "team@company.com"
+  },
+  "path_shortcuts": {
+    "app logs": "/var/log/app",
+    "system logs": "/var/log/system",
+    "access logs": "/var/log/nginx/access.log",
+    "error logs": "/var/log/nginx/error.log",
+    "backup dir": "/backup",
+    "temp dir": "/tmp",
+    "config dir": "/etc",
+    "home dir": "/home",
+    "web dir": "/var/www",
+    "data dir": "/var/data"
+  },
+  "priority_shortcuts": {
+    "asap": "P1",
+    "urgent": "P1", 
+    "critical": "P1",
+    "high": "P2",
+    "normal": "P3",
+    "low": "P4",
+    "lowest": "P4"
+  },
+  "time_shortcuts": {
+    "now": "immediately",
+    "asap": "immediately",
+    "tonight": "at 11 PM",
+    "morning": "at 9 AM",
+    "afternoon": "at 2 PM",
+    "evening": "at 6 PM",
+    "midnight": "at 12 AM",
+    "end of day": "at 5 PM",
+    "business hours": "during 9 AM to 5 PM"
+  },
+  "application_shortcuts": {
+    "web app": "web application",
+    "api": "REST API service",
+    "frontend": "frontend application",
+    "backend": "backend service",
+    "microservice": "microservice",
+    "container": "Docker container",
+    "k8s": "Kubernetes cluster"
+  }
+}
