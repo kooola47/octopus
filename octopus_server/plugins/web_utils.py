@@ -3,6 +3,12 @@
 Web Utils Plugin
 ================
 Plugin for web-related utilities and HTTP operations
+
+# NLP: keywords: fetch url, http request, web scraping, api call, download, post request, get request
+# NLP: example: Fetch URL https://api.github.com/users/octocat with GET method
+# NLP: example: Make HTTP request to status page with 60 second timeout
+# NLP: example: Download content from website and check response
+# NLP: example: POST data to API endpoint with JSON payload
 """
 
 import requests
@@ -14,6 +20,10 @@ import time
 def fetch_url(url: str, method: str = "GET", timeout: int = 30, follow_redirects: bool = True):
     """
     Fetch content from a URL.
+    
+    # NLP: keywords: fetch url, get url, http get, download webpage, api request
+    # NLP: example: Fetch URL https://httpbin.org/get with 45 second timeout
+    # NLP: example: Get content from API endpoint with POST method
     
     Args:
         url: URL to fetch
@@ -70,6 +80,10 @@ def check_url_status(urls: str, timeout: int = 10):
     """
     Check the status of multiple URLs.
     
+    # NLP: keywords: check url status, url health check, website status, ping urls, monitor websites
+    # NLP: example: Check URL status for https://google.com,https://github.com with 15 second timeout
+    # NLP: example: Monitor website status for production and staging URLs
+    
     Args:
         urls: Comma-separated list of URLs to check
         timeout: Request timeout in seconds (default: 10)
@@ -112,6 +126,10 @@ def encode_decode_url(text: str, operation: str = "encode"):
     """
     URL encode or decode text.
     
+    # NLP: keywords: url encode, url decode, percent encoding, escape url, unescape url
+    # NLP: example: URL encode text "hello world space" 
+    # NLP: example: Decode URL "%20%3D%26" to readable text
+    
     Args:
         text: Text to encode/decode
         operation: Operation to perform (encode, decode)
@@ -137,6 +155,10 @@ def encode_decode_url(text: str, operation: str = "encode"):
 def parse_url(url: str):
     """
     Parse a URL into its components.
+    
+    # NLP: keywords: parse url, url components, break down url, analyze url
+    # NLP: example: Parse URL https://example.com/path?param=value#section
+    # NLP: example: Break down URL components for API endpoint
     
     Args:
         url: URL to parse
@@ -172,6 +194,10 @@ def generate_qr_code(text: str, format_type: str = "text"):
     """
     Generate a simple text-based QR code representation.
     
+    # NLP: keywords: generate qr code, create qr code, qr code url, barcode
+    # NLP: example: Generate QR code for text "Hello World" with URL format
+    # NLP: example: Create QR code for website link in text format
+    
     Args:
         text: Text to encode in QR code
         format_type: Output format (text, url)
@@ -199,6 +225,10 @@ def generate_qr_code(text: str, format_type: str = "text"):
 def validate_email(email: str):
     """
     Basic email address validation.
+    
+    # NLP: keywords: validate email, check email, email validation, verify email address
+    # NLP: example: Validate email address user@company.com
+    # NLP: example: Check if admin@example.org is valid email format
     
     Args:
         email: Email address to validate

@@ -12,6 +12,8 @@ import time
 import os
 import sys
 import logging
+import threading
+from contextlib import contextmanager
 
 # Add parent directory to path for shared modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,41 +24,76 @@ from utils import get_current_timestamp, is_task_completed, sanitize_string, saf
 
 logger = logging.getLogger(__name__)
 
+# Database connection lock for thread safety
+_db_lock = threading.RLock()
+
 def init_db():
-    with sqlite3.connect(DB_FILE) as conn:
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS tasks (
-                id TEXT PRIMARY KEY,
-                owner TEXT,
-                plugin TEXT,
-                action TEXT,
-                args TEXT,
-                kwargs TEXT,
-                type TEXT,
-                execution_start_time TEXT,
-                execution_end_time TEXT,
-                interval TEXT,
-                status TEXT,
-                executor TEXT,
-                result TEXT,
-                updated_at REAL
-            )
-        ''')
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS executions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                task_id TEXT,
-                client TEXT,
-                status TEXT,
-                result TEXT,
-                updated_at REAL,
-                UNIQUE(task_id, client)
-            )
-        ''')
+    with _db_lock:
+        with sqlite3.connect(DB_FILE) as conn:
+            # Enable WAL mode for better concurrent performance
+            conn.execute('PRAGMA journal_mode=WAL')
+            conn.execute('PRAGMA synchronous=NORMAL') 
+            conn.execute('PRAGMA cache_size=10000')
+            conn.execute('PRAGMA temp_store=memory')
+            conn.execute('PRAGMA mmap_size=268435456')  # 256MB
+            
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id TEXT PRIMARY KEY,
+                    owner TEXT,
+                    plugin TEXT,
+                    action TEXT,
+                    args TEXT,
+                    kwargs TEXT,
+                    type TEXT,
+                    execution_start_time TEXT,
+                    execution_end_time TEXT,
+                    interval TEXT,
+                    status TEXT,
+                    executor TEXT,
+                    result TEXT,
+                    updated_at REAL
+                )
+            ''')
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS executions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    task_id TEXT,
+                    client TEXT,
+                    status TEXT,
+                    result TEXT,
+                    updated_at REAL,
+                    UNIQUE(task_id, client)
+                )
+            ''')
+            
+            # Create indexes for better performance
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks(updated_at)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_executions_task_id ON executions(task_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_executions_updated_at ON executions(updated_at)')
+            
+            conn.commit()
+
+@contextmanager
+def get_db_connection():
+    """Thread-safe database connection context manager"""
+    connection = None
+    try:
+        with _db_lock:
+            connection = sqlite3.connect(DB_FILE, timeout=30.0)  # 30 second timeout
+            connection.execute('PRAGMA busy_timeout=30000')  # 30 second busy timeout
+            yield connection
+    except sqlite3.OperationalError as e:
+        logger.error(f"Database operation error: {e}")
+        raise
+    finally:
+        if connection:
+            connection.close()
 
 def get_tasks():
     init_db()
-    with sqlite3.connect(DB_FILE) as conn:
+    with get_db_connection() as conn:
         cur = conn.execute("SELECT * FROM tasks")
         tasks = {}
         for row in cur.fetchall():
@@ -73,7 +110,7 @@ def get_tasks():
 def add_task(task):
     init_db()
     task_id = task.get("id") or str(int(time.time() * 1000))
-    with sqlite3.connect(DB_FILE) as conn:
+    with get_db_connection() as conn:
         conn.execute('''
             INSERT OR REPLACE INTO tasks (id, owner, plugin, action, args, kwargs, type, execution_start_time, execution_end_time, interval, status, executor, result, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

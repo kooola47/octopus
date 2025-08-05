@@ -3,6 +3,13 @@
 File Operations Plugin
 ======================
 Plugin for file and directory operations
+
+# NLP: keywords: create file, read file, list directory, copy file, delete file, file operations, directory listing
+# NLP: example: Create file test.txt with content "Hello World"
+# NLP: example: Read file configuration.json with max 50 lines
+# NLP: example: List directory /home/user including hidden files
+# NLP: example: Copy file backup.sql to /backup/backup_copy.sql
+# NLP: example: Delete file old_log.txt with confirmation
 """
 
 import os
@@ -13,6 +20,10 @@ from typing import Optional, List
 def create_file(filename: str, content: str = "", overwrite: bool = False):
     """
     Create a new file with the specified content.
+    
+    # NLP: keywords: create file, new file, write file, make file
+    # NLP: example: Create file report.txt with content "Monthly Report"
+    # NLP: example: Make new file config.json and overwrite if exists
     
     Args:
         filename: Name of the file to create
@@ -36,6 +47,10 @@ def create_file(filename: str, content: str = "", overwrite: bool = False):
 def read_file(filename: str, max_lines: int = 100):
     """
     Read content from a file.
+    
+    # NLP: keywords: read file, open file, view file, display file content
+    # NLP: example: Read file application.log with max 200 lines
+    # NLP: example: Open and display config.ini file content
     
     Args:
         filename: Name of the file to read
@@ -64,6 +79,11 @@ def read_file(filename: str, max_lines: int = 100):
 def list_directory(path: str = ".", include_hidden: bool = False, file_types: Optional[List[str]] = None):
     """
     List files and directories in the specified path.
+    
+    # NLP: keywords: list directory, show files, directory listing, browse folder, ls command
+    # NLP: example: List directory /var/log including hidden files
+    # NLP: example: Show files in current directory with .txt and .py extensions
+    # NLP: example: Browse folder /home/user and show all files
     
     Args:
         path: Directory path to list (default: current directory)
@@ -121,6 +141,10 @@ def copy_file(source: str, destination: str, overwrite: bool = False):
     """
     Copy a file from source to destination.
     
+    # NLP: keywords: copy file, duplicate file, backup file, cp command
+    # NLP: example: Copy file database.sql to backup/database_backup.sql
+    # NLP: example: Duplicate config.json to config_backup.json with overwrite
+    
     Args:
         source: Source file path
         destination: Destination file path
@@ -145,6 +169,10 @@ def copy_file(source: str, destination: str, overwrite: bool = False):
 def delete_file(filename: str, confirm: bool = False):
     """
     Delete a file (requires confirmation).
+    
+    # NLP: keywords: delete file, remove file, rm command, erase file
+    # NLP: example: Delete file old_backup.sql with confirmation
+    # NLP: example: Remove file temporary.txt and confirm deletion
     
     Args:
         filename: Name of the file to delete

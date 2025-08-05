@@ -182,31 +182,14 @@
                         <div class="col-12">
                             <h6 class="text-muted mb-3">
                                 <i class="fas fa-lightbulb"></i> Quick Examples (click to try):
+                                <button class="btn btn-sm btn-outline-primary ms-2" onclick="refreshExamples()" title="Refresh examples">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
                             </h6>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="example-card" onclick="setExample('Create a high priority incident about database connection failure')">
-                                        <strong>Incident Creation:</strong><br>
-                                        <small class="text-muted">Create a high priority incident about database connection failure</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="example-card" onclick="setExample('Send email to admin@company.com with subject Dashboard Alert')">
-                                        <strong>Email Notification:</strong><br>
-                                        <small class="text-muted">Send email to admin@company.com with subject "Dashboard Alert"</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="example-card" onclick="setExample('Backup the production database to /backup/prod daily at 2 AM')">
-                                        <strong>Scheduled Backup:</strong><br>
-                                        <small class="text-muted">Backup the production database to /backup/prod daily at 2 AM</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="example-card" onclick="setExample('Clean up log files older than 7 days from /var/log/app')">
-                                        <strong>File Cleanup:</strong><br>
-                                        <small class="text-muted">Clean up log files older than 7 days from /var/log/app</small>
-                                    </div>
+                            <div id="examples-container" class="row">
+                                <!-- Examples will be loaded dynamically -->
+                                <div class="col-12 text-center text-muted">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading examples...
                                 </div>
                             </div>
                         </div>
@@ -263,8 +246,11 @@
                                             <button id="create-task-btn" class="btn btn-success me-2">
                                                 <i class="fas fa-plus"></i> Create This Task
                                             </button>
-                                            <button id="edit-task-btn" class="btn btn-outline-primary">
-                                                <i class="fas fa-edit"></i> Edit Parameters
+                                            <button id="create-immediate-btn" class="btn btn-primary me-2">
+                                                <i class="fas fa-rocket"></i> Create Immediately
+                                            </button>
+                                            <button id="edit-task-btn" class="btn btn-outline-secondary">
+                                                <i class="fas fa-edit"></i> Edit Task
                                             </button>
                                         </div>
                                     </div>
@@ -351,6 +337,91 @@
             document.getElementById('nlp-input').focus();
         }
 
+        // Load dynamic examples from API
+        async function loadExamples() {
+            try {
+                const response = await fetch('/api/plugin-examples');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayExamples(data.examples);
+                } else {
+                    console.error('Failed to load examples:', data.error);
+                    displayFallbackExamples();
+                }
+            } catch (error) {
+                console.error('Error loading examples:', error);
+                displayFallbackExamples();
+            }
+        }
+
+        // Display examples in rotating fashion
+        function displayExamples(examples) {
+            const container = document.getElementById('examples-container');
+            
+            if (!examples || examples.length === 0) {
+                displayFallbackExamples();
+                return;
+            }
+
+            // Shuffle and take 4 examples for display
+            const shuffled = examples.sort(() => 0.5 - Math.random());
+            const selected = shuffled.slice(0, 4);
+
+            let html = '';
+            selected.forEach(example => {
+                const category = example.category ? example.category.charAt(0).toUpperCase() + example.category.slice(1) : 'Task';
+                html += `
+                    <div class="col-md-6">
+                        <div class="example-card" onclick="setExample('${example.text.replace(/'/g, "\\'")}')">
+                            <strong>${category}:</strong><br>
+                            <small class="text-muted">${example.text}</small>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Display fallback examples if API fails
+        function displayFallbackExamples() {
+            const container = document.getElementById('examples-container');
+            container.innerHTML = `
+                <div class="col-md-6">
+                    <div class="example-card" onclick="setExample('Create a high priority incident about database connection failure')">
+                        <strong>Incident Creation:</strong><br>
+                        <small class="text-muted">Create a high priority incident about database connection failure</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="example-card" onclick="setExample('Send email to admin@company.com with subject Dashboard Alert')">
+                        <strong>Email Notification:</strong><br>
+                        <small class="text-muted">Send email to admin@company.com with subject "Dashboard Alert"</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="example-card" onclick="setExample('Backup the production database to /backup/prod daily at 2 AM')">
+                        <strong>Scheduled Backup:</strong><br>
+                        <small class="text-muted">Backup the production database to /backup/prod daily at 2 AM</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="example-card" onclick="setExample('Clean up log files older than 7 days from /var/log/app')">
+                        <strong>File Cleanup:</strong><br>
+                        <small class="text-muted">Clean up log files older than 7 days from /var/log/app</small>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Refresh examples (called by refresh button)
+        function refreshExamples() {
+            const container = document.getElementById('examples-container');
+            container.innerHTML = '<div class="col-12 text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Loading examples...</div>';
+            loadExamples();
+        }
+
         // Parse button click handler
         document.getElementById('parse-btn').addEventListener('click', function() {
             const inputText = document.getElementById('nlp-input').value.trim();
@@ -421,7 +492,33 @@
             // Show raw data
             document.getElementById('raw-json').textContent = JSON.stringify(data, null, 2);
 
+            // Enable/disable task creation buttons based on plugin detection
+            updateTaskButtons(data.task);
+
             showResults(true);
+        }
+
+        // Update task creation buttons state
+        function updateTaskButtons(task) {
+            const createBtn = document.getElementById('create-task-btn');
+            const createImmediateBtn = document.getElementById('create-immediate-btn');
+            const editBtn = document.getElementById('edit-task-btn');
+            
+            const hasPlugin = task && task.plugin && task.plugin !== 'Not detected';
+            
+            if (hasPlugin) {
+                createBtn.disabled = false;
+                createImmediateBtn.disabled = false;
+                editBtn.disabled = false;
+                createBtn.title = 'Create this task in the dashboard';
+                createImmediateBtn.title = 'Create this task immediately without review';
+            } else {
+                createBtn.disabled = true;
+                createImmediateBtn.disabled = true;
+                editBtn.disabled = true;
+                createBtn.title = 'No plugin detected - please refine your request';
+                createImmediateBtn.title = 'No plugin detected - please refine your request';
+            }
         }
 
         // Display task preview
@@ -514,19 +611,79 @@
         document.getElementById('create-task-btn').addEventListener('click', function() {
             if (!currentTaskData) return;
             
-            // Redirect to main dashboard with task data
+            // Redirect to main dashboard with task data and tasks tab
             const taskData = encodeURIComponent(JSON.stringify(currentTaskData.task));
-            window.location.href = `/dashboard?createTask=${taskData}`;
+            window.location.href = `/dashboard?createTask=${taskData}&tab=tasks`;
+        });
+
+        // Create immediate task button handler
+        document.getElementById('create-immediate-btn').addEventListener('click', function() {
+            if (!currentTaskData) return;
+            
+            createTaskImmediately(currentTaskData.task);
         });
 
         // Edit task button handler
         document.getElementById('edit-task-btn').addEventListener('click', function() {
             if (!currentTaskData) return;
             
-            // Redirect to main dashboard with task data for editing
+            // Redirect to main dashboard with task data for editing and tasks tab
             const taskData = encodeURIComponent(JSON.stringify(currentTaskData.task));
-            window.location.href = `/dashboard?editTask=${taskData}`;
+            window.location.href = `/dashboard?editTask=${taskData}&tab=tasks`;
         });
+
+        // Create task immediately without going to dashboard
+        async function createTaskImmediately(taskData) {
+            try {
+                showLoading(true);
+                
+                const response = await fetch('/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        owner: taskData.owner || 'Anyone',
+                        plugin: taskData.plugin || '',
+                        action: taskData.action || 'main',
+                        type: taskData.type || 'Adhoc',
+                        priority: taskData.priority || 'P3',
+                        args: taskData.args || [],
+                        kwargs: taskData.kwargs || {},
+                        execution_start_time: taskData.execution_start_time || '',
+                        execution_end_time: taskData.execution_end_time || '',
+                        interval: taskData.interval || ''
+                    })
+                });
+
+                if (response.ok) {
+                    // Show success message
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'alert alert-success alert-dismissible fade show';
+                    successDiv.innerHTML = `
+                        <i class="fas fa-check-circle"></i> <strong>Task Created Successfully!</strong>
+                        Your task has been created and will be executed by the system.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    
+                    const container = document.querySelector('.container-fluid');
+                    container.insertBefore(successDiv, container.firstChild);
+                    
+                    // Auto-dismiss after 5 seconds
+                    setTimeout(() => {
+                        successDiv.remove();
+                    }, 5000);
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to create task: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('Error creating task:', error);
+                showError(`Failed to create task: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
 
         // Utility functions
         function showLoading(show) {
@@ -550,9 +707,10 @@
             document.getElementById('results').style.display = 'none';
         }
 
-        // Auto-focus input on page load
+        // Auto-focus input on page load and load examples
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('nlp-input').focus();
+            loadExamples();
         });
     </script>
 </body>

@@ -13,6 +13,7 @@ import json
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
 import logging
+import threading
 
 # Configure logging
 logger = logging.getLogger("octopus_nlp")
@@ -20,23 +21,45 @@ logger = logging.getLogger("octopus_nlp")
 class TaskNLPProcessor:
     """
     Natural Language Processor for converting text to task definitions
+    Thread-safe singleton implementation for performance
     """
     
+    _instance = None
+    _lock = threading.Lock()
+    _initialized = False
+    
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            with cls._lock:
+                if not cls._instance:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+    
     def __init__(self, static_data_file: Optional[str] = None, plugins_folder: str = "plugins"):
-        """Initialize the NLP processor with spaCy model and optional static data"""
-        try:
-            # Try to load the English model
-            self.nlp = spacy.load("en_core_web_sm")
-            logger.info("Loaded spaCy English model successfully")
-        except OSError:
-            logger.warning("spaCy English model not found. Install with: python -m spacy download en_core_web_sm")
-            self.nlp = None
-        
-        # Load static data mappings for shortcuts
-        self.static_mappings = self._load_static_data(static_data_file)
-        
-        # Load plugin comments for better understanding
-        self.plugin_metadata = self._load_plugin_metadata(plugins_folder)
+        # Avoid re-initialization in singleton
+        if self._initialized:
+            return
+            
+        with self._lock:
+            if self._initialized:
+                return
+                
+            """Initialize the NLP processor with spaCy model and optional static data"""
+            try:
+                # Try to load the English model
+                self.nlp = spacy.load("en_core_web_sm")
+                logger.info("Loaded spaCy English model successfully")
+            except OSError:
+                logger.warning("spaCy English model not found. Install with: python -m spacy download en_core_web_sm")
+                self.nlp = None
+            
+            # Load static data mappings for shortcuts
+            self.static_mappings = self._load_static_data(static_data_file)
+            
+            # Load plugin comments for better understanding
+            self.plugin_metadata = self._load_plugin_metadata(plugins_folder)
+            
+            self._initialized = True
         
         # Define patterns for extracting task components with enhanced coverage
         self.action_patterns = {
@@ -46,15 +69,54 @@ class TaskNLPProcessor:
                 r'new.*incident', r'issue.*creation', r'problem.*report', r'alert.*creation',
                 r'ticket.*creation', r'bug.*report', r'case.*opening'
             ],
-            'send_email': [
-                r'send.*email', r'email.*to', r'mail.*notification', r'notify.*via.*email',
-                r'send.*message', r'alert.*email', r'email.*alert', r'notification.*email',
-                r'message.*sending', r'mail.*to', r'email.*notification', r'send.*notification'
-            ],
             'backup_database': [
                 r'backup.*database', r'backup.*db', r'create.*backup', r'dump.*database',
                 r'export.*data', r'archive.*database', r'database.*backup', r'db.*backup',
                 r'data.*backup', r'backup.*data', r'database.*dump', r'db.*dump'
+            ],
+            'file_operations': [
+                r'create.*file', r'read.*file', r'list.*directory', r'copy.*file', r'delete.*file',
+                r'new.*file', r'write.*file', r'make.*file', r'open.*file', r'view.*file',
+                r'display.*file', r'show.*files', r'directory.*listing', r'browse.*folder',
+                r'ls.*command', r'duplicate.*file', r'backup.*file', r'cp.*command',
+                r'remove.*file', r'rm.*command', r'erase.*file', r'file.*operations'
+            ],
+            'data_processing': [
+                r'process.*numbers', r'calculate.*math', r'math.*expression', r'statistics',
+                r'data.*analysis', r'json.*data', r'text.*analysis', r'sort.*data',
+                r'generate.*data', r'calculate.*numbers', r'sum.*operation', r'average.*numbers',
+                r'median.*numbers', r'random.*numbers', r'sample.*data', r'test.*data',
+                r'compute.*formula', r'evaluate.*expression', r'mathematical.*calculation'
+            ],
+            'notifications': [
+                r'send.*notification', r'send.*alert', r'notify.*user', r'send.*message',
+                r'email.*notification', r'sms.*notification', r'push.*notification',
+                r'remind.*user', r'alert.*team', r'notification.*email', r'simple.*notification',
+                r'basic.*alert', r'quick.*message', r'async.*notification', r'delayed.*alert',
+                r'retry.*notification'
+            ],
+            'system_info': [
+                r'system.*info', r'cpu.*usage', r'memory.*usage', r'disk.*space',
+                r'performance.*monitoring', r'server.*stats', r'get.*system.*info',
+                r'show.*system.*details', r'server.*information', r'processor.*usage',
+                r'cpu.*load', r'system.*performance', r'ram.*usage', r'memory.*stats',
+                r'available.*memory', r'run.*command', r'execute.*command', r'system.*command',
+                r'shell.*command', r'disk.*usage', r'storage.*usage', r'free.*space'
+            ],
+            'web_utils': [
+                r'fetch.*url', r'http.*request', r'web.*scraping', r'api.*call',
+                r'download.*content', r'post.*request', r'get.*request', r'check.*url.*status',
+                r'url.*health.*check', r'website.*status', r'ping.*urls', r'monitor.*websites',
+                r'url.*encode', r'url.*decode', r'percent.*encoding', r'escape.*url',
+                r'unescape.*url', r'parse.*url', r'url.*components', r'break.*down.*url',
+                r'analyze.*url', r'generate.*qr.*code', r'create.*qr.*code', r'qr.*code.*url',
+                r'barcode', r'validate.*email', r'check.*email', r'email.*validation',
+                r'verify.*email.*address'
+            ],
+            'send_email': [
+                r'send.*email', r'email.*to', r'mail.*notification', r'notify.*via.*email',
+                r'send.*message', r'alert.*email', r'email.*alert', r'notification.*email',
+                r'message.*sending', r'mail.*to', r'email.*notification', r'send.*notification'
             ],
             'cleanup_logs': [
                 r'clean.*logs?', r'delete.*logs?', r'remove.*old.*files?', r'purge.*logs?',
@@ -643,8 +705,13 @@ class TaskNLPProcessor:
                 confidence += similarity_boost
         
         return min(1.0, confidence)
+
+    def reload_plugin_metadata(self, plugins_folder: str = "plugins"):
+        """Reload plugin metadata from files"""
+        with self._lock:
+            self.plugin_metadata = self._load_plugin_metadata(plugins_folder)
+            logger.info("Plugin metadata reloaded successfully")
+
 def get_nlp_processor(static_data_file: Optional[str] = "static_mappings.json", plugins_folder: str = "plugins") -> TaskNLPProcessor:
-    """Get a singleton instance of the NLP processor"""
-    if not hasattr(get_nlp_processor, '_instance'):
-        get_nlp_processor._instance = TaskNLPProcessor(static_data_file, plugins_folder)
-    return get_nlp_processor._instance
+    """Get a thread-safe singleton instance of the NLP processor"""
+    return TaskNLPProcessor(static_data_file, plugins_folder)

@@ -3,6 +3,12 @@
 Notification Plugin
 ===================
 Plugin for sending notifications and alerts (async examples)
+
+# NLP: keywords: send notification, alert, notify, message, email, sms, push notification, remind
+# NLP: example: Send urgent notification to admin about server outage
+# NLP: example: Notify ops team about maintenance window with high priority
+# NLP: example: Send email alert to john@company.com about backup completion
+# NLP: example: Alert all users about system downtime with 10 minute delay
 """
 
 import asyncio
@@ -13,6 +19,10 @@ from typing import Optional
 def send_simple_notification(message: str, priority: str = "normal", recipient: str = "admin"):
     """
     Send a simple notification (synchronous).
+    
+    # NLP: keywords: send simple notification, basic alert, quick message
+    # NLP: example: Send simple notification to admin with high priority about disk space
+    # NLP: example: Quick alert to ops team about service restart
     
     Args:
         message: Notification message
@@ -40,6 +50,10 @@ def send_simple_notification(message: str, priority: str = "normal", recipient: 
 async def send_async_notification(message: str, delay: int = 0, retry_count: int = 1):
     """
     Send an asynchronous notification with optional delay and retry.
+    
+    # NLP: keywords: send async notification, delayed alert, retry notification
+    # NLP: example: Send async notification about backup completion with 5 minute delay
+    # NLP: example: Alert with retry about failed service check
     
     Args:
         message: Notification message

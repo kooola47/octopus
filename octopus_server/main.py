@@ -17,6 +17,7 @@ import os
 import logging
 import inspect
 import importlib
+from typing import List
 from flask import request, jsonify
 from dbhelper import (
     get_tasks, add_task, update_task, delete_task,
@@ -30,6 +31,7 @@ from flask import render_template, redirect, url_for, render_template_string
 import sqlite3
 from sqlite_web import sqlite_web
 from datetime import datetime
+from performance_monitor import time_request, get_performance_report, monitor
 
 # Set template_folder to a "templates" directory for best practice
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
@@ -118,6 +120,7 @@ def commands(hostname):
         return jsonify(cmds)
 
 @app.route("/tasks", methods=["GET", "POST"])
+@time_request("tasks")
 def tasks():
     if request.method == "POST":
         task = request.json
@@ -556,6 +559,7 @@ def api_plugin_functions():
         return jsonify({"error": "Internal server error"}), 500
 
 @app.route("/api/nlp-parse", methods=["POST"])
+@time_request("nlp-parse")
 def api_nlp_parse():
     """
     API endpoint to parse natural language and convert to task definition
@@ -610,5 +614,178 @@ def confidence_guide():
     """
     return render_template("confidence_guide.html")
 
+@app.route("/api/performance", methods=["GET"])
+def api_performance():
+    """
+    API endpoint to get performance statistics
+    """
+    return jsonify(monitor.get_stats())
+
+@app.route("/performance-report")
+def performance_report():
+    """
+    Human-readable performance report
+    """
+    report = get_performance_report()
+    return f"<pre>{report}</pre>"
+
+@app.route("/api/plugin-examples", methods=["GET"])
+def api_plugin_examples():
+    """
+    API endpoint to get dynamic examples based on available plugins
+    """
+    try:
+        from nlp_processor import get_nlp_processor
+        
+        # Get NLP processor to access plugin metadata
+        nlp_processor = get_nlp_processor()
+        
+        examples = []
+        plugin_names = get_plugin_names()
+        
+        for plugin_name in plugin_names:
+            try:
+                # Get plugin metadata if available
+                if plugin_name in nlp_processor.plugin_metadata:
+                    metadata = nlp_processor.plugin_metadata[plugin_name]
+                    
+                    # Use examples from plugin comments
+                    for example in metadata.get('examples', []):
+                        examples.append({
+                            "text": example,
+                            "plugin": plugin_name,
+                            "description": metadata.get('description', '').split('\n')[0],  # First line
+                            "category": _get_plugin_category(plugin_name)
+                        })
+                
+                # If no metadata examples, create default ones
+                if plugin_name not in nlp_processor.plugin_metadata or not nlp_processor.plugin_metadata[plugin_name].get('examples'):
+                    default_examples = _get_default_examples(plugin_name)
+                    for example in default_examples:
+                        examples.append({
+                            "text": example,
+                            "plugin": plugin_name,
+                            "description": f"Execute {plugin_name} plugin",
+                            "category": _get_plugin_category(plugin_name)
+                        })
+                        
+            except Exception as e:
+                logger.warning(f"Could not load examples for plugin {plugin_name}: {e}")
+        
+        # Add some generic enhanced examples with shortcuts
+        enhanced_examples = [
+            {
+                "text": "backup prod db to backup dir tonight",
+                "plugin": "backup_database",
+                "description": "Uses shortcuts: prod db → production database, backup dir → /backup, tonight → at 11 PM",
+                "category": "database"
+            },
+            {
+                "text": "create urgent incident for api server down",
+                "plugin": "create_incident", 
+                "description": "High priority incident with server specification",
+                "category": "incident"
+            },
+            {
+                "text": "send email to ops about system maintenance morning",
+                "plugin": "send_email",
+                "description": "Email notification with time shortcut: morning → at 9 AM",
+                "category": "notification"
+            }
+        ]
+        
+        examples.extend(enhanced_examples)
+        
+        # Group examples by category for better organization
+        categorized = {}
+        for example in examples:
+            category = example.get('category', 'other')
+            if category not in categorized:
+                categorized[category] = []
+            categorized[category].append(example)
+        
+        return jsonify({
+            "success": True,
+            "examples": examples,
+            "categorized": categorized,
+            "total_plugins": len(plugin_names)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting plugin examples: {e}")
+        return jsonify({"error": "Failed to load plugin examples"}), 500
+
+def _get_plugin_category(plugin_name: str) -> str:
+    """Categorize plugin for better organization"""
+    categories = {
+        'create_incident': 'incident',
+        'send_email': 'notification', 
+        'backup_database': 'database',
+        'cleanup_logs': 'maintenance',
+        'generate_report': 'reporting',
+        'monitor_system': 'monitoring'
+    }
+    return categories.get(plugin_name, 'other')
+
+def _get_default_examples(plugin_name: str) -> List[str]:
+    """Generate default examples for plugins without metadata"""
+    defaults = {
+        'create_incident': [
+            f"create P1 incident for system failure",
+            f"report critical issue with {plugin_name}"
+        ],
+        'send_email': [
+            f"send email to admin about server status",
+            f"notify team about maintenance window"
+        ],
+        'backup_database': [
+            f"backup production database daily",
+            f"create database backup now"
+        ],
+        'cleanup_logs': [
+            f"cleanup old log files from /var/log",
+            f"remove logs older than 30 days"
+        ],
+        'generate_report': [
+            f"generate monthly system report",
+            f"create performance analysis"
+        ],
+        'monitor_system': [
+            f"monitor system health hourly",
+            f"check server performance"
+        ]
+    }
+    
+    return defaults.get(plugin_name, [f"run {plugin_name} with default parameters"])
+
+@app.route("/api/reload-plugins", methods=["POST"])
+@time_request("reload-plugins")
+def reload_plugins():
+    """Reload plugin metadata for NLP processing"""
+    try:
+        from nlp_processor import get_nlp_processor
+        
+        nlp_processor = get_nlp_processor()
+        nlp_processor.reload_plugin_metadata()
+        
+        # Get updated plugin count
+        plugin_count = len(nlp_processor.plugin_metadata)
+        
+        return jsonify({
+            "success": True,
+            "message": "Plugin metadata reloaded successfully",
+            "plugins_loaded": plugin_count,
+            "plugins": list(nlp_processor.plugin_metadata.keys())
+        })
+        
+    except ImportError:
+        return jsonify({
+            "error": "NLP processor module not found"
+        }), 500
+    except Exception as e:
+        logger.error(f"Error reloading plugins: {e}")
+        return jsonify({"error": "Failed to reload plugin metadata"}), 500
+
 if __name__ == "__main__":
-    app.run(host=SERVER_HOST, port=SERVER_PORT)
+    # Enable threading for concurrent request handling
+    app.run(host=SERVER_HOST, port=SERVER_PORT, threaded=True, debug=False)

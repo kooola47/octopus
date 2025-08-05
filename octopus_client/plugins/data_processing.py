@@ -3,6 +3,14 @@
 Data Processing Plugin
 ======================
 Plugin for data manipulation and processing tasks
+
+# NLP: keywords: process numbers, calculate, math, statistics, data analysis, json, text analysis, sort data, generate data
+# NLP: example: Process numbers 1,2,3,4,5 with operation sum
+# NLP: example: Calculate math expression 2 + 3 * 4
+# NLP: example: Generate 10 random numbers between 1 and 100
+# NLP: example: Analyze text content for word frequency
+# NLP: example: Sort data items by length
+# NLP: example: Validate and pretty print JSON data
 """
 
 import json
@@ -15,6 +23,10 @@ from datetime import datetime, timedelta
 def process_numbers(numbers: str, operation: str = "sum"):
     """
     Process a list of numbers with various operations.
+    
+    # NLP: keywords: process numbers, calculate numbers, sum, average, median, statistics
+    # NLP: example: Process numbers 10,20,30,40,50 with sum operation
+    # NLP: example: Calculate average of numbers 5,15,25,35
     
     Args:
         numbers: Comma-separated list of numbers (e.g., "1,2,3,4,5")
@@ -57,6 +69,11 @@ def process_numbers(numbers: str, operation: str = "sum"):
 def generate_data(data_type: str = "numbers", count: int = 10, min_val: int = 1, max_val: int = 100):
     """
     Generate sample data for testing.
+    
+    # NLP: keywords: generate data, create numbers, random data, sample data, test data
+    # NLP: example: Generate 20 random numbers between 1 and 100
+    # NLP: example: Create 15 random dates for testing
+    # NLP: example: Generate 5 random names
     
     Args:
         data_type: Type of data to generate (numbers, dates, names)
@@ -230,6 +247,10 @@ def text_analysis(text: str, analysis_type: str = "basic"):
 def calculate_math(expression: str, precision: int = 2):
     """
     Evaluate mathematical expressions safely.
+    
+    # NLP: keywords: calculate math, evaluate expression, mathematical calculation, compute formula
+    # NLP: example: Calculate math expression 2 + 3 * sqrt(16)
+    # NLP: example: Compute formula sin(pi/4) + cos(pi/3)
     
     Args:
         expression: Mathematical expression to evaluate

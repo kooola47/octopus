@@ -3,6 +3,12 @@
 System Info Plugin
 ==================
 Plugin for gathering system information and running system commands
+
+# NLP: keywords: system info, cpu usage, memory usage, disk space, performance, monitoring, server stats
+# NLP: example: Get system information and CPU usage
+# NLP: example: Check memory usage and disk space on server
+# NLP: example: Monitor system performance with 5 second interval
+# NLP: example: Show server stats and hardware information
 """
 
 import platform
@@ -14,6 +20,10 @@ from typing import Optional
 def get_system_info():
     """
     Get basic system information.
+    
+    # NLP: keywords: get system info, show system details, server information
+    # NLP: example: Get system information for current server
+    # NLP: example: Show system details and OS version
     
     Returns:
         str: Formatted system information
@@ -41,6 +51,10 @@ def get_cpu_usage(interval: float = 1.0):
     """
     Get current CPU usage percentage.
     
+    # NLP: keywords: cpu usage, processor usage, cpu load, system performance
+    # NLP: example: Get CPU usage with 2 second interval
+    # NLP: example: Check processor load and performance
+    
     Args:
         interval: Measurement interval in seconds (default: 1.0)
     
@@ -66,6 +80,10 @@ def get_cpu_usage(interval: float = 1.0):
 def get_memory_usage():
     """
     Get current memory usage information.
+    
+    # NLP: keywords: memory usage, ram usage, memory stats, available memory
+    # NLP: example: Get memory usage and swap information
+    # NLP: example: Check RAM usage and available memory
     
     Returns:
         str: Memory usage details
@@ -93,6 +111,10 @@ def get_memory_usage():
 def run_command(command: str, timeout: int = 30, shell: bool = True):
     """
     Execute a system command and return the output.
+    
+    # NLP: keywords: run command, execute command, system command, shell command
+    # NLP: example: Run command "ps aux" with 60 second timeout
+    # NLP: example: Execute "df -h" command to check disk space
     
     Args:
         command: Command to execute
@@ -131,8 +153,12 @@ def get_disk_usage(path: str = "/"):
     """
     Get disk usage information for a given path.
     
+    # NLP: keywords: disk usage, disk space, storage usage, free space
+    # NLP: example: Get disk usage for /var/log directory
+    # NLP: example: Check disk space on root filesystem
+    
     Args:
-        path: Path to check disk usage (default: root)
+        path: Path to check disk usage for (default: "/")
     
     Returns:
         str: Disk usage information
