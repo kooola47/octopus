@@ -24,47 +24,90 @@
         Execution History
     </h3>
     
-    <!-- Filter Controls -->
-    <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span>
-                <i class="bi bi-funnel"></i> Filters 
-                <small class="text-muted ms-2" id="executionFilterStatus"></small>
-            </span>
-            <div>
-                <button type="button" class="btn btn-sm btn-outline-warning me-1" onclick="resetExecutionFiltersToDefault()" title="Reset to default filters">
-                    <i class="bi bi-arrow-clockwise"></i> Reset
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearExecutionFilters()">
-                    <i class="bi bi-x-circle"></i> Clear All
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleExecutionFilters()">
-                    <i class="bi bi-chevron-down" id="executionFilterToggle"></i> Toggle
-                </button>
+    <!-- Enhanced Filter Controls -->
+    <div class="card mb-3 shadow-sm">
+        <div class="card-body p-3">
+            <!-- Quick Search and Primary Filters (Always Visible) -->
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-primary">
+                        <i class="bi bi-search"></i> Quick Search
+                    </label>
+                    <input type="text" class="form-control" id="executionQuickSearch" 
+                           placeholder="Search executions by ID, client, or result..." 
+                           onkeyup="applyExecutionFilters()">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold text-primary">Status</label>
+                    <select class="form-select" id="filterExecutionStatus" onchange="applyExecutionFilters()">
+                        <option value="">All Status</option>
+                        <option value="success" selected>✅ Success</option>
+                        <option value="failed">❌ Failed</option>
+                        <option value="error">🔴 Error</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold text-primary">Time Range</label>
+                    <select class="form-select" id="filterExecutionTimeRange" onchange="applyExecutionFilters()">
+                        <option value="">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week" selected>This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold text-primary">Show Results</label>
+                    <select class="form-select" id="filterExecutionResults" onchange="applyExecutionFilters()">
+                        <option value="all">All Results</option>
+                        <option value="recent" selected>Recent (50)</option>
+                        <option value="errors">Errors Only</option>
+                        <option value="success">Success Only</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                onclick="clearExecutionFilters()" title="Clear all filters">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                onclick="toggleAdvancedExecutionFilters()" id="advancedExecutionToggle">
+                            <i class="bi bi-sliders"></i> More
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="card-body" id="executionFilterControls" style="display: none;">
-            <div class="row g-3">
+
+            <!-- Advanced Filters (Collapsible) -->
+            <div class="row g-3 mt-2" id="advancedExecutionFilters" style="display: none;">
+                <div class="col-12"><hr class="my-2"></div>
                 <div class="col-md-3">
                     <label class="form-label">Task ID</label>
-                    <input type="text" class="form-control form-control-sm" id="filterExecutionTaskId" placeholder="Filter by task ID..." onkeyup="applyExecutionFilters()">
+                    <input type="text" class="form-control form-control-sm" id="filterExecutionTaskId" 
+                           placeholder="Filter by task ID..." onkeyup="applyExecutionFilters()">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Client</label>
-                    <input type="text" class="form-control form-control-sm" id="filterExecutionClient" placeholder="Filter by client..." onkeyup="applyExecutionFilters()">
+                    <input type="text" class="form-control form-control-sm" id="filterExecutionClient" 
+                           placeholder="Filter by client..." onkeyup="applyExecutionFilters()">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <select class="form-select form-select-sm" id="filterExecutionStatus" onchange="applyExecutionFilters()">
-                        <option value="">All Status</option>
-                        <option value="success" selected>Success</option>
-                        <option value="failed">Failed</option>
-                        <option value="error">Error</option>
-                    </select>
+                    <label class="form-label">Result Contains</label>
+                    <input type="text" class="form-control form-control-sm" id="filterExecutionResult" 
+                           placeholder="Filter by result content..." onkeyup="applyExecutionFilters()">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Result</label>
-                    <input type="text" class="form-control form-control-sm" id="filterExecutionResult" placeholder="Filter by result..." onkeyup="applyExecutionFilters()">
+                    <label class="form-label">Execution ID</label>
+                    <input type="text" class="form-control form-control-sm" id="filterExecutionId" 
+                           placeholder="Filter by execution ID..." onkeyup="applyExecutionFilters()">
+                </div>
+            </div>
+
+            <!-- Active Filters Display -->
+            <div class="mt-3" id="activeExecutionFilters" style="display: none;">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <small class="text-muted fw-bold">Active Filters:</small>
+                    <div id="executionFilterTags"></div>
                 </div>
             </div>
         </div>
@@ -535,5 +578,72 @@ function updateExecutionStats(executions = allExecutions) {
     document.getElementById('successfulExecutions').textContent = successful;
     document.getElementById('failedExecutions').textContent = failed;
     document.getElementById('successRate').textContent = successRate + '%';
+}
+
+// Enhanced filtering functions for executions
+function toggleAdvancedExecutionFilters() {
+    const advancedFilters = document.getElementById('advancedExecutionFilters');
+    const toggleBtn = document.getElementById('advancedExecutionToggle');
+    
+    if (advancedFilters.style.display === 'none') {
+        advancedFilters.style.display = 'block';
+        toggleBtn.innerHTML = '<i class="bi bi-sliders"></i> Less';
+    } else {
+        advancedFilters.style.display = 'none';
+        toggleBtn.innerHTML = '<i class="bi bi-sliders"></i> More';
+    }
+}
+
+function updateActiveExecutionFilters() {
+    const activeFiltersDiv = document.getElementById('activeExecutionFilters');
+    const tagsContainer = document.getElementById('executionFilterTags');
+    const filters = [];
+    
+    // Check all filter inputs for values
+    const quickSearch = document.getElementById('executionQuickSearch').value;
+    const status = document.getElementById('filterExecutionStatus').value;
+    const timeRange = document.getElementById('filterExecutionTimeRange').value;
+    const results = document.getElementById('filterExecutionResults').value;
+    const taskId = document.getElementById('filterExecutionTaskId').value;
+    const client = document.getElementById('filterExecutionClient').value;
+    const result = document.getElementById('filterExecutionResult').value;
+    const executionId = document.getElementById('filterExecutionId').value;
+    
+    if (quickSearch) filters.push({label: `Search: "${quickSearch}"`, type: 'search'});
+    if (status) filters.push({label: `Status: ${status}`, type: 'status'});
+    if (timeRange) filters.push({label: `Time: ${timeRange}`, type: 'time'});
+    if (results && results !== 'all') filters.push({label: `Show: ${results}`, type: 'results'});
+    if (taskId) filters.push({label: `Task ID: "${taskId}"`, type: 'taskId'});
+    if (client) filters.push({label: `Client: "${client}"`, type: 'client'});
+    if (result) filters.push({label: `Result: "${result}"`, type: 'result'});
+    if (executionId) filters.push({label: `Exec ID: "${executionId}"`, type: 'executionId'});
+    
+    if (filters.length > 0) {
+        activeFiltersDiv.style.display = 'block';
+        tagsContainer.innerHTML = filters.map(filter => 
+            `<span class="badge bg-light text-dark border me-1 mb-1">
+                ${filter.label}
+                <button type="button" class="btn-close btn-close-sm ms-1" 
+                        onclick="removeExecutionFilter('${filter.type}')" style="font-size: 0.7em;"></button>
+            </span>`
+        ).join('');
+    } else {
+        activeFiltersDiv.style.display = 'none';
+    }
+}
+
+function removeExecutionFilter(filterType) {
+    switch(filterType) {
+        case 'search': document.getElementById('executionQuickSearch').value = ''; break;
+        case 'status': document.getElementById('filterExecutionStatus').value = ''; break;
+        case 'time': document.getElementById('filterExecutionTimeRange').value = ''; break;
+        case 'results': document.getElementById('filterExecutionResults').value = 'all'; break;
+        case 'taskId': document.getElementById('filterExecutionTaskId').value = ''; break;
+        case 'client': document.getElementById('filterExecutionClient').value = ''; break;
+        case 'result': document.getElementById('filterExecutionResult').value = ''; break;
+        case 'executionId': document.getElementById('filterExecutionId').value = ''; break;
+    }
+    updateActiveExecutionFilters();
+    applyExecutionFilters();
 }
 </script>
