@@ -248,6 +248,33 @@ def dashboard():
         except Exception as e:
             logger.error("Failed to parse editTask parameter: %s", e)
     
+    # Auto-create task if createTask parameter is provided
+    if nlp_task_data and not edit_mode:
+        try:
+            # Create task from NLP data
+            task = {
+                "owner": nlp_task_data.get("owner", "Anyone"),
+                "plugin": nlp_task_data.get("plugin", ""),
+                "action": nlp_task_data.get("action", "main"),
+                "args": json.dumps(nlp_task_data.get("args", [])),
+                "kwargs": json.dumps(nlp_task_data.get("kwargs", {})),
+                "type": nlp_task_data.get("type", "Adhoc"),
+                "execution_start_time": nlp_task_data.get("execution_start_time"),
+                "execution_end_time": nlp_task_data.get("execution_end_time"),
+                "interval": nlp_task_data.get("interval"),
+                "executor": "" if nlp_task_data.get("owner") == "Anyone" else None
+            }
+            task_id = add_task(task)
+            logger.info("Auto-created NLP task with ID: %s", task_id)
+            
+            # Redirect to clear the URL parameters and show the created task
+            tab = request.args.get('tab', 'tasks')
+            return redirect(url_for("dashboard", tab=tab))
+            
+        except Exception as e:
+            logger.error("Failed to auto-create NLP task: %s", e)
+    
+    # For edit mode, keep the nlp_task_data to pass to template for modal opening
     logger.info("Template variables - nlp_task_data: %s, edit_mode: %s", nlp_task_data, edit_mode)
     tasks = get_tasks()
     clients = cache.all()

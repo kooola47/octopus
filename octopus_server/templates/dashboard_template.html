@@ -1324,11 +1324,18 @@
             handleUrlParameters();
             
             // Handle NLP task data from server
-            {% if nlp_task_data and nlp_task_data.action %}
-            console.log('NLP task data detected, processing...');
+            {% if nlp_task_data %}
+            {% if nlp_task_data.task and nlp_task_data.task.action %}
+            console.log('NLP task data detected (full response), processing...');
+            
+            const nlpTaskData = {{ nlp_task_data.task | tojson }};
+            const editMode = {{ edit_mode | tojson }};
+            {% elif nlp_task_data.action %}
+            console.log('NLP task data detected (task only), processing...');
             
             const nlpTaskData = {{ nlp_task_data | tojson }};
             const editMode = {{ edit_mode | tojson }};
+            {% endif %}
                 
                 console.log('NLP task data:', nlpTaskData);
                 console.log('Edit mode:', editMode);
