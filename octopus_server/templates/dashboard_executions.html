@@ -413,12 +413,17 @@ function toggleExecutionFilters() {
 }
 
 function clearExecutionFilters() {
-    document.getElementById('filterExecutionTaskId').value = '';
-    document.getElementById('filterExecutionClient').value = '';
-    document.getElementById('filterExecutionStatus').value = '';
-    document.getElementById('filterExecutionResult').value = '';
-    saveExecutionFilters(); // Save cleared filters
-    updateExecutionFilterStatus();
+    // Clear all filter inputs including the new ones
+    if(document.getElementById('executionQuickSearch')) document.getElementById('executionQuickSearch').value = '';
+    if(document.getElementById('filterExecutionStatus')) document.getElementById('filterExecutionStatus').value = '';
+    if(document.getElementById('filterExecutionTimeRange')) document.getElementById('filterExecutionTimeRange').value = '';
+    if(document.getElementById('filterExecutionResults')) document.getElementById('filterExecutionResults').value = 'all';
+    if(document.getElementById('filterExecutionTaskId')) document.getElementById('filterExecutionTaskId').value = '';
+    if(document.getElementById('filterExecutionClient')) document.getElementById('filterExecutionClient').value = '';
+    if(document.getElementById('filterExecutionResult')) document.getElementById('filterExecutionResult').value = '';
+    if(document.getElementById('filterExecutionId')) document.getElementById('filterExecutionId').value = '';
+    
+    updateActiveExecutionFilters();
     applyExecutionFilters();
 }
 

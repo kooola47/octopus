@@ -437,6 +437,50 @@ def client_tasks():
     """
     return jsonify(list(get_tasks().values()))
 
+@app.route("/api/clients", methods=["GET"])
+def api_clients():
+    """
+    API endpoint to get client data for statistics dashboard
+    """
+    import time
+    clients = cache.all()
+    now = time.time()
+    active_clients = get_active_clients(clients, now=now, timeout=30)
+    
+    return jsonify({
+        "clients": active_clients,
+        "now": now,
+        "timestamp": time.time()
+    })
+
+@app.route("/api/tasks", methods=["GET"])
+def api_tasks():
+    """
+    API endpoint to get task data for statistics dashboard
+    """
+    import time
+    tasks = get_tasks()
+    clients = cache.all()
+    now = time.time()
+    active_clients = get_active_clients(clients, now=now, timeout=30)
+    
+    # Use the comprehensive task assignment function
+    assign_all_tasks(tasks, active_clients)
+    
+    # Update task statuses after assignment, but don't override completed tasks
+    for tid, task in tasks.items():
+        db_status = task.get("status", "")
+        # Only compute status if the task isn't already Done/completed
+        if db_status not in ("Done", "success", "failed", "completed"):
+            computed_status = compute_task_status(task, active_clients)
+            task["status"] = computed_status
+    
+    return jsonify({
+        "tasks": tasks,
+        "now": now,
+        "timestamp": time.time()
+    })
+
 @app.route("/api/executions", methods=["GET"])
 def api_executions():
     """

@@ -1412,6 +1412,11 @@
 
         <ul class="nav nav-tabs">
             <li class="nav-item">
+                <a class="nav-link" id="statistics-tab" href="javascript:void(0);" onclick="showTab('statistics')">
+                    <i class="bi bi-graph-up"></i>Statistics
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" id="clients-tab" href="javascript:void(0);" onclick="showTab('clients')">
                     <i class="bi bi-people"></i>Clients
                 </a>
@@ -1428,6 +1433,9 @@
             </li>
         </ul>
 
+        <div id="statistics" class="octopus-view" style="display:none;">
+            {% include "dashboard_statistics.html" %}
+        </div>
         <div id="clients" class="octopus-view" style="display:none;">
             {% include "dashboard_clients.html" %}
         </div>
