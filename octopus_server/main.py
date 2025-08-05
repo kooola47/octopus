@@ -17,6 +17,9 @@ import os
 import logging
 import inspect
 import importlib
+import json
+import urllib.parse
+import urllib.parse
 from typing import List
 from flask import request, jsonify
 from dbhelper import (
@@ -219,6 +222,33 @@ def seconds_to_human_filter(seconds):
 @app.route("/dashboard", methods=["GET", "POST"])
 def dashboard():
     import time
+    
+    # Add debugging for NLP task creation
+    logger.info("Dashboard route called with args: %s", request.args)
+    
+    # Parse NLP task data from URL parameters
+    nlp_task_data = None
+    edit_mode = False
+    
+    create_task_param = request.args.get('createTask')
+    edit_task_param = request.args.get('editTask')
+    
+    if create_task_param:
+        try:
+            nlp_task_data = json.loads(urllib.parse.unquote(create_task_param))
+            logger.info("Parsed createTask data: %s", nlp_task_data)
+        except Exception as e:
+            logger.error("Failed to parse createTask parameter: %s", e)
+    
+    if edit_task_param:
+        try:
+            nlp_task_data = json.loads(urllib.parse.unquote(edit_task_param))
+            edit_mode = True
+            logger.info("Parsed editTask data: %s", nlp_task_data)
+        except Exception as e:
+            logger.error("Failed to parse editTask parameter: %s", e)
+    
+    logger.info("Template variables - nlp_task_data: %s, edit_mode: %s", nlp_task_data, edit_mode)
     tasks = get_tasks()
     clients = cache.all()
     now = time.time()
@@ -323,6 +353,30 @@ def dashboard():
     if executions:
         logger.info(f"Sample execution: {executions[0]}")
     
+    # Handle NLP task creation/editing parameters
+    nlp_task_data = None
+    edit_mode = False
+    
+    create_task_param = request.args.get("createTask")
+    if create_task_param:
+        try:
+            nlp_task_data = json.loads(urllib.parse.unquote(create_task_param))
+            edit_mode = False
+            logger.info(f"Parsed createTask data: {nlp_task_data}")
+        except Exception as e:
+            logger.error(f"Error parsing createTask data: {e}")
+    
+    edit_task_param = request.args.get("editTask")
+    if edit_task_param:
+        try:
+            nlp_task_data = json.loads(urllib.parse.unquote(edit_task_param))
+            edit_mode = True
+            logger.info(f"Parsed editTask data: {nlp_task_data}")
+        except Exception as e:
+            logger.error(f"Error parsing editTask data: {e}")
+    
+    logger.info(f"Dashboard rendering with nlp_task_data: {nlp_task_data}, edit_mode: {edit_mode}")
+    
     return render_template(
         "dashboard_template.html",
         tasks=tasks,
@@ -331,7 +385,9 @@ def dashboard():
         now=now,
         plugin_names=plugin_names,
         owner_options=owner_options,
-        active_tab=active_tab
+        active_tab=active_tab,
+        nlp_task_data=nlp_task_data,
+        edit_mode=edit_mode
     )
 
 @app.route("/tasks-ui/delete/<task_id>")

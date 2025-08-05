@@ -611,7 +611,7 @@
         document.getElementById('create-task-btn').addEventListener('click', function() {
             if (!currentTaskData) return;
             
-            // Redirect to main dashboard with task data and tasks tab
+            // Redirect to main dashboard with task data and tasks tab (NO autoSubmit - should show popup)
             const taskData = encodeURIComponent(JSON.stringify(currentTaskData.task));
             window.location.href = `/dashboard?createTask=${taskData}&tab=tasks`;
         });

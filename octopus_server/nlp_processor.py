@@ -320,7 +320,52 @@ class TaskNLPProcessor:
         text_lower = text.lower()
         best_match = None
         best_score = 0.0
+        best_action = "main"  # Default fallback
         match_count = 0
+        
+        # Plugin-specific action mappings based on common keywords
+        plugin_action_mappings = {
+            "web_utils": {
+                "fetch": "fetch_url",
+                "download": "fetch_url", 
+                "get": "fetch_url",
+                "request": "fetch_url",
+                "check": "check_url_status",
+                "status": "check_url_status",
+                "validate": "validate_email",
+                "email": "validate_email",
+                "parse": "parse_url",
+                "qr": "generate_qr_code",
+                "shorten": "shorten_url_info",
+                "encode": "encode_decode_url",
+                "decode": "encode_decode_url"
+            },
+            "file_operations": {
+                "list": "list_files",
+                "copy": "copy_file", 
+                "move": "move_file",
+                "delete": "delete_file",
+                "create": "create_file",
+                "read": "read_file",
+                "write": "write_file",
+                "search": "search_files"
+            },
+            "notifications": {
+                "send": "send_notification",
+                "notify": "send_notification",
+                "alert": "send_notification",
+                "email": "send_email",
+                "slack": "send_slack_message"
+            },
+            "system_info": {
+                "info": "get_system_info",
+                "status": "get_system_info",
+                "disk": "get_disk_usage",
+                "memory": "get_memory_usage",
+                "cpu": "get_cpu_usage",
+                "process": "get_running_processes"
+            }
+        }
         
         for plugin, patterns in self.action_patterns.items():
             plugin_score = 0.0
@@ -351,6 +396,13 @@ class TaskNLPProcessor:
             if plugin_score > best_score:
                 best_score = plugin_score
                 best_match = plugin
+                
+                # Determine the best action for this plugin
+                if plugin in plugin_action_mappings:
+                    for keyword, action in plugin_action_mappings[plugin].items():
+                        if keyword in text_lower:
+                            best_action = action
+                            break
         
         # Additional confidence boost for clear action words
         action_words = ['create', 'send', 'backup', 'cleanup', 'generate', 'run', 'execute', 'schedule']
@@ -360,7 +412,7 @@ class TaskNLPProcessor:
                 break
         
         if best_match:
-            return best_match, "main", min(1.0, best_score)
+            return best_match, best_action, min(1.0, best_score)
         
         return None, "main", 0.0
 

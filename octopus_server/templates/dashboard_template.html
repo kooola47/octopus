@@ -1322,6 +1322,59 @@
         // Initialize page
         window.addEventListener('load', function() {
             handleUrlParameters();
+            
+            // Handle NLP task data from server
+            {% if nlp_task_data and nlp_task_data.action %}
+            console.log('NLP task data detected, processing...');
+            
+            const nlpTaskData = {{ nlp_task_data | tojson }};
+            const editMode = {{ edit_mode | tojson }};
+                
+                console.log('NLP task data:', nlpTaskData);
+                console.log('Edit mode:', editMode);
+                
+                // Check if auto-submit is requested (future feature)
+                const urlParams = new URLSearchParams(window.location.search);
+                const autoSubmit = urlParams.get('autoSubmit') === 'true';
+                
+                // Show the Tasks tab
+                const tasksTab = document.querySelector('[data-bs-target="#tasks"]');
+                if (tasksTab) {
+                    console.log('Switching to Tasks tab...');
+                    const tab = new bootstrap.Tab(tasksTab);
+                    tab.show();
+                }
+                
+                // Populate the create task form and show modal with extended delay
+                setTimeout(() => {
+                    console.log('Processing NLP task data and clicking Create Task button...');
+                    populateCreateTaskForm(nlpTaskData);
+                    
+                    // Find and click the Create Task button to open the modal
+                    const createTaskButton = document.querySelector('button[data-bs-target="#createTaskModal"]');
+                    if (createTaskButton) {
+                        console.log('Found Create Task button, clicking to open modal...');
+                        createTaskButton.click();
+                        
+                        // Update modal title after a short delay
+                        setTimeout(() => {
+                            const modalTitle = document.querySelector('#createTaskModal .modal-title');
+                            if (modalTitle) {
+                                if (editMode) {
+                                    modalTitle.textContent = '🤖 Edit NLP Task';
+                                } else {
+                                    modalTitle.textContent = '🤖 Review & Create NLP Task';
+                                }
+                                console.log('Modal title updated for NLP mode');
+                            }
+                        }, 500);
+                    } else {
+                        console.error('Create Task button not found - modal cannot be opened');
+                    }
+                }, 2000); // Increased timeout to 2 seconds to ensure everything is loaded
+            {% else %}
+            console.log('No NLP task data detected');
+            {% endif %}
         });
     </script>
 </head>
