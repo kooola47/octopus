@@ -43,13 +43,13 @@
                         </label>
                         <input type="text" class="form-control" id="taskQuickSearch" 
                                placeholder="Search tasks by ID, owner, plugin, or action..." 
-                               onkeyup="applyTaskFilters()">
+                               onkeyup="onTaskQuickSearchChange()">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label fw-bold text-primary">Status</label>
                         <select class="form-select" id="filterTaskStatus" onchange="applyTaskFilters()">
-                            <option value="">All Status</option>
-                            <option value="Active" selected>🟢 Active</option>
+                            <option value="" selected>All Status</option>
+                            <option value="Active">🟢 Active</option>
                             <option value="Created">🔵 Created</option>
                             <option value="Done">✅ Done</option>
                             <option value="failed">❌ Failed</option>
@@ -67,19 +67,19 @@
                     <div class="col-md-2">
                         <label class="form-label fw-bold text-primary">Time Range</label>
                         <select class="form-select" id="filterTaskTimeRange" onchange="applyTaskFilters()">
-                            <option value="">All Time</option>
+                            <option value="" selected>All Time</option>
                             <option value="today">Today</option>
-                            <option value="week" selected>This Week</option>
+                            <option value="week">This Week</option>
                             <option value="month">This Month</option>
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <div class="d-flex gap-1">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" 
+                        <div class="filter-control-buttons">
+                            <button type="button" class="btn btn-outline-secondary filter-clear" 
                                     onclick="clearTaskFilters()" title="Clear all filters">
                                 <i class="bi bi-x-circle"></i> Clear
                             </button>
-                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                            <button type="button" class="btn btn-outline-primary filter-more" 
                                     onclick="toggleAdvancedTaskFilters()" id="advancedToggle">
                                 <i class="bi bi-sliders"></i> More
                             </button>
@@ -284,6 +284,30 @@ function updateTaskFilterStatus() {
         statusElement.textContent = '(no filters)';
         statusElement.className = 'text-muted ms-2';
     }
+}
+
+// New function to handle task quick search changes - clears other filters when quick search is used
+function onTaskQuickSearchChange() {
+    const quickSearchValue = document.getElementById('taskQuickSearch')?.value || '';
+    
+    // If quick search has content, clear other search columns (set them to "include all")
+    if (quickSearchValue.trim() !== '') {
+        // Clear advanced filter inputs (but keep them available in the UI)
+        if (document.getElementById('filterTaskOwner')) document.getElementById('filterTaskOwner').value = '';
+        if (document.getElementById('filterTaskPlugin')) document.getElementById('filterTaskPlugin').value = '';
+        if (document.getElementById('filterTaskAction')) document.getElementById('filterTaskAction').value = '';
+        if (document.getElementById('filterTaskExecutor')) document.getElementById('filterTaskExecutor').value = '';
+        
+        // Reset primary filter dropdowns to "include all" options
+        if (document.getElementById('filterTaskStatus')) document.getElementById('filterTaskStatus').value = '';
+        if (document.getElementById('filterTaskType')) document.getElementById('filterTaskType').value = '';
+        if (document.getElementById('filterTaskTimeRange')) document.getElementById('filterTaskTimeRange').value = '';
+        
+        console.log('Task quick search activated - cleared other filters:', quickSearchValue);
+    }
+    
+    // Apply filters after clearing others
+    applyTaskFilters();
 }
 
 function applyTaskFilters() {

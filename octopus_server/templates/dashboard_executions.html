@@ -35,7 +35,7 @@
                     </label>
                     <input type="text" class="form-control" id="executionQuickSearch" 
                            placeholder="Search executions by ID, client, or result..." 
-                           onkeyup="applyExecutionFilters()">
+                           onkeyup="onQuickSearchChange()">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-bold text-primary">Status</label>
@@ -65,12 +65,12 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <div class="d-flex gap-1">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" 
+                    <div class="filter-control-buttons">
+                        <button type="button" class="btn btn-outline-secondary filter-clear" 
                                 onclick="clearExecutionFilters()" title="Clear all filters">
                             <i class="bi bi-x-circle"></i> Clear
                         </button>
-                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                        <button type="button" class="btn btn-outline-primary filter-more" 
                                 onclick="toggleAdvancedExecutionFilters()" id="advancedExecutionToggle">
                             <i class="bi bi-sliders"></i> More
                         </button>
@@ -105,9 +105,13 @@
 
             <!-- Active Filters Display -->
             <div class="mt-3" id="activeExecutionFilters" style="display: none;">
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <small class="text-muted fw-bold">Active Filters:</small>
-                    <div id="executionFilterTags"></div>
+                <div class="active-filters-container">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <small class="text-muted fw-bold">
+                            <i class="bi bi-funnel"></i> Active Filters:
+                        </small>
+                        <div id="executionFilterTags"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -520,6 +524,30 @@ function updateExecutionFilterStatus() {
     }
 }
 
+// New function to handle quick search changes - clears other filters when quick search is used
+function onQuickSearchChange() {
+    const quickSearchValue = document.getElementById('executionQuickSearch')?.value || '';
+    
+    // If quick search has content, clear other search columns (set them to "include all")
+    if (quickSearchValue.trim() !== '') {
+        // Clear advanced filter inputs (but keep them available in the UI)
+        if (document.getElementById('filterExecutionTaskId')) document.getElementById('filterExecutionTaskId').value = '';
+        if (document.getElementById('filterExecutionClient')) document.getElementById('filterExecutionClient').value = '';
+        if (document.getElementById('filterExecutionResult')) document.getElementById('filterExecutionResult').value = '';
+        if (document.getElementById('filterExecutionId')) document.getElementById('filterExecutionId').value = '';
+        
+        // Reset primary filter dropdowns to "include all" options
+        if (document.getElementById('filterExecutionStatus')) document.getElementById('filterExecutionStatus').value = '';
+        if (document.getElementById('filterExecutionTimeRange')) document.getElementById('filterExecutionTimeRange').value = '';
+        if (document.getElementById('filterExecutionResults')) document.getElementById('filterExecutionResults').value = 'all';
+        
+        console.log('Quick search activated - cleared other filters:', quickSearchValue);
+    }
+    
+    // Apply filters after clearing others
+    applyExecutionFilters();
+}
+
 function applyExecutionFilters() {
     // Check allExecutions first
     console.log('=== EXECUTIONS FILTER DEBUG ===');
@@ -712,6 +740,9 @@ function applyExecutionFilters() {
     
     console.log('Calling updateExecutionStats with filtered executions:', filteredExecutions.length);
     updateExecutionStats(filteredExecutions);
+    
+    // Update active filters display
+    updateActiveExecutionFilters();
 }
 
 function getExecutionStatusBadge(status) {
@@ -770,34 +801,81 @@ function toggleAdvancedExecutionFilters() {
 function updateActiveExecutionFilters() {
     const activeFiltersDiv = document.getElementById('activeExecutionFilters');
     const tagsContainer = document.getElementById('executionFilterTags');
+    
+    if (!activeFiltersDiv || !tagsContainer) {
+        console.warn('Active filters elements not found');
+        return;
+    }
+    
     const filters = [];
     
-    // Check all filter inputs for values
-    const quickSearch = document.getElementById('executionQuickSearch').value;
-    const status = document.getElementById('filterExecutionStatus').value;
-    const timeRange = document.getElementById('filterExecutionTimeRange').value;
-    const results = document.getElementById('filterExecutionResults').value;
-    const taskId = document.getElementById('filterExecutionTaskId').value;
-    const client = document.getElementById('filterExecutionClient').value;
-    const result = document.getElementById('filterExecutionResult').value;
-    const executionId = document.getElementById('filterExecutionId').value;
+    // Check all filter inputs for values with null checks
+    const quickSearch = document.getElementById('executionQuickSearch')?.value || '';
+    const status = document.getElementById('filterExecutionStatus')?.value || '';
+    const timeRange = document.getElementById('filterExecutionTimeRange')?.value || '';
+    const results = document.getElementById('filterExecutionResults')?.value || '';
+    const taskId = document.getElementById('filterExecutionTaskId')?.value || '';
+    const client = document.getElementById('filterExecutionClient')?.value || '';
+    const result = document.getElementById('filterExecutionResult')?.value || '';
+    const executionId = document.getElementById('filterExecutionId')?.value || '';
     
-    if (quickSearch) filters.push({label: `Search: "${quickSearch}"`, type: 'search'});
-    if (status) filters.push({label: `Status: ${status}`, type: 'status'});
-    if (timeRange) filters.push({label: `Time: ${timeRange}`, type: 'time'});
-    if (results && results !== 'all') filters.push({label: `Show: ${results}`, type: 'results'});
-    if (taskId) filters.push({label: `Task ID: "${taskId}"`, type: 'taskId'});
-    if (client) filters.push({label: `Client: "${client}"`, type: 'client'});
-    if (result) filters.push({label: `Result: "${result}"`, type: 'result'});
-    if (executionId) filters.push({label: `Exec ID: "${executionId}"`, type: 'executionId'});
+    // Build filter tags with improved styling and icons
+    if (quickSearch) filters.push({
+        label: `🔍 Search: "${quickSearch}"`, 
+        type: 'search',
+        class: 'tag-search'
+    });
+    
+    if (status) filters.push({
+        label: `📊 Status: ${status.charAt(0).toUpperCase() + status.slice(1)}`, 
+        type: 'status',
+        class: 'tag-status'
+    });
+    
+    if (timeRange) filters.push({
+        label: `⏰ Time: ${timeRange.charAt(0).toUpperCase() + timeRange.slice(1)}`, 
+        type: 'time',
+        class: 'tag-time'
+    });
+    
+    if (results && results !== 'all') filters.push({
+        label: `📋 Show: ${results.charAt(0).toUpperCase() + results.slice(1)}`, 
+        type: 'results',
+        class: 'tag-results'
+    });
+    
+    if (taskId) filters.push({
+        label: `🔑 Task ID: "${taskId}"`, 
+        type: 'taskId',
+        class: 'tag-taskId'
+    });
+    
+    if (client) filters.push({
+        label: `👤 Client: "${client}"`, 
+        type: 'client',
+        class: 'tag-client'
+    });
+    
+    if (result) filters.push({
+        label: `📝 Result: "${result}"`, 
+        type: 'result',
+        class: 'tag-result'
+    });
+    
+    if (executionId) filters.push({
+        label: `🆔 Exec ID: "${executionId}"`, 
+        type: 'executionId',
+        class: 'tag-executionId'
+    });
     
     if (filters.length > 0) {
         activeFiltersDiv.style.display = 'block';
         tagsContainer.innerHTML = filters.map(filter => 
-            `<span class="badge bg-light text-dark border me-1 mb-1">
+            `<span class="filter-tag ${filter.class}" title="Click × to remove this filter">
                 ${filter.label}
-                <button type="button" class="btn-close btn-close-sm ms-1" 
-                        onclick="removeExecutionFilter('${filter.type}')" style="font-size: 0.7em;"></button>
+                <button type="button" class="btn-close btn-close-white" 
+                        onclick="removeExecutionFilter('${filter.type}')" 
+                        aria-label="Remove filter"></button>
             </span>`
         ).join('');
     } else {
