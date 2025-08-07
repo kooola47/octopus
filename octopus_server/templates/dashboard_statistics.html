@@ -413,17 +413,42 @@ function updateAllStatistics() {
 function updateQuickStats() {
     const { clients, tasks, executions } = statisticsData;
     
-    // Total counts
-    document.getElementById('totalClientsCount').textContent = clients.length;
-    document.getElementById('totalTasksCount').textContent = Object.keys(tasks).length;
-    document.getElementById('totalExecutionsCount').textContent = executions.length;
+    // Total counts - fix data structure access
+    const clientsData = clients.clients || clients || {};
+    const tasksData = tasks.tasks || tasks || {};
+    const executionsData = executions.executions || executions || [];
+    
+    const totalClients = Object.keys(clientsData).length;
+    const totalTasks = Object.keys(tasksData).length;
+    const totalExecutions = Array.isArray(executionsData) ? executionsData.length : 0;
+    
+    document.getElementById('totalClientsCount').textContent = totalClients;
+    document.getElementById('totalTasksCount').textContent = totalTasks;
+    document.getElementById('totalExecutionsCount').textContent = totalExecutions;
     
     // Calculate system health score
-    const onlineClients = clients.filter(c => c.status === 'online').length;
-    const clientHealthScore = clients.length > 0 ? (onlineClients / clients.length) * 100 : 0;
+    const now = clients.now || Date.now() / 1000;
+    const clientEntries = Object.entries(clientsData);
+    let onlineClients = 0;
     
-    const successfulExecs = executions.filter(e => e.exec_status === 'success').length;
-    const executionHealthScore = executions.length > 0 ? (successfulExecs / executions.length) * 100 : 0;
+    clientEntries.forEach(([key, client]) => {
+        const timeDiff = client.last_heartbeat ? now - client.last_heartbeat : null;
+        if (timeDiff !== null && timeDiff <= 30) {
+            onlineClients++;
+        }
+    });
+    
+    const clientHealthScore = totalClients > 0 ? (onlineClients / totalClients) * 100 : 0;
+    
+    let successfulExecs = 0;
+    if (Array.isArray(executionsData)) {
+        successfulExecs = executionsData.filter(e => {
+            const status = (e.status || '').toLowerCase();
+            return status === 'success' || status === 'completed' || status === 'done';
+        }).length;
+    }
+    
+    const executionHealthScore = totalExecutions > 0 ? (successfulExecs / totalExecutions) * 100 : 0;
     
     const overallHealth = Math.round((clientHealthScore + executionHealthScore) / 2);
     document.getElementById('systemHealthScore').textContent = overallHealth + '%';
@@ -432,37 +457,74 @@ function updateQuickStats() {
 function updateClientStatistics() {
     const { clients } = statisticsData;
     
-    const onlineClients = clients.filter(c => c.status === 'online');
-    const offlineClients = clients.filter(c => c.status !== 'online');
-    const busyClients = clients.filter(c => c.status === 'busy' || c.current_task);
-    const availableClients = onlineClients.filter(c => !c.current_task);
+    const clientsData = clients.clients || clients || {};
+    const now = clients.now || Date.now() / 1000;
+    const clientEntries = Object.entries(clientsData);
+    
+    let onlineClients = 0;
+    let offlineClients = 0;
+    let busyClients = 0;
+    let availableClients = 0;
+    const responseTimes = [];
+    
+    clientEntries.forEach(([key, client]) => {
+        const timeDiff = client.last_heartbeat ? now - client.last_heartbeat : null;
+        const isOnline = timeDiff !== null && timeDiff <= 30;
+        
+        if (isOnline) {
+            onlineClients++;
+            if (client.current_task) {
+                busyClients++;
+            } else {
+                availableClients++;
+            }
+        } else {
+            offlineClients++;
+        }
+        
+        // Collect response times if available
+        if (client.last_response_time) {
+            const responseTime = parseFloat(client.last_response_time) || 0;
+            if (responseTime > 0) {
+                responseTimes.push(responseTime);
+            }
+        }
+    });
     
     // Calculate average response time
-    const responseTimes = clients
-        .filter(c => c.last_response_time)
-        .map(c => parseFloat(c.last_response_time) || 0);
     const avgResponseTime = responseTimes.length > 0 
         ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
         : 0;
     
-    const availability = clients.length > 0 ? Math.round((onlineClients.length / clients.length) * 100) : 0;
+    const totalClients = clientEntries.length;
+    const availability = totalClients > 0 ? Math.round((onlineClients / totalClients) * 100) : 0;
     
     // Update display
-    document.getElementById('onlineClientsCount').textContent = onlineClients.length;
-    document.getElementById('offlineClientsCount').textContent = offlineClients.length;
+    document.getElementById('onlineClientsCount').textContent = onlineClients;
+    document.getElementById('offlineClientsCount').textContent = offlineClients;
     document.getElementById('avgResponseTime').textContent = avgResponseTime + 'ms';
-    document.getElementById('busyClientsCount').textContent = busyClients.length;
-    document.getElementById('availableClientsCount').textContent = availableClients.length;
+    document.getElementById('busyClientsCount').textContent = busyClients;
+    document.getElementById('availableClientsCount').textContent = availableClients;
     document.getElementById('clientAvailabilityRate').textContent = availability + '%';
 }
 
 function updateTaskStatistics() {
     const { tasks } = statisticsData;
-    const taskList = Object.values(tasks);
+    const tasksData = tasks.tasks || tasks || {};
+    const taskList = Object.values(tasksData);
     
-    const activeTasks = taskList.filter(t => t.status === 'Active');
-    const completedTasks = taskList.filter(t => t.status === 'Done');
-    const failedTasks = taskList.filter(t => t.status === 'failed' || t.status === 'error');
+    const activeTasks = taskList.filter(t => {
+        const status = t.status || '';
+        return status === 'Active' || status === 'Running' || status === 'Assigned';
+    });
+    const completedTasks = taskList.filter(t => {
+        const status = t.status || '';
+        return status === 'Done' || status === 'completed' || status === 'success';
+    });
+    const failedTasks = taskList.filter(t => {
+        const status = t.status || '';
+        return status === 'failed' || status === 'error' || status === 'Failed';
+    });
     const scheduledTasks = taskList.filter(t => t.type === 'Schedule');
     const adhocTasks = taskList.filter(t => t.type === 'Adhoc');
     
@@ -480,27 +542,42 @@ function updateTaskStatistics() {
 
 function updateExecutionStatistics() {
     const { executions } = statisticsData;
+    const executionsData = executions.executions || executions || [];
     
-    const successful = executions.filter(e => e.exec_status === 'success');
-    const failed = executions.filter(e => e.exec_status === 'failed');
-    const errors = executions.filter(e => e.exec_status === 'error');
+    // Ensure we have an array
+    const executionsList = Array.isArray(executionsData) ? executionsData : [];
+    
+    const successful = executionsList.filter(e => {
+        const status = (e.status || '').toLowerCase();
+        return status === 'success' || status === 'completed' || status === 'done';
+    });
+    const failed = executionsList.filter(e => {
+        const status = (e.status || '').toLowerCase();
+        return status === 'failed';
+    });
+    const errors = executionsList.filter(e => {
+        const status = (e.status || '').toLowerCase();
+        return status === 'error';
+    });
     
     // Time-based filtering
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     
-    const todayExecs = executions.filter(e => {
+    const todayExecs = executionsList.filter(e => {
+        if (!e.updated_at) return false;
         const execDate = new Date(parseFloat(e.updated_at) * 1000);
         return execDate >= today;
     });
     
-    const weekExecs = executions.filter(e => {
+    const weekExecs = executionsList.filter(e => {
+        if (!e.updated_at) return false;
         const execDate = new Date(parseFloat(e.updated_at) * 1000);
         return execDate >= thisWeek;
     });
     
-    const successRate = executions.length > 0 ? Math.round((successful.length / executions.length) * 100) : 0;
+    const successRate = executionsList.length > 0 ? Math.round((successful.length / executionsList.length) * 100) : 0;
     
     // Update display
     document.getElementById('successfulExecutionsCount').textContent = successful.length;
@@ -513,7 +590,10 @@ function updateExecutionStatistics() {
 
 function updatePluginStatistics() {
     const { tasks, executions } = statisticsData;
-    const taskList = Object.values(tasks);
+    const tasksData = tasks.tasks || tasks || {};
+    const executionsData = executions.executions || executions || [];
+    const taskList = Object.values(tasksData);
+    const executionsList = Array.isArray(executionsData) ? executionsData : [];
     
     // Group by plugin
     const pluginStats = {};
@@ -526,7 +606,7 @@ function updatePluginStatistics() {
         pluginStats[plugin].tasks++;
     });
     
-    executions.forEach(exec => {
+    executionsList.forEach(exec => {
         // Find corresponding task to get plugin
         const task = taskList.find(t => t.id === exec.task_id);
         const plugin = task?.plugin || 'unknown';

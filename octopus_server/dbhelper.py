@@ -316,10 +316,10 @@ def compute_task_status(task, clients):
         # Check if any execution for this task is success/failed
         executions = task.get("executions", [])
         if executions:
-            # For ALL tasks, check if any client has completed it
+            # For ALL tasks, complete when any client succeeds (first success wins)
             if owner == TaskOwnership.ALL:
                 if any(TaskStatus.is_completed(exec.get("status")) for exec in executions):
-                    return TaskStatus.ACTIVE  # Still active until all clients complete or task expires
+                    return TaskStatus.DONE  # Complete when any client completes the ALL task
             else:
                 # For specific user or Anyone tasks, check if completed
                 if any(TaskStatus.is_completed(exec.get("status")) for exec in executions):

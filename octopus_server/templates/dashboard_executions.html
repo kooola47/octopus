@@ -41,7 +41,7 @@
                     <label class="form-label fw-bold text-primary">Status</label>
                     <select class="form-select" id="filterExecutionStatus" onchange="applyExecutionFilters()">
                         <option value="">All Status</option>
-                        <option value="success" selected>✅ Success</option>
+                        <option value="success">✅ Success</option>
                         <option value="failed">❌ Failed</option>
                         <option value="error">🔴 Error</option>
                     </select>
@@ -49,17 +49,17 @@
                 <div class="col-md-2">
                     <label class="form-label fw-bold text-primary">Time Range</label>
                     <select class="form-select" id="filterExecutionTimeRange" onchange="applyExecutionFilters()">
-                        <option value="">All Time</option>
+                        <option value="" selected>All Time</option>
                         <option value="today">Today</option>
-                        <option value="week" selected>This Week</option>
+                        <option value="week">This Week</option>
                         <option value="month">This Month</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-bold text-primary">Show Results</label>
                     <select class="form-select" id="filterExecutionResults" onchange="applyExecutionFilters()">
-                        <option value="all">All Results</option>
-                        <option value="recent" selected>Recent (50)</option>
+                        <option value="all" selected>All Results</option>
+                        <option value="recent">Recent (50)</option>
                         <option value="errors">Errors Only</option>
                         <option value="success">Success Only</option>
                     </select>
@@ -349,7 +349,7 @@ function loadSavedExecutionFilters() {
     document.getElementById('filterExecutionStatus').value = savedFilters.status;
     document.getElementById('filterExecutionResult').value = savedFilters.result;
     
-    // Update filter status indicator
+    // Update filter status indicator (only if element exists)
     updateExecutionFilterStatus();
     
     // Show/hide filter controls based on saved preference
@@ -367,34 +367,94 @@ function loadSavedExecutionFilters() {
 }
 
 function saveExecutionFilters() {
-    // Save current filter values to localStorage
-    localStorage.setItem('executionFilter_taskId', document.getElementById('filterExecutionTaskId').value);
-    localStorage.setItem('executionFilter_client', document.getElementById('filterExecutionClient').value);
-    localStorage.setItem('executionFilter_status', document.getElementById('filterExecutionStatus').value);
-    localStorage.setItem('executionFilter_result', document.getElementById('filterExecutionResult').value);
+    // Save current filter values to localStorage with null checks
+    try {
+        const taskIdEl = document.getElementById('filterExecutionTaskId');
+        const clientEl = document.getElementById('filterExecutionClient');
+        const statusEl = document.getElementById('filterExecutionStatus');
+        const resultEl = document.getElementById('filterExecutionResult');
+        
+        if (taskIdEl) localStorage.setItem('executionFilter_taskId', taskIdEl.value);
+        if (clientEl) localStorage.setItem('executionFilter_client', clientEl.value);
+        if (statusEl) localStorage.setItem('executionFilter_status', statusEl.value);
+        if (resultEl) localStorage.setItem('executionFilter_result', resultEl.value);
+    } catch (error) {
+        console.warn('Error saving execution filters:', error);
+    }
 }
 
 function loadExecutions() {
+    console.log('Loading executions from API...');
     fetch('/api/executions')
-        .then(response => response.json())
+        .then(response => {
+            console.log('API response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Received executions data:', data);
+            console.log('Data type:', typeof data);
+            console.log('Is array:', Array.isArray(data));
+            console.log('Number of executions:', Array.isArray(data) ? data.length : 'N/A');
+            
+            // Ensure data is an array
+            if (!Array.isArray(data)) {
+                console.error('Expected array but got:', typeof data, data);
+                throw new Error('API returned invalid data format');
+            }
+            
+            // Update the global allExecutions data
             allExecutions = data;
-            applyExecutionFilters(); // Apply saved filters (not default filter)
-            updateExecutionStats();
+            console.log('Updated allExecutions:', allExecutions.length, 'items');
+            
+            // Check if there are active filters before applying them
+            const hasActiveFilters = checkForActiveFilters();
+            
+            if (hasActiveFilters) {
+                console.log('Active filters detected, preserving current view');
+                // Only update statistics, keep the filtered table view
+                updateExecutionStats();
+            } else {
+                console.log('No active filters, applying default view');
+                // Apply saved filters (not default filter) and update everything
+                applyExecutionFilters();
+                updateExecutionStats();
+            }
         })
         .catch(error => {
             console.error('Error loading executions:', error);
             const tbody = document.getElementById('executionsTableBody');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="text-center text-danger py-4">
-                        <i class="bi bi-exclamation-triangle display-4"></i>
-                        <div class="mt-2">Failed to load execution records</div>
-                        <small>Error: ${error.message}</small>
-                    </td>
-                </tr>
-            `;
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-danger py-4">
+                            <i class="bi bi-exclamation-triangle display-4"></i>
+                            <div class="mt-2">Failed to load execution records</div>
+                            <small>Error: ${error.message}</small>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-primary" onclick="loadExecutions()">
+                                    <i class="bi bi-arrow-clockwise"></i> Retry
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
         });
+}
+
+// Helper function to check if any filters are currently active
+function checkForActiveFilters() {
+    const taskIdFilter = (document.getElementById('filterExecutionTaskId')?.value || '').trim();
+    const clientFilter = (document.getElementById('filterExecutionClient')?.value || '').trim();
+    const statusFilter = (document.getElementById('filterExecutionStatus')?.value || '').trim();
+    const resultFilter = (document.getElementById('filterExecutionResult')?.value || '').trim();
+    const quickSearch = (document.getElementById('executionQuickSearch')?.value || '').trim();
+    
+    return taskIdFilter !== '' || clientFilter !== '' || statusFilter !== '' || 
+           resultFilter !== '' || quickSearch !== '';
 }
 
 function toggleExecutionFilters() {
@@ -439,6 +499,12 @@ function resetExecutionFiltersToDefault() {
 
 function updateExecutionFilterStatus() {
     const statusElement = document.getElementById('executionFilterStatus');
+    
+    // Check if the status element exists (it might not exist on all pages)
+    if (!statusElement) {
+        return; // Silently return if element doesn't exist
+    }
+    
     const hasActiveFilters = 
         document.getElementById('filterExecutionTaskId').value ||
         document.getElementById('filterExecutionClient').value ||
@@ -455,29 +521,119 @@ function updateExecutionFilterStatus() {
 }
 
 function applyExecutionFilters() {
-    const taskIdFilter = document.getElementById('filterExecutionTaskId').value.toLowerCase();
-    const clientFilter = document.getElementById('filterExecutionClient').value.toLowerCase();
-    const statusFilter = document.getElementById('filterExecutionStatus').value.toLowerCase();
-    const resultFilter = document.getElementById('filterExecutionResult').value.toLowerCase();
+    // Check allExecutions first
+    console.log('=== EXECUTIONS FILTER DEBUG ===');
+    console.log('allExecutions type:', typeof allExecutions);
+    console.log('allExecutions is array:', Array.isArray(allExecutions));
+    console.log('allExecutions length:', allExecutions ? allExecutions.length : 'undefined');
+    console.log('allExecutions sample:', allExecutions ? allExecutions.slice(0, 2) : 'undefined');
     
-    // Save filters whenever they are applied
-    saveExecutionFilters();
-    updateExecutionFilterStatus();
+    // Get filter values with null checks
+    const quickSearch = (document.getElementById('executionQuickSearch')?.value || '').toLowerCase();
+    const taskIdFilter = (document.getElementById('filterExecutionTaskId')?.value || '').trim(); // Don't convert to lowercase
+    const clientFilter = (document.getElementById('filterExecutionClient')?.value || '').toLowerCase();
+    const statusFilter = (document.getElementById('filterExecutionStatus')?.value || '').toLowerCase();
+    const resultFilter = (document.getElementById('filterExecutionResult')?.value || '').toLowerCase();
+    
+    console.log('Applying execution filters:');
+    console.log('- quickSearch:', quickSearch);
+    console.log('- taskIdFilter:', taskIdFilter);
+    console.log('- clientFilter:', clientFilter);
+    console.log('- statusFilter:', statusFilter);
+    console.log('- resultFilter:', resultFilter);
+    console.log('- Total executions:', allExecutions ? allExecutions.length : 'undefined');
+    
+    // Log first few executions to see their task_id values
+    if (allExecutions && allExecutions.length > 0) {
+        console.log('First 3 executions task IDs:');
+        allExecutions.slice(0, 3).forEach((exec, i) => {
+            console.log(`  ${i}: task_id="${exec.task_id}" (type: ${typeof exec.task_id})`);
+        });
+    } else {
+        console.error('allExecutions is empty or undefined!');
+        const tbody = document.getElementById('executionsTableBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-warning py-4">
+                        <i class="bi bi-exclamation-triangle display-4"></i>
+                        <div class="mt-2">No execution data loaded</div>
+                        <small>Please wait for data to load or refresh the page</small>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="loadExecutions()">
+                                <i class="bi bi-arrow-clockwise"></i> Reload Data
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        return;
+    }
+    
+    // Save filters whenever they are applied (with null checks)
+    try {
+        saveExecutionFilters();
+        updateExecutionFilterStatus();
+    } catch (error) {
+        console.warn('Error saving filters:', error);
+    }
     
     const tbody = document.getElementById('executionsTableBody');
+    if (!tbody) {
+        console.error('executionsTableBody element not found!');
+        return;
+    }
     tbody.innerHTML = '';
     
     let visibleCount = 0;
     
+    // Ensure allExecutions is an array
+    if (!Array.isArray(allExecutions)) {
+        console.error('allExecutions is not an array:', allExecutions);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-warning py-4">
+                    <i class="bi bi-exclamation-triangle display-4"></i>
+                    <div class="mt-2">No execution data available</div>
+                    <small>Data structure error - please reload the page</small>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
     // Filter executions first
     const filteredExecutions = allExecutions.filter(execution => {
-        // Apply filters
-        if (taskIdFilter && !execution.task_id?.toLowerCase().includes(taskIdFilter)) return false;
+        // Quick search across multiple fields
+        if (quickSearch) {
+            const searchableText = `${execution.id || ''} ${execution.task_id || ''} ${execution.client || ''} ${execution.exec_status || ''} ${execution.exec_result || ''}`.toLowerCase();
+            if (!searchableText.includes(quickSearch)) return false;
+        }
+        
+        // Log execution details for debugging
+        if (taskIdFilter) {
+            console.log(`Checking execution: task_id="${execution.task_id}" (type: ${typeof execution.task_id}) vs filter="${taskIdFilter}" (type: ${typeof taskIdFilter})`);
+            console.log(`String comparison: "${String(execution.task_id)}" === "${String(taskIdFilter)}" = ${String(execution.task_id) === String(taskIdFilter)}`);
+        }
+        
+        // Specific filters - use exact match for task ID (convert both to strings), partial match for others
+        if (taskIdFilter && String(execution.task_id) !== String(taskIdFilter)) {
+            console.log(`Task ID mismatch: "${execution.task_id}" !== "${taskIdFilter}" - filtering out execution ${execution.id}`);
+            return false;
+        }
         if (clientFilter && !execution.client?.toLowerCase().includes(clientFilter)) return false;
         if (statusFilter && !execution.exec_status?.toLowerCase().includes(statusFilter)) return false;
         if (resultFilter && !execution.exec_result?.toLowerCase().includes(resultFilter)) return false;
+        
+        if (taskIdFilter) {
+            console.log(`Task ID match found: execution ${execution.id} with task_id "${execution.task_id}" matches filter "${taskIdFilter}"`);
+        }
         return true;
     });
+    
+    console.log('Filtered executions:', filteredExecutions.length);
+    console.log('First few filtered executions:', filteredExecutions.slice(0, 3));
     
     // Convert to object format for sorting
     const executionsObj = {};
@@ -493,6 +649,8 @@ function applyExecutionFilters() {
         };
     });
     
+    console.log('Converted executions object:', Object.keys(executionsObj).length, 'entries');
+    
     // Sort filtered executions if a sort column is selected
     let sortedExecutions;
     if (currentExecutionsSortColumn && executionsSortOrder[currentExecutionsSortColumn]) {
@@ -501,9 +659,13 @@ function applyExecutionFilters() {
         sortedExecutions = Object.entries(executionsObj);
     }
     
+    console.log('Sorted executions to display:', sortedExecutions.length);
+    
     sortedExecutions.forEach(([executionId, executionData]) => {
         const execution = executionData._original;
         visibleCount++;
+        
+        console.log(`Creating row for execution ${executionId}:`, execution);
         
         // Create table row
         const row = document.createElement('tr');
@@ -548,6 +710,7 @@ function applyExecutionFilters() {
         tbody.appendChild(row);
     }
     
+    console.log('Calling updateExecutionStats with filtered executions:', filteredExecutions.length);
     updateExecutionStats(filteredExecutions);
 }
 
@@ -574,10 +737,15 @@ function getExecutionStatusBadge(status) {
 }
 
 function updateExecutionStats(executions = allExecutions) {
+    console.log('updateExecutionStats called with:', executions.length, 'executions');
+    console.log('First execution sample:', executions[0]);
+    
     const total = executions.length;
     const successful = executions.filter(e => e.exec_status === 'success').length;
     const failed = executions.filter(e => e.exec_status === 'failed' || e.exec_status === 'error').length;
     const successRate = total > 0 ? ((successful / total) * 100).toFixed(1) : 0;
+    
+    console.log('Stats calculated:', { total, successful, failed, successRate });
     
     document.getElementById('totalExecutions').textContent = total;
     document.getElementById('successfulExecutions').textContent = successful;

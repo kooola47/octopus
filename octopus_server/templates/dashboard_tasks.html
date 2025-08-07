@@ -1,19 +1,19 @@
 <!-- Statistics Cards -->
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-number">{{ tasks|length }}</div>
+        <div class="stat-number" id="totalTasksCount">{{ tasks|length }}</div>
         <div class="stat-label">Total Tasks</div>
     </div>
     <div class="stat-card">
-        <div class="stat-number">{{ tasks.values()|selectattr('status', 'equalto', 'Active')|list|length }}</div>
+        <div class="stat-number" id="activeTasksCount">{{ tasks.values()|selectattr('status', 'equalto', 'Active')|list|length }}</div>
         <div class="stat-label">Active Tasks</div>
     </div>
     <div class="stat-card">
-        <div class="stat-number">{{ tasks.values()|selectattr('status', 'equalto', 'Done')|list|length }}</div>
+        <div class="stat-number" id="completedTasksCount">{{ tasks.values()|selectattr('status', 'equalto', 'Done')|list|length }}</div>
         <div class="stat-label">Completed</div>
     </div>
     <div class="stat-card">
-        <div class="stat-number">{{ tasks.values()|selectattr('status', 'in', ['failed', 'error', 'Failed'])|list|length }}</div>
+        <div class="stat-number" id="failedTasksCount">{{ tasks.values()|selectattr('status', 'in', ['failed', 'error', 'Failed'])|list|length }}</div>
         <div class="stat-label">Failed</div>
     </div>
 </div>
@@ -410,6 +410,12 @@ function applyTaskFilters() {
                             data-task-interval="${escapeHtml(task.interval || '')}">
                         <i class="bi bi-eye"></i>
                     </button>
+                    <button type="button" class="btn btn-sm btn-success octopus-btn" 
+                            title="View Executions for this Task" 
+                            onclick="viewTaskExecutions('${escapeHtml(tid)}'); return false;"
+                            data-task-id="${escapeHtml(tid)}">
+                        <i class="bi bi-play-circle"></i>
+                    </button>
                     ${task.status !== 'Created' ? `
                         <button type="button" class="btn btn-sm btn-primary octopus-btn" 
                                 title="Edit Task"
@@ -450,6 +456,25 @@ function applyTaskFilters() {
         `;
         tbody.appendChild(row);
     }
+    
+    // Update statistics based on filtered data
+    updateTaskStatistics(filteredTasks);
+}
+
+function updateTaskStatistics(filteredTasks) {
+    const tasks = Object.values(filteredTasks);
+    
+    // Count tasks by status
+    const totalTasks = tasks.length;
+    const activeTasks = tasks.filter(task => task.status === 'Active').length;
+    const completedTasks = tasks.filter(task => task.status === 'Done').length;
+    const failedTasks = tasks.filter(task => ['failed', 'error', 'Failed'].includes(task.status)).length;
+    
+    // Update the statistics display
+    document.getElementById('totalTasksCount').textContent = totalTasks;
+    document.getElementById('activeTasksCount').textContent = activeTasks;
+    document.getElementById('completedTasksCount').textContent = completedTasks;
+    document.getElementById('failedTasksCount').textContent = failedTasks;
 }
 
 function getStatusBadge(status) {
@@ -625,5 +650,76 @@ function removeTaskFilter(filterType) {
     }
     updateActiveTaskFilters();
     applyTaskFilters();
+}
+
+// Function to navigate to executions tab with task ID filter
+function viewTaskExecutions(taskId) {
+    console.log('Viewing executions for task:', taskId);
+    
+    // Switch to executions tab
+    showTab('executions');
+    
+    // Wait a moment for the tab to load, then apply the filter
+    setTimeout(() => {
+        // Clear and reset ALL filters to show all data
+        const filters = [
+            'executionQuickSearch',
+            'filterExecutionStatus', 
+            'filterExecutionTimeRange',
+            'filterExecutionResults',
+            'filterExecutionClient',
+            'filterExecutionResult',
+            'filterExecutionId'
+        ];
+        
+        filters.forEach(filterId => {
+            const element = document.querySelector(`#executions #${filterId}`);
+            if (element) {
+                if (element.tagName === 'SELECT') {
+                    // For select elements, choose the "All" option (empty value)
+                    element.value = '';
+                } else {
+                    // For input elements, clear the value
+                    element.value = '';
+                }
+            }
+        });
+        
+        // Specifically set the filter selects to "All" options
+        const timeRangeFilter = document.querySelector('#executions #filterExecutionTimeRange');
+        if (timeRangeFilter) {
+            timeRangeFilter.value = ''; // All Time
+        }
+        
+        const resultsFilter = document.querySelector('#executions #filterExecutionResults');
+        if (resultsFilter) {
+            resultsFilter.value = 'all'; // All Results
+        }
+        
+        const statusFilter = document.querySelector('#executions #filterExecutionStatus');
+        if (statusFilter) {
+            statusFilter.value = ''; // All Status
+        }
+        
+        // Now set the task ID filter for the specific task
+        const taskIdFilter = document.querySelector('#executions #filterExecutionTaskId');
+        if (taskIdFilter) {
+            taskIdFilter.value = taskId;
+            console.log('Set task ID filter to:', taskId);
+            console.log('Reset all other filters to show all data');
+            
+            // Trigger the filter application
+            if (typeof applyExecutionFilters === 'function') {
+                applyExecutionFilters();
+            }
+        } else {
+            console.warn('Task ID filter not found');
+        }
+        
+        // Show a notification to the user
+        if (typeof showNotification === 'function') {
+            showNotification(`Filtered executions for Task ID: ${taskId}`, 'info');
+        }
+    }, 300); // Give the tab 300ms to load
 }
 </script>

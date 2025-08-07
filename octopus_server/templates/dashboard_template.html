@@ -592,6 +592,29 @@
         }
 
         function updateExecutionsView(executions) {
+            // Check if there are active filters in the executions view
+            const executionsView = document.getElementById('executions');
+            let hasActiveFilters = false;
+            
+            if (executionsView) {
+                // Check if any filter inputs have values - use correct selectors
+                const taskIdFilter = document.getElementById('filterExecutionTaskId');
+                const clientFilter = document.getElementById('filterExecutionClient');
+                const statusFilter = document.getElementById('filterExecutionStatus');
+                const resultFilter = document.getElementById('filterExecutionResult');
+                const quickSearch = document.getElementById('executionQuickSearch');
+                
+                hasActiveFilters = (taskIdFilter && taskIdFilter.value.trim() !== '') ||
+                                  (clientFilter && clientFilter.value.trim() !== '') ||
+                                  (statusFilter && statusFilter.value.trim() !== '') ||
+                                  (resultFilter && resultFilter.value.trim() !== '') ||
+                                  (quickSearch && quickSearch.value.trim() !== '');
+                                  
+                console.log('Filter check in updateExecutionsView:');
+                console.log('- taskIdFilter:', taskIdFilter ? taskIdFilter.value : 'not found');
+                console.log('- hasActiveFilters:', hasActiveFilters);
+            }
+            
             const totalExecutions = executions.length;
             let successCount = 0, failedCount = 0;
 
@@ -606,12 +629,22 @@
 
             const successRate = totalExecutions > 0 ? ((successCount / totalExecutions) * 100).toFixed(1) : '0.0';
 
-            updateStatCard('executions', 0, totalExecutions);
-            updateStatCard('executions', 1, successCount);
-            updateStatCard('executions', 2, failedCount);
-            updateStatCard('executions', 3, successRate + '%');
+            // Only update stat cards if no filters are active - filtered view handles its own stats
+            if (!hasActiveFilters) {
+                updateStatCard('executions', 0, totalExecutions);
+                updateStatCard('executions', 1, successCount);
+                updateStatCard('executions', 2, failedCount);
+                updateStatCard('executions', 3, successRate + '%');
+            } else {
+                console.log('Skipping stat card updates - filters are active');
+            }
 
-            updateExecutionsTable(executions);
+            // Only update the executions table if no filters are active
+            if (!hasActiveFilters) {
+                updateExecutionsTable(executions);
+            } else {
+                console.log('Skipping executions table update - filters are active');
+            }
         }
 
         function updateStatCard(viewId, index, value) {
@@ -807,6 +840,12 @@
                 el.classList.remove('active');
             });
             document.getElementById(tabId + '-tab').classList.add('active');
+            
+            // Load data for specific tabs when they are shown
+            if (tabId === 'executions' && typeof loadExecutions === 'function') {
+                console.log('Loading executions data for executions tab');
+                loadExecutions();
+            }
             
             // Update URL
             if (history.pushState) {
