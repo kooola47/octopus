@@ -12,8 +12,8 @@ SERVER_URL = "http://localhost:8000"
 # =============================================================================
 # CLIENT BEHAVIOR
 # =============================================================================
-HEARTBEAT_INTERVAL = 10  # Send heartbeat every 10 seconds
-TASK_CHECK_INTERVAL = 5  # Check for new tasks every 5 seconds
+HEARTBEAT_INTERVAL = 30  # Send heartbeat every 30 seconds (was 10)
+TASK_CHECK_INTERVAL = 15  # Check for new tasks every 15 seconds (was 5)
 MAX_RETRY_ATTEMPTS = 3  # Maximum retries for failed operations
 RETRY_DELAY = 2  # Seconds to wait between retries
 

@@ -1,0 +1,303 @@
+{% extends "layout.html" %}
+
+{% block title %}🐙 Octopus Dashboard{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-1">
+                <i class="bi bi-speedometer2 text-primary me-2"></i>
+                Dashboard
+            </h1>
+            <p class="text-muted mb-0">Overview of your task orchestration system</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary refresh-btn">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+            </button>
+            <div class="form-check form-switch d-flex align-items-center">
+                <input class="form-check-input me-2" type="checkbox" id="autoRefresh" checked>
+                <label class="form-check-label text-muted small" for="autoRefresh">Auto-refresh</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card primary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number text-primary">{{ stats.total_tasks or 0 }}</div>
+                        <div class="stat-label">Total Tasks</div>
+                    </div>
+                    <div class="text-primary opacity-50">
+                        <i class="bi bi-list-task" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card success">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number text-success">{{ stats.active_clients or 0 }}</div>
+                        <div class="stat-label">Active Clients</div>
+                    </div>
+                    <div class="text-success opacity-50">
+                        <i class="bi bi-people" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number text-warning">{{ stats.running_tasks or 0 }}</div>
+                        <div class="stat-label">Running Tasks</div>
+                    </div>
+                    <div class="text-warning opacity-50">
+                        <i class="bi bi-play-circle" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number text-info">{{ stats.total_executions or 0 }}</div>
+                        <div class="stat-label">Executions Today</div>
+                    </div>
+                    <div class="text-info opacity-50">
+                        <i class="bi bi-graph-up" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Activity -->
+    <div class="row g-4 mb-4">
+        <!-- Recent Activity -->
+        <div class="col-xl-8">
+            <div class="octopus-card h-100">
+                <div class="octopus-card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-activity me-2"></i>
+                        Recent Activity
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Event</th>
+                                    <th>Client</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in recent_activity %}
+                                <tr>
+                                    <td class="text-muted">
+                                        <small data-timestamp="{{ activity.timestamp }}">
+                                            {{ activity.created_at|datetimeformat }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ activity.event_type }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ activity.description }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="client-status {{ activity.client_status }}"></span>
+                                        {{ activity.client or 'System' }}
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-{{ activity.status }}">
+                                            {{ activity.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox me-2"></i>
+                                        No recent activity
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Health -->
+        <div class="col-xl-4">
+            <div class="octopus-card h-100">
+                <div class="octopus-card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-heart-pulse me-2"></i>
+                        System Health
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- CPU Usage -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">CPU Usage</small>
+                            <small class="text-muted">{{ system_health.cpu_usage or 25 }}%</small>
+                        </div>
+                        <div class="progress progress-octopus">
+                            <div class="progress-bar bg-primary" style="width: {{ system_health.cpu_usage or 25 }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Memory Usage -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">Memory Usage</small>
+                            <small class="text-muted">{{ system_health.memory_usage or 45 }}%</small>
+                        </div>
+                        <div class="progress progress-octopus">
+                            <div class="progress-bar bg-info" style="width: {{ system_health.memory_usage or 45 }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Database Size -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">Database Size</small>
+                            <small class="text-muted">{{ system_health.db_size or '2.3 MB' }}</small>
+                        </div>
+                        <div class="progress progress-octopus">
+                            <div class="progress-bar bg-success" style="width: 15%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <hr>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('modern_tasks') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i> Create Task
+                        </a>
+                        <a href="{{ url_for('modern_clients') }}" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-people me-1"></i> Manage Clients
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Tasks and Executions -->
+    <div class="row g-4">
+        <!-- Recent Tasks -->
+        <div class="col-lg-6">
+            <div class="octopus-card">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 text-dark">
+                            <i class="bi bi-list-task me-2"></i>
+                            Recent Tasks
+                        </h6>
+                        <a href="{{ url_for('modern_tasks') }}" class="btn btn-sm btn-outline-primary">
+                            View All
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <tbody>
+                                {% for task in recent_tasks %}
+                                <tr class="clickable-row" data-action="view-task" data-id="{{ task.id }}">
+                                    <td style="width: 50px;">
+                                        <div class="execution-icon {{ task.status }}">
+                                            <i class="bi bi-{{ 'check' if task.status == 'success' else 'x' if task.status == 'failed' else 'play' }}"></i>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ task.plugin }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ task.owner }}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <small class="text-muted">{{ task.created_at|datetimeformat }}</small>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-3">
+                                        No recent tasks
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Executions -->
+        <div class="col-lg-6">
+            <div class="octopus-card">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 text-dark">
+                            <i class="bi bi-play-circle me-2"></i>
+                            Recent Executions
+                        </h6>
+                        <a href="{{ url_for('modern_executions') }}" class="btn btn-sm btn-outline-primary">
+                            View All
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <tbody>
+                                {% for execution in recent_executions %}
+                                <tr class="clickable-row" data-action="view-execution" data-id="{{ execution.execution_id }}">
+                                    <td style="width: 50px;">
+                                        <div class="execution-icon {{ execution.status }}">
+                                            <i class="bi bi-{{ 'check' if execution.status == 'success' else 'x' if execution.status == 'failed' else 'play' }}"></i>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ execution.execution_id[:8] }}...</strong>
+                                        <br>
+                                        <small class="text-muted">{{ execution.client }}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <small class="text-muted">{{ execution.created_at|datetimeformat }}</small>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-3">
+                                        No recent executions
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

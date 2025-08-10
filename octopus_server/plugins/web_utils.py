@@ -16,6 +16,63 @@ import urllib.parse
 import json
 from typing import Optional, Dict, Any
 import time
+import logging
+import sys
+import os
+from logging_framework.plugin_logger import get_plugin_logger
+# ============================================================================
+# LOGGING FRAMEWORK INTEGRATION - Choose your preferred method:
+# ============================================================================
+
+# METHOD 1: Direct import (recommended for runtime)
+def setup_logging_method1():
+    """Method 1: Direct import with path manipulation"""
+    server_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, server_dir)
+    from logging_framework import get_plugin_logger
+    return get_plugin_logger("web_utils", log_level="INFO", console_output=True)
+
+# METHOD 2: Copy the logging framework locally (if import issues persist)
+class SimplePluginLogger:
+    """Simplified version of the logging framework for plugins"""
+    def __init__(self, plugin_name: str, log_level: str = "INFO"):
+        self.logger = logging.getLogger(f"plugin.{plugin_name}")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        if not self.logger.handlers:
+            self.logger.addHandler(handler)
+        self.logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
+    
+    def info(self, message: str, **kwargs):
+        self.logger.info(self._format_message(message, **kwargs))
+    
+    def debug(self, message: str, **kwargs):
+        self.logger.debug(self._format_message(message, **kwargs))
+    
+    def warning(self, message: str, **kwargs):
+        self.logger.warning(self._format_message(message, **kwargs))
+    
+    def error(self, message: str, **kwargs):
+        self.logger.error(self._format_message(message, **kwargs))
+    
+    def _format_message(self, message: str, **kwargs) -> str:
+        if kwargs:
+            context = " | ".join(f"{k}={v}" for k, v in kwargs.items())
+            return f"{message} | {context}"
+        return message
+
+# METHOD 3: Initialize logging with fallback
+try:
+    # Try Method 1 first
+    logger = setup_logging_method1()
+    logger.info("✅ Web Utils initialized with logging framework")
+except Exception as e:
+    # Fallback to Method 2
+    logger = SimplePluginLogger("web_utils")
+    logger.warning(f"⚠️ Using fallback logger: {e}")
+    logger.info("✅ Web Utils initialized with simple logger")
+
 
 def fetch_url(url: str, method: str = "GET", timeout: int = 30, follow_redirects: bool = True):
     """
@@ -34,18 +91,29 @@ def fetch_url(url: str, method: str = "GET", timeout: int = 30, follow_redirects
     Returns:
         str: Response content and metadata
     """
+    # 🔥 LOGGING FRAMEWORK USAGE EXAMPLE:
+    logger.info("Fetching URL", url=url, method=method, timeout=timeout)
+    
     try:
         method = method.upper()
         
         if method not in ["GET", "POST", "HEAD"]:
+            logger.error("Unsupported HTTP method", method=method, url=url)
             return f"Error: Unsupported HTTP method '{method}'. Use GET, POST, or HEAD"
         
+        logger.debug("Making HTTP request", url=url, method=method)
         response = requests.request(
             method=method,
             url=url,
             timeout=timeout,
             allow_redirects=follow_redirects
         )
+        
+        # Log successful response
+        logger.info("HTTP request successful", 
+                   url=url, 
+                   status_code=response.status_code, 
+                   content_length=len(response.content))
         
         result = f"URL: {url}\n"
         result += f"Method: {method}\n"
@@ -60,20 +128,26 @@ def fetch_url(url: str, method: str = "GET", timeout: int = 30, follow_redirects
                 try:
                     json_data = response.json()
                     result += f"\nJSON Response:\n{json.dumps(json_data, indent=2)}"
+                    logger.debug("Parsed JSON response", json_keys=list(json_data.keys()) if isinstance(json_data, dict) else "non-dict")
                 except:
                     result += f"\nContent:\n{response.text[:1000]}..."
+                    logger.warning("Failed to parse JSON response", url=url)
             else:
                 result += f"\nContent:\n{response.text[:1000]}..."
                 if len(response.text) > 1000:
                     result += "\n(truncated...)"
+                    logger.debug("Response truncated", original_length=len(response.text))
         
         return result
         
     except requests.exceptions.Timeout:
+        logger.error("Request timeout", url=url, timeout=timeout)
         return f"Error: Request to {url} timed out after {timeout} seconds"
     except requests.exceptions.ConnectionError:
+        logger.error("Connection error", url=url)
         return f"Error: Could not connect to {url}"
     except Exception as e:
+        logger.error("Unexpected error during fetch", url=url, error=str(e))
         return f"Error fetching URL: {str(e)}"
 
 def check_url_status(urls: str, timeout: int = 10):

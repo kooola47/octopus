@@ -52,28 +52,66 @@ def init_db():
                     status TEXT,
                     executor TEXT,
                     result TEXT,
+                    created_at REAL,
                     updated_at REAL
                 )
             ''')
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS executions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    execution_id TEXT UNIQUE,
                     task_id TEXT,
                     client TEXT,
                     status TEXT,
                     result TEXT,
-                    updated_at REAL,
-                    UNIQUE(task_id, client)
+                    created_at REAL,
+                    updated_at REAL
                 )
             ''')
             
             # Create indexes for better performance
             conn.execute('CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks(updated_at)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_executions_execution_id ON executions(execution_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_executions_task_id ON executions(task_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_executions_client ON executions(client)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_executions_created_at ON executions(created_at)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_executions_updated_at ON executions(updated_at)')
             
+            # Migrate existing tables to add missing columns
+            migrate_tasks_table(conn)
+            
+            # Backfill created_at for existing rows if column exists but values are NULL
+            try:
+                conn.execute('UPDATE tasks SET created_at = COALESCE(created_at, updated_at)')
+            except Exception:
+                pass
             conn.commit()
+
+def migrate_tasks_table(conn):
+    """Add missing columns to existing tasks table"""
+    try:
+        # Check if created_at column exists
+        cursor = conn.execute("PRAGMA table_info(tasks)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'created_at' not in columns:
+            print("Adding created_at column to tasks table...")
+            conn.execute('ALTER TABLE tasks ADD COLUMN created_at REAL')
+            # Set current timestamp for existing tasks
+            now_ts = time.time()
+            conn.execute('UPDATE tasks SET created_at = ?', (now_ts,))
+            
+        if 'updated_at' not in columns:
+            print("Adding updated_at column to tasks table...")
+            conn.execute('ALTER TABLE tasks ADD COLUMN updated_at REAL')
+            # Set current timestamp for existing tasks
+            now_ts = time.time()
+            conn.execute('UPDATE tasks SET updated_at = ?', (now_ts,))
+            
+    except Exception as e:
+        print(f"Migration warning: {e}")
+        # Continue execution even if migration fails
 
 @contextmanager
 def get_db_connection():
@@ -100,9 +138,17 @@ def get_tasks():
             columns = [col[0] for col in cur.description]
             task = dict(zip(columns, row))
             # Add executions for all tasks (not just ALL tasks)
-            exec_cur = conn.execute("SELECT id, client, status, result, updated_at FROM executions WHERE task_id=?", (task["id"],))
+            exec_cur = conn.execute("SELECT id, execution_id, client, status, result, created_at, updated_at FROM executions WHERE task_id=? ORDER BY created_at DESC", (task["id"],))
             task["executions"] = [
-                {"id": r[0], "client": r[1], "status": r[2], "result": r[3], "updated_at": r[4]} for r in exec_cur.fetchall()
+                {
+                    "id": r[0], 
+                    "execution_id": r[1], 
+                    "client": r[2], 
+                    "status": r[3], 
+                    "result": r[4], 
+                    "created_at": r[5],
+                    "updated_at": r[6]
+                } for r in exec_cur.fetchall()
             ]
             tasks[task["id"]] = task
         return tasks
@@ -111,9 +157,10 @@ def add_task(task):
     init_db()
     task_id = task.get("id") or str(int(time.time() * 1000))
     with get_db_connection() as conn:
+        now_ts = time.time()
         conn.execute('''
-            INSERT OR REPLACE INTO tasks (id, owner, plugin, action, args, kwargs, type, execution_start_time, execution_end_time, interval, status, executor, result, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO tasks (id, owner, plugin, action, args, kwargs, type, execution_start_time, execution_end_time, interval, status, executor, result, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             task_id,
             task.get("owner"),
@@ -128,7 +175,8 @@ def add_task(task):
             "Created",  # Changed from "pending" to "Created"
             task.get("executor", ""),
             task.get("result", ""),
-            time.time()
+            now_ts,
+            now_ts
         ))
         conn.commit()
     return task_id
@@ -143,6 +191,7 @@ def update_task(task_id, updates):
         columns = [col[0] for col in cur.description]
         task = dict(zip(columns, row))
         task.update(updates)
+        now_ts = time.time()
         conn.execute('''
             UPDATE tasks SET owner=?, plugin=?, action=?, args=?, kwargs=?, type=?, execution_start_time=?, execution_end_time=?, interval=?, status=?, executor=?, result=?, updated_at=?
             WHERE id=?
@@ -159,7 +208,7 @@ def update_task(task_id, updates):
             task.get("status", "Created"),  # Changed from "pending" to "Created"
             task.get("executor", ""),
             task.get("result", ""),
-            time.time(),
+            now_ts,
             task_id
         ))
         # Insert/update executions table only if there's actual result data (not just assignment)
@@ -169,19 +218,18 @@ def update_task(task_id, updates):
         
         # Only create execution record if we have actual execution results
         if client and (result or exec_status in ("success", "failed", "Done")):
+            # Insert a new execution row; if a unique constraint is added later, replace with UPSERT
             conn.execute('''
-                INSERT INTO executions (task_id, client, status, result, updated_at)
-                VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(task_id, client) DO UPDATE SET
-                    status=excluded.status,
-                    result=excluded.result,
-                    updated_at=excluded.updated_at
+                INSERT INTO executions (execution_id, task_id, client, status, result, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', (
+                f"{task_id}_{client}_{int(now_ts*1000)}",
                 task_id,
                 client,
                 exec_status or "completed",
                 str(result or ""),
-                time.time()
+                now_ts,
+                now_ts
             ))
         conn.commit()
     return True
@@ -368,31 +416,34 @@ def get_active_clients(clients, now=None, timeout=30):
 
 def add_execution_result(task_id, client, status, result):
     """
-    Add or update an execution result for a task.
-    This is specifically for recording task execution results.
-    For adhoc tasks, also updates the task status to Done when execution completes.
+    Add execution result for a task with unique execution ID.
+    Each execution gets its own record, allowing multiple executions per task per client.
     """
     import logging
+    import time
     logger = logging.getLogger("octopus_server")
     
     init_db()
+    
+    # Generate unique execution ID
+    execution_id = f"{task_id}_{client}_{int(time.time() * 1000)}"
+    current_time = time.time()
+    
     with sqlite3.connect(DB_FILE) as conn:
-        logger.info(f"Adding execution result: task_id={task_id}, client={client}, status={status}")
+        logger.info(f"Adding execution result: execution_id={execution_id}, task_id={task_id}, client={client}, status={status}")
         
-        # Record the execution result
+        # Always insert a new execution record (no conflict resolution)
         conn.execute('''
-            INSERT INTO executions (task_id, client, status, result, updated_at)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(task_id, client) DO UPDATE SET
-                status=excluded.status,
-                result=excluded.result,
-                updated_at=excluded.updated_at
+            INSERT INTO executions (execution_id, task_id, client, status, result, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ''', (
+            execution_id,
             task_id,
             client,
             status,
             str(result),
-            time.time()
+            current_time,
+            current_time
         ))
         
         # For adhoc tasks, update the task status to Done when execution completes
@@ -405,9 +456,9 @@ def add_execution_result(task_id, client, status, result):
                 task_status = 'Done' if status.lower() in ['success', 'completed', 'done'] else 'Failed'
                 conn.execute('''
                     UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?
-                ''', (task_status, time.time(), task_id))
+                ''', (task_status, current_time, task_id))
                 logger.info(f"Updated adhoc task {task_id} status to {task_status}")
         
         conn.commit()
-        logger.info(f"Execution result added successfully for task {task_id}")
-    return True
+        logger.info(f"Execution result added successfully: execution_id={execution_id}, task_id={task_id}")
+    return execution_id
