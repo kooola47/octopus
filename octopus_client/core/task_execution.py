@@ -11,6 +11,7 @@ import asyncio
 import inspect
 import time
 import requests
+import json
 from typing import Dict, Any, Tuple, Optional
 
 class TaskExecutor:
@@ -222,8 +223,9 @@ class TaskExecutor:
                     # Run sync function normally
                     result = func(*args, **kwargs)
                 
-                exec_status = "success"
-                result_str = str(result) if result is not None else ""
+                # Process plugin response if it's in structured format
+                exec_status, result_str = self._process_plugin_result(result, tid, username)
+                
             else:
                 result_str = f"Action {action} not found"
                 exec_status = "failed"
@@ -233,6 +235,62 @@ class TaskExecutor:
             exec_status = "failed"
         
         return exec_status, result_str
+    
+    def _process_plugin_result(self, result: Any, task_id: str, username: str) -> Tuple[str, str]:
+        """Process plugin result - handle both simple strings and structured responses"""
+        # If result is None or simple string, handle as before
+        if result is None:
+            return "success", ""
+        
+        if isinstance(result, str):
+            # Try to parse as JSON (structured response)
+            try:
+                parsed_result = json.loads(result)
+                if isinstance(parsed_result, dict) and "status_code" in parsed_result:
+                    return self._process_structured_response(parsed_result, task_id, username)
+            except json.JSONDecodeError:
+                pass
+            # Not JSON, treat as simple string result
+            return "success", result
+        
+        # If result is already a dict, check if it's structured response
+        if isinstance(result, dict) and "status_code" in result:
+            return self._process_structured_response(result, task_id, username)
+        
+        # For other types, convert to string
+        return "success", str(result)
+    
+    def _process_structured_response(self, response: Dict[str, Any], task_id: str, username: str) -> Tuple[str, str]:
+        """Process structured plugin response with data operations"""
+        try:
+            # Import the processor
+            from .plugin_response_processor import PluginResponseProcessor
+            
+            # Create processor instance
+            processor = PluginResponseProcessor(logger=self.logger)
+            
+            # Create execution context
+            context = {
+                "task_id": task_id,
+                "client": username,
+                "execution_id": f"{task_id}_{username}_{int(time.time() * 1000)}"
+            }
+            
+            # Process the response
+            status, processed_result = processor.process_response(response, context)
+            
+            # Map status to execution status
+            exec_status = "success" if status == "Completed" else "failed"
+            
+            return exec_status, processed_result
+            
+        except Exception as e:
+            self.logger.error(f"Error processing structured response: {e}")
+            # Fallback to simple processing
+            status_code = response.get("status_code", 200)
+            message = response.get("message", "Task completed")
+            exec_status = "success" if 200 <= status_code < 300 else "failed"
+            return exec_status, message
     
     def post_execution_result(self, tid: str, username: str, exec_status: str, result: str):
         """Post execution result for ALL tasks to the executions table with unique execution ID."""
