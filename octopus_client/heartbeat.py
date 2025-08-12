@@ -4,6 +4,7 @@ import getpass
 import time
 import logging
 import os
+import psutil
 from cache import Cache
 from config import SERVER_URL
 from utils import get_hostname, get_local_ip, get_client_id
@@ -15,13 +16,32 @@ USERNAME = f"{getpass.getuser()}-{os.getpid()}"
 HOSTNAME = get_hostname()
 IP_ADDRESS = get_local_ip()
 
+def get_cpu_usage():
+    """Get current CPU usage percentage"""
+    try:
+        return round(psutil.cpu_percent(interval=1), 1)
+    except Exception as e:
+        logger.warning(f"Failed to get CPU usage: {e}")
+        return 0.0
+
+def get_memory_usage():
+    """Get current memory usage percentage"""
+    try:
+        memory = psutil.virtual_memory()
+        return round(memory.percent, 1)
+    except Exception as e:
+        logger.warning(f"Failed to get memory usage: {e}")
+        return 0.0
+
 def send_heartbeat():
     data = {
         "username": USERNAME,
         "hostname": HOSTNAME,
         "ip": get_local_ip(),
         "login_time": cache.get("login_time") or time.time(),
-        "since_last_heartbeat": time.time() - (cache.get("last_heartbeat") or time.time())
+        "since_last_heartbeat": time.time() - (cache.get("last_heartbeat") or time.time()),
+        "cpu_usage": get_cpu_usage(),
+        "memory_usage": get_memory_usage()
     }
     try:
         requests.post(f"{SERVER_URL}/heartbeat", json=data, timeout=5)

@@ -622,17 +622,29 @@ def get_clients_paginated(page=1, page_size=25, search='', status_filter=''):
             
             # Try to get client data from heartbeats table
             try:
-                # Get unique clients with their latest heartbeat
+                # Get unique clients with their latest heartbeat and system stats
                 base_query = """
                     SELECT 
-                        username as name,
-                        hostname,
-                        ip_address,
-                        MAX(timestamp) as last_heartbeat,
-                        COUNT(*) as heartbeat_count
-                    FROM heartbeats 
-                    WHERE username IS NOT NULL
-                    GROUP BY username, hostname, ip_address
+                        h1.username as name,
+                        h1.hostname,
+                        h1.ip_address,
+                        h1.timestamp as last_heartbeat,
+                        h1.cpu_usage,
+                        h1.memory_usage,
+                        COUNT(h2.id) as heartbeat_count
+                    FROM heartbeats h1
+                    LEFT JOIN heartbeats h2 ON h1.username = h2.username 
+                        AND h1.hostname = h2.hostname 
+                        AND h1.ip_address = h2.ip_address
+                    WHERE h1.username IS NOT NULL
+                        AND h1.timestamp = (
+                            SELECT MAX(timestamp) 
+                            FROM heartbeats h3 
+                            WHERE h3.username = h1.username 
+                                AND h3.hostname = h1.hostname 
+                                AND h3.ip_address = h1.ip_address
+                        )
+                    GROUP BY h1.username, h1.hostname, h1.ip_address
                 """
                 
                 cursor.execute(base_query)
@@ -671,8 +683,8 @@ def get_clients_paginated(page=1, page_size=25, search='', status_filter=''):
                         'last_heartbeat': row['last_heartbeat'],
                         'tasks_executed': tasks_executed,
                         'success_rate': round(success_rate, 1),
-                        'cpu_usage': 25 + (i % 30),  # Mock data for now
-                        'memory_usage': 30 + (i % 40),  # Mock data for now
+                        'cpu_usage': round(row['cpu_usage'] or 0.0, 1),  # Real CPU usage from heartbeat
+                        'memory_usage': round(row['memory_usage'] or 0.0, 1),  # Real memory usage from heartbeat
                         'version': 'v2.0.0'
                     }
                     all_clients.append(client)

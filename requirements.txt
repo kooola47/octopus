@@ -4,6 +4,7 @@ requests>=2.31.0
 sqlite-web>=0.4.0
 PyYAML>=6.0
 spacy>=3.6.0
+psutil>=5.9.0
 
 # Development dependencies (uncomment as needed)
 # pytest>=7.0.0

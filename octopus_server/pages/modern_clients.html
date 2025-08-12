@@ -94,18 +94,18 @@
 <!-- Clients Grid -->
 <div class="row">
     {% if clients %}
-        {% for client_id, client in clients.items() %}
+        {% for client in clients %}
         <div class="col-lg-6 col-xl-4 mb-4 client-item">
-            <div class="card h-100 {% if client.is_active %}border-success{% else %}border-secondary{% endif %}">
+            <div class="card h-100 {% if client.status == 'online' %}border-success{% elif client.status == 'idle' %}border-warning{% else %}border-secondary{% endif %}">
                 <div class="card-header bg-transparent border-0 pb-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center">
-                            <div class="{% if client.is_active %}bg-success{% else %}bg-secondary{% endif %} rounded-circle me-3" 
+                            <div class="{% if client.status == 'online' %}bg-success{% elif client.status == 'idle' %}bg-warning{% else %}bg-secondary{% endif %} rounded-circle me-3" 
                                  style="width: 12px; height: 12px;"></div>
-                            <h6 class="card-title mb-0">{{ client.hostname or client_id }}</h6>
+                            <h6 class="card-title mb-0">{{ client.hostname or client.name }}</h6>
                         </div>
-                        <span class="badge {% if client.is_active %}bg-success{% else %}bg-secondary{% endif %}">
-                            {% if client.is_active %}Online{% else %}Offline{% endif %}
+                        <span class="badge {% if client.status == 'online' %}bg-success{% elif client.status == 'idle' %}bg-warning{% else %}bg-secondary{% endif %}">
+                            {{ client.status.title() if client.status else 'Unknown' }}
                         </span>
                     </div>
                 </div>
@@ -114,13 +114,13 @@
                         <div class="col-6">
                             <div class="bg-light rounded p-2 text-center">
                                 <small class="text-muted d-block">Username</small>
-                                <strong>{{ client.username or 'Unknown' }}</strong>
+                                <strong>{{ client.name or 'Unknown' }}</strong>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="bg-light rounded p-2 text-center">
                                 <small class="text-muted d-block">IP Address</small>
-                                <strong>{{ client.ip or 'N/A' }}</strong>
+                                <strong>{{ client.ip_address or 'N/A' }}</strong>
                             </div>
                         </div>
                     </div>
@@ -128,7 +128,7 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <small class="text-muted">Last Heartbeat</small>
-                            <small class="{% if client.is_active %}text-success{% else %}text-muted{% endif %}">
+                            <small class="{% if client.status == 'online' %}text-success{% else %}text-muted{% endif %}">
                                 {% if client.last_heartbeat %}
                                     {{ moment(client.last_heartbeat).fromNow() if moment else 'Recently' }}
                                 {% else %}
@@ -137,68 +137,56 @@
                             </small>
                         </div>
                         
-                        {% if client.login_time %}
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <small class="text-muted">Login Time</small>
+                            <small class="text-muted">Tasks Executed</small>
                             <small class="text-muted">
-                                {{ moment(client.login_time).format('MMM DD, HH:mm') if moment else 'Unknown' }}
+                                {{ client.tasks_executed or 0 }}
                             </small>
                         </div>
-                        {% endif %}
                         
-                        {% if client.since_last_heartbeat %}
                         <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Uptime</small>
+                            <small class="text-muted">Success Rate</small>
                             <small class="text-muted">
-                                {{ (client.since_last_heartbeat / 3600) | round(1) }}h
+                                {{ client.success_rate or 0 }}%
                             </small>
                         </div>
-                        {% endif %}
                     </div>
                     
-                    <!-- Task Statistics -->
-                    {% if client.task_stats %}
+                    <!-- System Statistics -->
                     <div class="mb-3">
-                        <small class="text-muted d-block mb-2">Task Statistics</small>
+                        <small class="text-muted d-block mb-2">System Statistics</small>
                         <div class="row g-1">
-                            <div class="col-4 text-center">
-                                <div class="bg-primary bg-opacity-10 rounded p-1">
-                                    <small class="text-primary fw-bold">{{ client.task_stats.total or 0 }}</small>
-                                    <small class="d-block text-muted">Total</small>
+                            <div class="col-6 text-center">
+                                <div class="bg-info bg-opacity-10 rounded p-1">
+                                    <small class="text-info fw-bold">{{ client.cpu_usage or 0 }}%</small>
+                                    <small class="d-block text-muted">CPU</small>
                                 </div>
                             </div>
-                            <div class="col-4 text-center">
-                                <div class="bg-success bg-opacity-10 rounded p-1">
-                                    <small class="text-success fw-bold">{{ client.task_stats.completed or 0 }}</small>
-                                    <small class="d-block text-muted">Done</small>
-                                </div>
-                            </div>
-                            <div class="col-4 text-center">
-                                <div class="bg-danger bg-opacity-10 rounded p-1">
-                                    <small class="text-danger fw-bold">{{ client.task_stats.failed or 0 }}</small>
-                                    <small class="d-block text-muted">Failed</small>
+                            <div class="col-6 text-center">
+                                <div class="bg-warning bg-opacity-10 rounded p-1">
+                                    <small class="text-warning fw-bold">{{ client.memory_usage or 0 }}%</small>
+                                    <small class="d-block text-muted">Memory</small>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    {% endif %}
                 </div>
                 <div class="card-footer bg-transparent border-0 pt-0">
                     <div class="d-grid gap-2">
-                        {% if client.is_active %}
-                        <button class="btn btn-primary btn-sm" onclick="assignTask('{{ client_id }}')">
+                        {% if client.status == 'online' %}
+                        <button class="btn btn-primary btn-sm" onclick="assignTask('{{ client.id }}')">
                             <i class="bi bi-send me-1"></i> Assign Task
                         </button>
                         {% endif %}
                         <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-info" onclick="viewClient('{{ client_id }}')" title="View Details">
+                            <button class="btn btn-outline-info" onclick="viewClient('{{ client.id }}')" title="View Details">
                                 <i class="bi bi-eye"></i>
                             </button>
-                            <button class="btn btn-outline-secondary" onclick="pingClient('{{ client_id }}')" title="Ping Client">
+                            <button class="btn btn-outline-secondary" onclick="pingClient('{{ client.id }}')" title="Ping Client">
                                 <i class="bi bi-wifi"></i>
                             </button>
-                            {% if not client.is_active %}
-                            <button class="btn btn-outline-danger" onclick="removeClient('{{ client_id }}')" title="Remove">
+                            {% if client.status != 'online' %}
+                            <button class="btn btn-outline-danger" onclick="removeClient('{{ client.id }}')" title="Remove">
                                 <i class="bi bi-trash"></i>
                             </button>
                             {% endif %}
@@ -246,8 +234,8 @@
                         <label class="form-label">Select Client</label>
                         <select class="form-select" name="client_id" required>
                             <option value="">Choose a client...</option>
-                            {% for client_id, client in clients.items() if client.is_active %}
-                            <option value="{{ client_id }}">{{ client.hostname or client_id }} ({{ client.username }})</option>
+                            {% for client in clients if client.status == 'online' %}
+                            <option value="{{ client.id }}">{{ client.hostname or client.name }} ({{ client.name }})</option>
                             {% endfor %}
                         </select>
                     </div>
