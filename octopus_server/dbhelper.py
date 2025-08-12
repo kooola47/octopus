@@ -595,7 +595,7 @@ def add_execution_result(task_id, client, status, result):
             if task_row:
                 task_type, end_time = task_row
                 
-                if task_type == 'Adhoc':
+                if task_type.lower() == 'adhoc':
                     # Update task status to Done for completed adhoc tasks
                     task_status = 'Done' if status.lower() in ['success', 'completed', 'done'] else 'Failed'
                     conn.execute('''

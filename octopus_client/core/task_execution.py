@@ -241,9 +241,8 @@ class TaskExecutor:
             execution_id = f"{tid}_{username}_{int(time.time() * 1000)}"
             
             response = requests.post(
-                f"{self.server_url}/dashboard",
+                f"{self.server_url}/api/execution-results",
                 data={
-                    "add_execution": "1",
                     "execution_id": execution_id,
                     "task_id": tid,
                     "client": username,

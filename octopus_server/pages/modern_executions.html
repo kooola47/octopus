@@ -46,6 +46,7 @@
         <div class="d-flex gap-2">
             <select class="form-select" id="statusFilter">
                 <option value="">All Status</option>
+                <option value="success">Success</option>
                 <option value="completed">Completed</option>
                 <option value="running">Running</option>
                 <option value="failed">Failed</option>
@@ -117,7 +118,7 @@
         <div class="d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">
                 <i class="bi bi-list me-2"></i>
-                Execution History ({{ executions|length if executions else 0 }})
+                Execution History ({{ total_executions or 0 }} total)
             </h5>
             <div class="d-flex gap-2">
                 <div class="btn-group btn-group-sm">
@@ -176,9 +177,9 @@
                             </span>
                         </td>
                         <td>
-                            <span class="badge {% if execution.status == 'completed' or execution.status == 'Done' %}bg-success{% elif execution.status == 'failed' %}bg-danger{% elif execution.status == 'running' %}bg-primary{% else %}bg-warning{% endif %}">
-                                <i class="bi bi-{% if execution.status == 'completed' or execution.status == 'Done' %}check-circle{% elif execution.status == 'failed' %}x-circle{% elif execution.status == 'running' %}play-circle{% else %}clock{% endif %} me-1"></i>
-                                {% if execution.status == 'Done' %}Completed{% else %}{{ execution.status|title or 'Pending' }}{% endif %}
+                            <span class="badge {% if execution.status == 'completed' or execution.status == 'Done' or execution.status == 'success' %}bg-success{% elif execution.status == 'failed' %}bg-danger{% elif execution.status == 'running' %}bg-primary{% else %}bg-warning{% endif %}">
+                                <i class="bi bi-{% if execution.status == 'completed' or execution.status == 'Done' or execution.status == 'success' %}check-circle{% elif execution.status == 'failed' %}x-circle{% elif execution.status == 'running' %}play-circle{% else %}clock{% endif %} me-1"></i>
+                                {% if execution.status == 'Done' %}Completed{% elif execution.status == 'success' %}Success{% else %}{{ execution.status|title or 'Pending' }}{% endif %}
                             </span>
                         </td>
                         <td>
@@ -228,6 +229,74 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- Pagination Controls -->
+        {% if total_pages > 1 %}
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="text-muted">
+                Showing {{ ((current_page - 1) * page_size + 1) }} to {{ current_page * page_size if current_page * page_size <= total_executions else total_executions }} of {{ total_executions }} executions
+            </div>
+            <nav aria-label="Execution pagination">
+                <ul class="pagination mb-0">
+                    {% if current_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ current_page - 1 }}&page_size={{ page_size }}{% if request.args.get('search') %}&search={{ request.args.get('search') }}{% endif %}{% if request.args.get('status') %}&status={{ request.args.get('status') }}{% endif %}{% if request.args.get('client') %}&client={{ request.args.get('client') }}{% endif %}{% if request.args.get('time_range') %}&time_range={{ request.args.get('time_range') }}{% endif %}">
+                            <i class="bi bi-chevron-left"></i> Previous
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="bi bi-chevron-left"></i> Previous</span>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in range(1, total_pages + 1) %}
+                        {% if page_num == current_page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% elif page_num <= 3 or page_num > total_pages - 3 or (page_num >= current_page - 1 and page_num <= current_page + 1) %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_num }}&page_size={{ page_size }}{% if request.args.get('search') %}&search={{ request.args.get('search') }}{% endif %}{% if request.args.get('status') %}&status={{ request.args.get('status') }}{% endif %}{% if request.args.get('client') %}&client={{ request.args.get('client') }}{% endif %}{% if request.args.get('time_range') %}&time_range={{ request.args.get('time_range') }}{% endif %}">{{ page_num }}</a>
+                        </li>
+                        {% elif page_num == 4 and current_page > 5 %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% elif page_num == total_pages - 3 and current_page < total_pages - 4 %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if current_page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ current_page + 1 }}&page_size={{ page_size }}{% if request.args.get('search') %}&search={{ request.args.get('search') }}{% endif %}{% if request.args.get('status') %}&status={{ request.args.get('status') }}{% endif %}{% if request.args.get('client') %}&client={{ request.args.get('client') }}{% endif %}{% if request.args.get('time_range') %}&time_range={{ request.args.get('time_range') }}{% endif %}">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Next <i class="bi bi-chevron-right"></i></span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        
+        <!-- Page Size Selector -->
+        <div class="text-center mt-3">
+            <small class="text-muted">Show: </small>
+            <select class="form-select form-select-sm d-inline-block" style="width: auto;" onchange="changePageSize(this.value)">
+                <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+            </select>
+            <small class="text-muted"> executions per page</small>
+        </div>
+        {% endif %}
         
         <!-- Timeline View (Hidden by default) -->
         <div id="timelineView" class="p-4" style="display: none;">
@@ -479,6 +548,13 @@ Errors: 0</code></pre>
     
     function refreshExecutions() {
         location.reload();
+    }
+    
+    function changePageSize(pageSize) {
+        const url = new URL(window.location);
+        url.searchParams.set('page_size', pageSize);
+        url.searchParams.set('page', '1'); // Reset to first page when changing page size
+        window.location.href = url.toString();
     }
     
     // Initialize filters on page load

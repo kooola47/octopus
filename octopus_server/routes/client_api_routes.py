@@ -209,3 +209,42 @@ def register_client_api_routes(app, cache, logger):
                 "has_prev": page > 1
             }
         })
+
+    @app.route("/api/execution-results", methods=["POST"])
+    def submit_execution_result():
+        """
+        Unauthenticated endpoint for clients to submit execution results.
+        This endpoint specifically handles execution result submissions without requiring web session authentication.
+        """
+        try:
+            # Handle both form data and JSON data
+            if request.is_json:
+                data = request.json or {}
+            else:
+                data = request.form.to_dict() or {}
+            
+            logger.info(f"Received execution result submission: {data}")
+            
+            # Extract required fields
+            task_id = data.get("task_id")
+            client = data.get("client") 
+            status = data.get("exec_status") or data.get("status", "completed")
+            result = data.get("exec_result") or data.get("result", "")
+            
+            # Validate required fields
+            if not task_id or not client:
+                logger.warning(f"Missing required fields in execution submission: task_id={task_id}, client={client}")
+                return jsonify({"error": "Missing required fields: task_id and client"}), 400
+            
+            # Record the execution result
+            logger.info(f"Recording execution result: task_id={task_id}, client={client}, status={status}")
+            add_execution_result(task_id, client, status, result)
+            
+            logger.info(f"Successfully recorded execution result for task {task_id} from client {client}")
+            return jsonify({"success": True, "message": "Execution result recorded successfully"})
+            
+        except Exception as e:
+            logger.error(f"Error processing execution result submission: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({"error": "Failed to record execution result"}), 500

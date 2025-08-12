@@ -16,7 +16,7 @@
                 <td>{{ execution.task_id[:8] }}...</td>
                 <td>{{ execution.client }}</td>
                 <td>
-                    {% if execution.status == 'Done' %}
+                    {% if execution.status == 'Done' or execution.status == 'success' or execution.status == 'completed' %}
                         <span class="badge bg-success">{{ execution.status }}</span>
                     {% elif execution.status == 'failed' %}
                         <span class="badge bg-danger">{{ execution.status }}</span>

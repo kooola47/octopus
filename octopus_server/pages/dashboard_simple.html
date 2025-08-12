@@ -107,8 +107,8 @@
                                     <td>{{ execution.task_name or execution.task_id }}</td>
                                     <td>{{ execution.client_id }}</td>
                                     <td>
-                                        <span class="badge {% if execution.status == 'completed' %}bg-success{% elif execution.status == 'failed' %}bg-danger{% elif execution.status == 'running' %}bg-primary{% else %}bg-warning{% endif %}">
-                                            {{ execution.status|title }}
+                                        <span class="badge {% if execution.status == 'completed' or execution.status == 'success' or execution.status == 'Done' %}bg-success{% elif execution.status == 'failed' %}bg-danger{% elif execution.status == 'running' %}bg-primary{% else %}bg-warning{% endif %}">
+                                            {% if execution.status == 'success' %}Success{% else %}{{ execution.status|title }}{% endif %}
                                         </span>
                                     </td>
                                     <td>{{ execution.started_at.strftime('%m/%d %H:%M') if execution.started_at else 'N/A' }}</td>

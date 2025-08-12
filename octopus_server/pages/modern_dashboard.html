@@ -138,8 +138,8 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge {% if execution.status == 'completed' or execution.status == 'Done' %}bg-success{% elif execution.status == 'failed' %}bg-danger{% elif execution.status == 'running' %}bg-primary{% else %}bg-warning{% endif %}">
-                                            {% if execution.status == 'Done' %}Completed{% else %}{{ execution.status|title }}{% endif %}
+                                        <span class="badge {% if execution.status == 'completed' or execution.status == 'Done' or execution.status == 'success' %}bg-success{% elif execution.status == 'failed' %}bg-danger{% elif execution.status == 'running' %}bg-primary{% else %}bg-warning{% endif %}">
+                                            {% if execution.status == 'Done' %}Completed{% elif execution.status == 'success' %}Success{% else %}{{ execution.status|title }}{% endif %}
                                         </span>
                                     </td>
                                     <td>
