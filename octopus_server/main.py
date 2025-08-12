@@ -53,7 +53,7 @@ def datetimeformat(value):
         # If it's a timestamp (float), convert to datetime
         if isinstance(value, (int, float)):
             dt = datetime.fromtimestamp(value)
-            return dt.strftime('%Y-%m-%d %H:%M:%S')
+            return dt.strftime('%m/%d/%Y %H:%M')
         else:
             return str(value)
     except:
@@ -76,6 +76,20 @@ def seconds_to_human_filter(seconds):
     except Exception:
         return str(seconds)
 
+@app.template_filter('dateformat')
+def dateformat(value):
+    if value is None:
+        return 'Unknown'
+    try:
+        # If it's a timestamp (float), convert to datetime
+        if isinstance(value, (int, float)):
+            dt = datetime.fromtimestamp(value)
+            return dt.strftime('%m/%d/%Y')
+        else:
+            return str(value)
+    except:
+        return str(value)
+
 # Setup logs folder and logging
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 logging.basicConfig(
@@ -92,7 +106,7 @@ werkzeug_logger = logging.getLogger('werkzeug')
 werkzeug_logger.disabled = True
 
 # Create custom HTTP request logger
-http_logger = logging.getLogger("http_requests")
+http_logger = logging.getLogger("octopus_server.http")
 
 # Custom middleware to log HTTP requests in standardized format
 def log_request_info():

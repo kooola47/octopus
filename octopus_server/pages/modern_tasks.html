@@ -127,7 +127,7 @@
                         <th>Executor</th>
                         <th>Plugin</th>
                         <th>Status</th>
-                        <th>Created</th>
+                        <th width="140">Created</th>
                         <th width="120">Actions</th>
                     </tr>
                 </thead>
@@ -182,16 +182,16 @@
                                 {% if task.status == 'Done' %}Completed{% else %}{{ task.status|title or 'Pending' }}{% endif %}
                             </span>
                         </td>
-                        <td>
+                        <td class="text-nowrap">
                             <small class="text-muted">
                                 {% if task.created_at %}
-                                    {{ task.created_at.strftime('%m/%d/%Y') if task.created_at.strftime else 'Recently' }}
+                                    {{ task.created_at | datetimeformat if task.created_at else 'Recently' }}
                                 {% else %}
                                     N/A
                                 {% endif %}
                             </small>
                         </td>
-                        <td>
+                        <td class="text-nowrap">
                             <div class="btn-group btn-group-sm">
                                 <button class="btn btn-outline-primary" title="View Details" onclick="viewTask('{{ task.id }}')">
                                     <i class="bi bi-eye"></i>
