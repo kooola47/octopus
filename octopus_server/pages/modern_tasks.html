@@ -234,7 +234,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Plugin</label>
-                                <select class="form-select" name="plugin" required>
+                                <select class="form-select" name="plugin" id="pluginSelect" required onchange="onPluginChange()">
                                     <option value="">Select Plugin</option>
                                     {% for plugin in plugin_names %}
                                     <option value="{{ plugin }}">{{ plugin }}</option>
@@ -244,8 +244,35 @@
                         </div>
                     </div>
                     
-                    <div class="row">
+                    <div class="row" id="functionRow" style="display: none;">
                         <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Function</label>
+                                <select class="form-select" name="function" id="functionSelect" onchange="onFunctionChange()">
+                                    <option value="">Select Function</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Owner</label>
+                                <select class="form-select" name="owner">
+                                    <option value="Anyone">Anyone</option>
+                                    {% for owner in owner_options %}
+                                    <option value="{{ owner }}">{{ owner }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="parametersContainer" style="display: none;">
+                        <h6 class="mb-3">Function Parameters</h6>
+                        <div id="dynamicParameters"></div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6" id="ownerColumnFallback" style="display: none;">
                             <div class="mb-3">
                                 <label class="form-label">Owner</label>
                                 <select class="form-select" name="owner">
@@ -261,26 +288,6 @@
                     <div class="mb-3">
                         <label class="form-label">Description</label>
                         <textarea class="form-control" name="description" rows="3"></textarea>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Action</label>
-                        <input type="text" class="form-control" name="action" value="main" required>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Arguments (JSON)</label>
-                                <textarea class="form-control" name="args" rows="2">[]</textarea>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Keyword Arguments (JSON)</label>
-                                <textarea class="form-control" name="kwargs" rows="2">{}</textarea>
-                            </div>
-                        </div>
                     </div>
                 </form>
             </div>
@@ -367,21 +374,50 @@
     function createTask() {
         const form = document.getElementById('createTaskForm');
         const formData = new FormData(form);
+        const functionSelect = document.getElementById('functionSelect');
         
         // Convert form data to JSON
         const taskData = {};
+        const kwargs = {};
+        
+        // Set the action to the selected function name
+        if (functionSelect && functionSelect.value) {
+            taskData.action = functionSelect.value;
+        } else {
+            taskData.action = 'main'; // fallback
+        }
+        
         for (let [key, value] of formData.entries()) {
-            if (key === 'args' || key === 'kwargs') {
-                try {
-                    taskData[key] = JSON.parse(value);
-                } catch (e) {
-                    alert(`Invalid JSON in ${key}`);
-                    return;
+            if (key.startsWith('param_')) {
+                // Handle dynamic parameters
+                const paramName = key.substring(6); // Remove 'param_' prefix
+                
+                // Try to parse JSON values for complex types
+                if (value.startsWith('[') || value.startsWith('{')) {
+                    try {
+                        kwargs[paramName] = JSON.parse(value);
+                    } catch (e) {
+                        kwargs[paramName] = value;
+                    }
+                } else if (value === 'true' || value === 'false') {
+                    kwargs[paramName] = value === 'true';
+                } else if (!isNaN(value) && value !== '') {
+                    kwargs[paramName] = parseFloat(value);
+                } else {
+                    kwargs[paramName] = value;
                 }
             } else {
                 taskData[key] = value;
             }
         }
+        
+        // Add collected kwargs to taskData if any parameters were provided
+        if (Object.keys(kwargs).length > 0) {
+            taskData.kwargs = kwargs;
+        }
+        
+        // Set default empty args
+        taskData.args = [];
         
         // Implementation for creating task
         console.log('Create task:', taskData);
@@ -390,6 +426,166 @@
         const modal = bootstrap.Modal.getInstance(document.getElementById('createTaskModal'));
         modal.hide();
         refreshTasks();
+    }
+    
+    // Dynamic plugin and function loading
+    function onPluginChange() {
+        const pluginSelect = document.getElementById('pluginSelect');
+        const functionRow = document.getElementById('functionRow');
+        const functionSelect = document.getElementById('functionSelect');
+        const parametersContainer = document.getElementById('parametersContainer');
+        const ownerFallback = document.getElementById('ownerColumnFallback');
+        
+        if (pluginSelect.value) {
+            // Show function selection
+            functionRow.style.display = 'block';
+            ownerFallback.style.display = 'none';
+            
+            // Load functions for the selected plugin
+            fetch(`/api/plugins/${pluginSelect.value}/functions`)
+                .then(response => response.json())
+                .then(data => {
+                    functionSelect.innerHTML = '<option value="">Select Function</option>';
+                    
+                    if (data.functions) {
+                        // Filter out functions starting with "_" (private functions)
+                        const publicFunctions = data.functions.filter(func => !func.name.startsWith('_'));
+                        
+                        publicFunctions.forEach(func => {
+                            // Add to function dropdown
+                            const functionOption = document.createElement('option');
+                            functionOption.value = func.name;
+                            functionOption.textContent = `${func.name} (${func.parameter_count} params)`;
+                            functionOption.title = func.description;
+                            functionSelect.appendChild(functionOption);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading functions:', error);
+                    showToast('Error loading plugin functions', 'danger');
+                });
+        } else {
+            // Hide function selection and show owner fallback
+            functionRow.style.display = 'none';
+            parametersContainer.style.display = 'none';
+            ownerFallback.style.display = 'block';
+        }
+    }
+    
+    function onFunctionChange() {
+        const functionSelect = document.getElementById('functionSelect');
+        
+        if (functionSelect.value) {
+            loadFunctionParameters(functionSelect.value);
+        } else {
+            document.getElementById('parametersContainer').style.display = 'none';
+        }
+    }
+    
+    function loadFunctionParameters(functionName) {
+        const pluginSelect = document.getElementById('pluginSelect');
+        const parametersContainer = document.getElementById('parametersContainer');
+        const dynamicParameters = document.getElementById('dynamicParameters');
+        
+        if (functionName && pluginSelect.value) {
+            // Load parameters for the selected function
+            fetch(`/api/plugins/${pluginSelect.value}/functions/${functionName}/parameters`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.parameters && data.parameters.length > 0) {
+                        parametersContainer.style.display = 'block';
+                        dynamicParameters.innerHTML = '';
+                        
+                        data.parameters.forEach(param => {
+                            const paramDiv = createParameterInput(param);
+                            dynamicParameters.appendChild(paramDiv);
+                        });
+                    } else {
+                        parametersContainer.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading parameters:', error);
+                    showToast('Error loading function parameters', 'danger');
+                });
+        } else {
+            parametersContainer.style.display = 'none';
+        }
+    }
+    
+    function createParameterInput(param) {
+        const div = document.createElement('div');
+        div.className = 'mb-3';
+        
+        const label = document.createElement('label');
+        label.className = 'form-label';
+        label.textContent = `${param.name} (${param.type})${param.required ? ' *' : ''}`;
+        
+        let input;
+        if (param.type === 'bool') {
+            input = document.createElement('select');
+            input.className = 'form-select';
+            input.innerHTML = `
+                <option value="">Select...</option>
+                <option value="true">True</option>
+                <option value="false">False</option>
+            `;
+        } else if (param.type.includes('List') || param.type.includes('Dict')) {
+            input = document.createElement('textarea');
+            input.className = 'form-control';
+            input.rows = 2;
+            input.placeholder = param.type.includes('List') ? '["item1", "item2"]' : '{"key": "value"}';
+        } else {
+            input = document.createElement('input');
+            input.className = 'form-control';
+            input.type = param.type === 'int' || param.type === 'float' ? 'number' : 'text';
+            if (param.type === 'float') {
+                input.step = 'any';
+            }
+        }
+        
+        input.name = `param_${param.name}`;
+        input.required = param.required;
+        
+        if (param.default !== null && param.default !== undefined) {
+            input.value = param.default;
+            input.placeholder = `Default: ${param.default}`;
+        }
+        
+        if (param.description) {
+            input.title = param.description;
+        }
+        
+        div.appendChild(label);
+        div.appendChild(input);
+        
+        return div;
+    }
+    
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        const bgClass = type === 'success' ? 'bg-success' : type === 'danger' ? 'bg-danger' : 'bg-info';
+        const icon = type === 'success' ? 'bi-check-circle' : type === 'danger' ? 'bi-exclamation-triangle' : 'bi-info-circle';
+        
+        toast.className = `toast align-items-center text-white ${bgClass} border-0`;
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi ${icon} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
+        });
     }
     
     function refreshTasks() {

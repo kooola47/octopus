@@ -114,6 +114,17 @@ logger = logging.getLogger("octopus_server")
 from dbhelper import init_db
 init_db()
 
+# Initialize plugin cache system
+from plugin_cache_manager import initialize_plugin_cache
+try:
+    plugin_cache = initialize_plugin_cache(
+        plugins_folder=PLUGINS_FOLDER,
+        start_background_refresh=True
+    )
+    logger.info("Plugin cache system initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize plugin cache: {e}")
+
 # Register routes from other modules
 from pluginhelper import register_plugin_routes
 from heartbeat import register_heartbeat_routes

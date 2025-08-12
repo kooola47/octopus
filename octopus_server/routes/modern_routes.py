@@ -9,8 +9,11 @@ import time
 import math
 import sqlite3
 import logging
+import os
 from flask import request, render_template, url_for, jsonify, Response
 from dbhelper import get_db_file, get_tasks, get_active_clients
+from plugin_discovery import PluginDiscovery
+from plugin_cache_manager import get_plugin_cache_manager
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -493,6 +496,92 @@ def register_modern_routes(app, cache, logger):
                 
         except Exception as e:
             logger.error(f"Error downloading execution result: {e}")
+            return {"error": "Internal server error"}, 500
+
+    # Plugin Discovery API Endpoints
+    @app.route("/api/plugins", methods=["GET"])
+    def api_get_plugins():
+        """Get all available plugins with their metadata from cache"""
+        try:
+            cache_manager = get_plugin_cache_manager()
+            formatted_plugins = cache_manager.get_formatted_plugins_for_ui()
+            
+            return jsonify({
+                "plugins": formatted_plugins,
+                "cache_stats": cache_manager.get_cache_stats()
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting plugins: {e}")
+            return {"error": "Internal server error"}, 500
+
+    @app.route("/api/plugins/<plugin_name>/functions", methods=["GET"])
+    def api_get_plugin_functions(plugin_name):
+        """Get functions for a specific plugin from cache"""
+        try:
+            cache_manager = get_plugin_cache_manager()
+            functions = cache_manager.get_plugin_function_details(plugin_name)
+            
+            if not functions:
+                return {"error": "Plugin not found or has no functions"}, 404
+            
+            return jsonify({
+                "plugin_name": plugin_name,
+                "functions": functions
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting plugin functions: {e}")
+            return {"error": "Internal server error"}, 500
+
+    @app.route("/api/plugins/<plugin_name>/functions/<function_name>/parameters", methods=["GET"])
+    def api_get_function_parameters(plugin_name, function_name):
+        """Get parameters for a specific plugin function from cache"""
+        try:
+            cache_manager = get_plugin_cache_manager()
+            parameters = cache_manager.get_function_parameters(plugin_name, function_name)
+            
+            if not parameters:
+                return {"error": "Function not found or has no parameters"}, 404
+                
+            return jsonify({
+                "plugin_name": plugin_name,
+                "function_name": function_name,
+                "parameters": parameters
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting function parameters: {e}")
+            return {"error": "Internal server error"}, 500
+
+    @app.route("/api/plugins/cache/refresh", methods=["POST"])
+    def api_refresh_plugin_cache():
+        """Manually refresh the plugin cache"""
+        try:
+            cache_manager = get_plugin_cache_manager()
+            success = cache_manager.refresh_cache()
+            
+            if success:
+                return jsonify({
+                    "message": "Plugin cache refreshed successfully",
+                    "cache_stats": cache_manager.get_cache_stats()
+                })
+            else:
+                return {"error": "Failed to refresh plugin cache"}, 500
+                
+        except Exception as e:
+            logger.error(f"Error refreshing plugin cache: {e}")
+            return {"error": "Internal server error"}, 500
+
+    @app.route("/api/plugins/cache/stats", methods=["GET"])
+    def api_get_plugin_cache_stats():
+        """Get plugin cache statistics"""
+        try:
+            cache_manager = get_plugin_cache_manager()
+            return jsonify(cache_manager.get_cache_stats())
+            
+        except Exception as e:
+            logger.error(f"Error getting cache stats: {e}")
             return {"error": "Internal server error"}, 500
 
 # Helper functions for data retrieval
@@ -1097,18 +1186,29 @@ def get_available_clients():
         return []
 
 def get_available_plugins():
-    """Get list of available plugins for task creation"""
+    """Get list of available plugins for task creation from cache"""
     try:
+        # Get plugins from cache first
+        cache_manager = get_plugin_cache_manager()
+        plugin_names = cache_manager.get_plugin_names()
+        
+        if plugin_names:
+            return plugin_names
+        
+        # Fallback to database if cache is empty
         with sqlite3.connect(get_db_file()) as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT DISTINCT plugin FROM tasks WHERE plugin IS NOT NULL ORDER BY plugin")
             plugins = [row[0] for row in cursor.fetchall()]
-            # If no plugins in tasks, return some default plugin names
-            if not plugins:
-                plugins = ['web_utils', 'file_utils', 'system_utils', 'email_utils']
-            return plugins
-    except Exception:
-        return ['web_utils', 'file_utils', 'system_utils', 'email_utils']
+            if plugins:
+                return plugins
+                
+        # Final fallback to hardcoded list
+        return ['web_utils', 'file_operations', 'system_info', 'notifications']
+        
+    except Exception as e:
+        logger.error(f"Error getting available plugins: {e}")
+        return ['web_utils', 'file_operations', 'system_info', 'notifications']
 
 def get_all_clients_dict():
     """Get all clients as a dictionary for template use"""
