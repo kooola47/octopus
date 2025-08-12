@@ -40,12 +40,6 @@
                 <option value="completed">Completed</option>
                 <option value="failed">Failed</option>
             </select>
-            <select class="form-select" id="priorityFilter">
-                <option value="">All Priorities</option>
-                <option value="P1">High (P1)</option>
-                <option value="P2">Medium (P2)</option>
-                <option value="P3">Low (P3)</option>
-            </select>
             <button class="btn btn-outline-secondary" onclick="clearFilters()">
                 <i class="bi bi-x-circle"></i>
             </button>
@@ -131,7 +125,6 @@
                         <th>Task Details</th>
                         <th>Owner</th>
                         <th>Plugin</th>
-                        <th>Priority</th>
                         <th>Status</th>
                         <th>Created</th>
                         <th width="120">Actions</th>
@@ -168,11 +161,6 @@
                             <span class="badge bg-info">
                                 <i class="bi bi-puzzle me-1"></i>
                                 {{ task.plugin or 'Unknown' }}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge {% if task.priority == 'P1' %}bg-danger{% elif task.priority == 'P2' %}bg-warning{% else %}bg-secondary{% endif %}">
-                                {{ task.priority or 'P3' }}
                             </span>
                         </td>
                         <td>
@@ -268,16 +256,6 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Priority</label>
-                                <select class="form-select" name="priority">
-                                    <option value="P3">Low (P3)</option>
-                                    <option value="P2">Medium (P2)</option>
-                                    <option value="P1">High (P1)</option>
-                                </select>
-                            </div>
-                        </div>
                     </div>
                     
                     <div class="mb-3">
@@ -325,26 +303,20 @@
     // Filter functionality
     function setupFilters() {
         const statusFilter = document.getElementById('statusFilter');
-        const priorityFilter = document.getElementById('priorityFilter');
         
-        [statusFilter, priorityFilter].forEach(filter => {
-            filter.addEventListener('change', applyFilters);
-        });
+        statusFilter.addEventListener('change', applyFilters);
     }
     
     function applyFilters() {
         const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
-        const priorityFilter = document.getElementById('priorityFilter').value;
         const rows = document.querySelectorAll('.task-item');
         
         rows.forEach(row => {
             const status = row.querySelector('.badge').textContent.toLowerCase().trim();
-            const priority = row.querySelectorAll('.badge')[2]?.textContent.trim() || '';
             
             const statusMatch = !statusFilter || status.includes(statusFilter);
-            const priorityMatch = !priorityFilter || priority === priorityFilter;
             
-            if (statusMatch && priorityMatch) {
+            if (statusMatch) {
                 row.style.display = '';
             } else {
                 row.style.display = 'none';
@@ -354,7 +326,6 @@
     
     function clearFilters() {
         document.getElementById('statusFilter').value = '';
-        document.getElementById('priorityFilter').value = '';
         document.getElementById('taskSearch').value = '';
         
         document.querySelectorAll('.task-item').forEach(row => {
