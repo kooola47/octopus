@@ -258,6 +258,43 @@
                         </div>
                     </div>
                     
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Task Type</label>
+                                <select class="form-select" name="type" required onchange="onTaskTypeChange()">
+                                    <option value="">Select Type</option>
+                                    <option value="adhoc">Ad-hoc (Run Once)</option>
+                                    <option value="scheduled">Scheduled (Recurring)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3" id="intervalField" style="display: none;">
+                                <label class="form-label">Interval (seconds)</label>
+                                <input type="number" class="form-control" name="interval" placeholder="e.g., 3600 for hourly">
+                                <small class="form-text text-muted">How often to repeat the task</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row" id="scheduledTimeFields" style="display: none;">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Start Time</label>
+                                <input type="datetime-local" class="form-control" name="execution_start_time" id="startTimeInput">
+                                <small class="form-text text-muted">When to start executing the task</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">End Time</label>
+                                <input type="datetime-local" class="form-control" name="execution_end_time" id="endTimeInput">
+                                <small class="form-text text-muted">When to stop executing the task</small>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="row" id="functionRow" style="display: none;">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -519,6 +556,55 @@
             loadFunctionParameters(functionSelect.value);
         } else {
             document.getElementById('parametersContainer').style.display = 'none';
+        }
+    }
+    
+    function onTaskTypeChange() {
+        const taskTypeSelect = document.querySelector('select[name="type"]');
+        const intervalField = document.getElementById('intervalField');
+        const scheduledTimeFields = document.getElementById('scheduledTimeFields');
+        const startTimeInput = document.getElementById('startTimeInput');
+        const endTimeInput = document.getElementById('endTimeInput');
+        
+        if (taskTypeSelect.value === 'scheduled') {
+            intervalField.style.display = 'block';
+            scheduledTimeFields.style.display = 'block';
+            
+            // Make fields required
+            intervalField.querySelector('input').required = true;
+            startTimeInput.required = true;
+            endTimeInput.required = true;
+            
+            // Set default values: now and 1 hour later
+            const now = new Date();
+            const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+            
+            // Format to datetime-local format (YYYY-MM-DDTHH:MM)
+            const formatDateTime = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            };
+            
+            startTimeInput.value = formatDateTime(now);
+            endTimeInput.value = formatDateTime(oneHourLater);
+            
+        } else {
+            intervalField.style.display = 'none';
+            scheduledTimeFields.style.display = 'none';
+            
+            // Remove required validation
+            intervalField.querySelector('input').required = false;
+            startTimeInput.required = false;
+            endTimeInput.required = false;
+            
+            // Clear values
+            intervalField.querySelector('input').value = '';
+            startTimeInput.value = '';
+            endTimeInput.value = '';
         }
     }
     

@@ -88,7 +88,16 @@ class TaskExecutionLoop:
             if task.get("owner") == "ALL":
                 self.task_executor.post_execution_result(tid, username, exec_status, result)
             else:
-                self.task_executor.update_task_status(tid, username, result)
+                # For scheduled tasks, don't mark as Done - they should keep running
+                task_type = task.get("type", "").lower()
+                if task_type in ["scheduled", "schedule"]:
+                    # Post execution result but don't update task status to Done
+                    self.task_executor.post_execution_result(tid, username, exec_status, result)
+                    self.logger.info(f"Posted execution result for scheduled task {tid}: {exec_status}")
+                else:
+                    # For adhoc tasks, mark as Done when completed
+                    self.task_executor.update_task_status(tid, username, result)
+                    self.logger.info(f"Updated adhoc task {tid} status to Done")
                 
             self.logger.info(f"Task {tid} execution completed: {exec_status}")
         finally:

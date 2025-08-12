@@ -218,6 +218,23 @@ def get_tasks():
 def add_task(task):
     init_db()
     task_id = task.get("id") or str(int(time.time() * 1000))
+    
+    # Convert datetime-local strings to timestamps for consistent storage
+    def convert_datetime_to_timestamp(dt_string):
+        if not dt_string:
+            return None
+        try:
+            import datetime
+            # Parse datetime-local format: YYYY-MM-DDTHH:MM
+            dt = datetime.datetime.fromisoformat(dt_string.replace('T', ' '))
+            return dt.timestamp()
+        except Exception:
+            # If parsing fails, return as-is (might already be a timestamp)
+            return dt_string
+    
+    start_time = convert_datetime_to_timestamp(task.get("execution_start_time"))
+    end_time = convert_datetime_to_timestamp(task.get("execution_end_time"))
+    
     with get_db_connection() as conn:
         now_ts = time.time()
         conn.execute('''
@@ -231,8 +248,8 @@ def add_task(task):
             str(task.get("args", [])),
             str(task.get("kwargs", {})),
             task.get("type"),
-            task.get("execution_start_time"),
-            task.get("execution_end_time"),
+            start_time,
+            end_time,
             task.get("interval"),
             "Created",  # Changed from "pending" to "Created"
             task.get("executor", ""),
@@ -252,8 +269,38 @@ def update_task(task_id, updates):
             return False
         columns = [col[0] for col in cur.description]
         task = dict(zip(columns, row))
+        
+        # Debug logging for task updates
+        logger.info(f"UPDATE_TASK: Task {task_id} update requested with: {updates}")
+        logger.info(f"UPDATE_TASK: Current task type: {task.get('type')}, status: {task.get('status')}")
+        
+        # Before applying updates, check if this is a scheduled task being marked as Done
+        original_type = task.get("type", "").lower()
+        new_status = updates.get("status", "").lower()
+        
+        # Prevent scheduled tasks from being marked as Done unless execution window has ended
+        if (original_type in ["scheduled", "schedule"] and 
+            new_status in ["done", "completed", "success"] and
+            task.get("execution_end_time")):
+            try:
+                end_time_val = task.get("execution_end_time")
+                if end_time_val is not None:
+                    end_timestamp = float(end_time_val)
+                    current_time = time.time()
+                    logger.info(f"UPDATE_TASK: Scheduled task {task_id} - current: {current_time}, end: {end_timestamp}")
+                    if current_time < end_timestamp:
+                        # Still within execution window, don't mark as Done
+                        logger.info(f"UPDATE_TASK: Preventing scheduled task {task_id} from being marked as Done - still within execution window")
+                        updates = updates.copy()  # Don't modify the original
+                        updates.pop("status", None)  # Remove status update
+                    else:
+                        logger.info(f"UPDATE_TASK: Allowing scheduled task {task_id} to be marked as Done - execution window ended")
+            except (ValueError, TypeError):
+                logger.warning(f"UPDATE_TASK: Invalid end_time format for scheduled task {task_id}: {task.get('execution_end_time')}")
+        
         task.update(updates)
         now_ts = time.time()
+        logger.info(f"UPDATE_TASK: Final status for task {task_id}: {task.get('status')}")
         conn.execute('''
             UPDATE tasks SET owner=?, plugin=?, action=?, args=?, kwargs=?, type=?, execution_start_time=?, execution_end_time=?, interval=?, status=?, executor=?, result=?, updated_at=?
             WHERE id=?
@@ -516,19 +563,73 @@ def add_execution_result(task_id, client, status, result):
         # For adhoc tasks, update the task status to Done when execution completes
         # Check if this is an adhoc task and if the execution status indicates completion
         if status.lower() in ['success', 'completed', 'done', 'failed', 'error']:
-            # Get the task type
-            task_row = conn.execute('SELECT type FROM tasks WHERE id = ?', (task_id,)).fetchone()
-            if task_row and task_row[0] == 'Adhoc':
-                # Update task status to Done for completed adhoc tasks
-                task_status = 'Done' if status.lower() in ['success', 'completed', 'done'] else 'Failed'
-                conn.execute('''
-                    UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?
-                ''', (task_status, current_time, task_id))
-                logger.info(f"Updated adhoc task {task_id} status to {task_status}")
+            # Get the task type and timing info
+            task_row = conn.execute('SELECT type, execution_end_time FROM tasks WHERE id = ?', (task_id,)).fetchone()
+            if task_row:
+                task_type, end_time = task_row
+                
+                if task_type == 'Adhoc':
+                    # Update task status to Done for completed adhoc tasks
+                    task_status = 'Done' if status.lower() in ['success', 'completed', 'done'] else 'Failed'
+                    conn.execute('''
+                        UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?
+                    ''', (task_status, current_time, task_id))
+                    logger.info(f"Updated adhoc task {task_id} status to {task_status}")
+                
+                elif task_type in ['scheduled', 'Schedule'] and end_time:
+                    # For scheduled tasks, check if execution window has ended
+                    try:
+                        end_timestamp = float(end_time)
+                        if current_time > end_timestamp:
+                            # Execution window has ended, mark as Done
+                            conn.execute('''
+                                UPDATE tasks SET status = 'Done', updated_at = ? WHERE id = ?
+                            ''', (current_time, task_id))
+                            logger.info(f"Updated scheduled task {task_id} status to Done - execution window ended")
+                    except (ValueError, TypeError):
+                        logger.warning(f"Invalid end_time format for scheduled task {task_id}: {end_time}")
         
         conn.commit()
         logger.info(f"Execution result added successfully: execution_id={execution_id}, task_id={task_id}")
     return execution_id
+
+
+def update_expired_scheduled_tasks():
+    """Check and update status for scheduled tasks whose execution window has ended"""
+    import time
+    
+    with sqlite3.connect(DB_FILE) as conn:
+        current_time = time.time()
+        
+        # Find scheduled tasks that are still Active but past their end time
+        cursor = conn.execute('''
+            SELECT id, execution_end_time FROM tasks 
+            WHERE type IN ('scheduled', 'Schedule') 
+            AND status = 'Active' 
+            AND execution_end_time IS NOT NULL
+        ''')
+        
+        expired_tasks = []
+        for task_id, end_time in cursor.fetchall():
+            try:
+                end_timestamp = float(end_time)
+                if current_time > end_timestamp:
+                    expired_tasks.append(task_id)
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid end_time format for task {task_id}: {end_time}")
+        
+        # Update expired tasks to Done status
+        if expired_tasks:
+            for task_id in expired_tasks:
+                conn.execute('''
+                    UPDATE tasks SET status = 'Done', updated_at = ? WHERE id = ?
+                ''', (current_time, task_id))
+                logger.info(f"Marked expired scheduled task {task_id} as Done")
+            
+            conn.commit()
+            logger.info(f"Updated {len(expired_tasks)} expired scheduled tasks")
+        
+        return len(expired_tasks)
 
 
 # ========================================

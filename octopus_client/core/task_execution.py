@@ -61,6 +61,60 @@ class TaskExecutor:
         
         return False
     
+    def _is_within_execution_window(self, task: Dict[str, Any]) -> bool:
+        """Check if current time is within the task's execution window"""
+        import datetime
+        
+        start_time = task.get("execution_start_time")
+        end_time = task.get("execution_end_time")
+        current_time = time.time()
+        
+        # If no start time specified, assume it's ready to start
+        if start_time:
+            try:
+                # Handle both timestamp and datetime string formats
+                if isinstance(start_time, str):
+                    # Try to parse as float first (timestamp)
+                    try:
+                        start_ts = float(start_time)
+                    except ValueError:
+                        # Parse datetime-local format: YYYY-MM-DDTHH:MM
+                        dt = datetime.datetime.fromisoformat(start_time.replace('T', ' '))
+                        start_ts = dt.timestamp()
+                else:
+                    # Already a numeric timestamp
+                    start_ts = float(start_time)
+                    
+                if current_time < start_ts:
+                    self.logger.debug(f"Task not yet ready to start. Current: {current_time}, Start: {start_ts}")
+                    return False
+            except Exception as e:
+                self.logger.warning(f"Error parsing start time '{start_time}': {e}")
+        
+        # If no end time specified, assume it can run indefinitely
+        if end_time:
+            try:
+                # Handle both timestamp and datetime string formats
+                if isinstance(end_time, str):
+                    # Try to parse as float first (timestamp)
+                    try:
+                        end_ts = float(end_time)
+                    except ValueError:
+                        # Parse datetime-local format: YYYY-MM-DDTHH:MM
+                        dt = datetime.datetime.fromisoformat(end_time.replace('T', ' '))
+                        end_ts = dt.timestamp()
+                else:
+                    # Already a numeric timestamp
+                    end_ts = float(end_time)
+                    
+                if current_time > end_ts:
+                    self.logger.debug(f"Task execution window has ended. Current: {current_time}, End: {end_ts}")
+                    return False
+            except Exception as e:
+                self.logger.warning(f"Error parsing end time '{end_time}': {e}")
+        
+        return True
+    
     def should_client_execute(self, task: Dict[str, Any], username: str) -> bool:
         """Returns True if this client should execute the task."""
         owner = task.get("owner")
@@ -73,8 +127,13 @@ class TaskExecutor:
         if status != "Active":
             return False
         
+        # Check execution time window for scheduled tasks
+        if task_type in ["Schedule", "scheduled"]:
+            if not self._is_within_execution_window(task):
+                return False
+        
         # For Schedule tasks, check interval before allowing execution
-        if task_type == "Schedule":
+        if task_type in ["Schedule", "scheduled"]:
             interval = task.get("interval")
             if interval:
                 try:
