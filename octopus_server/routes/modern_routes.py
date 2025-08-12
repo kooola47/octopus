@@ -759,7 +759,7 @@ def get_client_stats():
             current_time = time.time()
             online_clients = 0
             offline_clients = 0
-            busy_clients = 0
+            idle_clients = 0
             
             try:
                 # Try heartbeats table first
@@ -775,7 +775,7 @@ def get_client_stats():
                     if time_diff < 60:
                         online_clients += 1
                     elif time_diff < 300:
-                        busy_clients += 1
+                        idle_clients += 1
                     else:
                         offline_clients += 1
                         
@@ -795,12 +795,12 @@ def get_client_stats():
                     else:
                         offline_clients += 1
             
-            total_clients = online_clients + offline_clients + busy_clients
+            total_clients = online_clients + offline_clients + idle_clients
             
             return {
                 'online_clients': online_clients,
                 'offline_clients': offline_clients,
-                'busy_clients': busy_clients,
+                'idle_clients': idle_clients,
                 'total_clients': total_clients
             }
     except Exception as e:
@@ -808,7 +808,7 @@ def get_client_stats():
         return {
             'online_clients': 0,
             'offline_clients': 0,
-            'busy_clients': 0,
+            'idle_clients': 0,
             'total_clients': 0
         }
 

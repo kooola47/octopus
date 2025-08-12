@@ -264,6 +264,26 @@ export OCTOPUS_LOG_LEVEL=DEBUG
 - **Executions** - Monitor task execution history
 - **Clients** - Track connected clients and their status
 
+### Client Status Management
+
+The system tracks client availability in real-time and manages task assignments based on client status:
+
+| Client Status | Heartbeat Age | Task Assignment | UI Display |
+|---------------|---------------|-----------------|------------|
+| **Online** | < 60 seconds | ✅ **Receives tasks** | Green, "Online" |
+| **Idle** | 1-5 minutes | ❌ **No task assignment** | Orange, "Idle" |
+| **Offline** | > 5 minutes | ❌ **No task assignment** | Gray, "Offline" |
+
+#### Status Behavior:
+- **Online Clients**: Actively connected and ready to receive new task assignments
+- **Idle Clients**: Recently active but may be temporarily disconnected or executing long-running tasks
+- **Offline Clients**: Considered unavailable and will not receive new task assignments
+
+#### Task Assignment Rules:
+- Tasks are **only assigned to Online clients** (heartbeat within 60 seconds)
+- **Idle and Offline clients are skipped** during task assignment to prevent failed executions
+- Clients automatically return to Online status when they resume sending heartbeats
+
 ### Log Files
 ```bash
 # Server logs

@@ -21,7 +21,7 @@ def register_dashboard_api_routes(app, cache, logger):
         """API endpoint to get client data for statistics dashboard"""
         clients = cache.all()
         now = time.time()
-        active_clients = get_active_clients(clients, now=now, timeout=30)
+        active_clients = get_active_clients(clients, now=now, timeout=60)  # Align with "online" status
         
         return jsonify({
             "clients": active_clients,
@@ -42,7 +42,7 @@ def register_dashboard_api_routes(app, cache, logger):
         tasks = get_tasks()
         clients = cache.all()
         now = time.time()
-        active_clients = get_active_clients(clients, now=now, timeout=30)
+        active_clients = get_active_clients(clients, now=now, timeout=60)  # Align with "online" status
         
         # Use the comprehensive task assignment function
         assign_all_tasks(tasks, active_clients)
@@ -250,7 +250,7 @@ def register_dashboard_api_routes(app, cache, logger):
         tasks = get_tasks()
         clients = cache.all()
         now = time.time()
-        active_clients = get_active_clients(clients, now=now, timeout=30)
+        active_clients = get_active_clients(clients, now=now, timeout=60)  # Align with "online" status
         
         # Use the comprehensive task assignment function
         assign_all_tasks(tasks, active_clients)

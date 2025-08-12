@@ -82,6 +82,19 @@ def init_db():
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    email TEXT,
+                    password_hash TEXT NOT NULL,
+                    role TEXT DEFAULT 'user',
+                    is_active INTEGER DEFAULT 1,
+                    last_login REAL,
+                    created_at REAL NOT NULL,
+                    updated_at REAL NOT NULL
+                )
+            ''')
             
             # Create indexes for better performance
             conn.execute('CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)')
@@ -95,9 +108,15 @@ def init_db():
             conn.execute('CREATE INDEX IF NOT EXISTS idx_heartbeats_hostname ON heartbeats(hostname)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_heartbeats_timestamp ON heartbeats(timestamp)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_heartbeats_user_host_time ON heartbeats(username, hostname, timestamp)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)')
             
             # Migrate existing tables to add missing columns
             migrate_tasks_table(conn)
+            
+            # Create default admin user if no users exist
+            create_default_admin_user(conn)
             
             # Backfill created_at for existing rows if column exists but values are NULL
             try:
@@ -105,6 +124,31 @@ def init_db():
             except Exception:
                 pass
             conn.commit()
+
+def create_default_admin_user(conn):
+    """Create a default admin user if no users exist"""
+    import time
+    import hashlib
+    
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM users')
+    user_count = cursor.fetchone()[0]
+    
+    if user_count == 0:
+        print("Creating default admin user...")
+        current_time = time.time()
+        
+        # Default admin credentials: admin/admin
+        username = "admin"
+        password = "admin"
+        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        
+        cursor.execute('''
+            INSERT INTO users (username, email, password_hash, role, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (username, "admin@localhost", password_hash, "admin", 1, current_time, current_time))
+        
+        print(f"Default admin user created: {username}/admin")
 
 def migrate_tasks_table(conn):
     """Add missing columns to existing tasks table"""
@@ -288,11 +332,11 @@ def get_owner_options(active_clients):
 
 def assign_anyone_task(tasks, clients):
     """
-    Assigns unassigned 'Anyone' tasks to a random available client (by username).
-    Only assigns if executor is empty and client is online.
+    Assigns unassigned 'Anyone' tasks to a random ONLINE client (by username).
+    Only assigns if executor is empty and client has sent heartbeat recently.
     """
     import random
-    # Fix: Use the latest usernames from heartbeat (which now include PID)
+    # Only use clients that are currently active/online (filtered by get_active_clients)
     available_users = [str(client['username']) for client in clients.values() if 'username' in client]
     for tid, task in tasks.items():
         # Only assign if executor is empty and status is not 'success' or 'failed'
@@ -306,11 +350,13 @@ def assign_all_tasks(tasks, clients):
     """
     Assign tasks to appropriate executors based on owner type.
     This handles ALL, Anyone, and specific user assignments.
+    IMPORTANT: Only assigns tasks to ONLINE clients (clients passed in are pre-filtered by get_active_clients).
     """
     import random
     import logging
     
     logger = logging.getLogger("octopus_server")
+    # Only use clients that are currently online (pre-filtered by caller)
     available_users = [str(client['username']) for client in clients.values() if 'username' in client]
     logger.info(f"Available users for task assignment: {available_users}")
     
@@ -422,6 +468,9 @@ def compute_task_status(task, clients):
 def get_active_clients(clients, now=None, timeout=30):
     """
     Returns a dict of clients that have sent heartbeat within the last `timeout` seconds.
+    These are considered ONLINE clients available for task assignment.
+    Default timeout=30 seconds for strict availability, but should be called with 
+    timeout=60 to align with UI "online" status definition.
     """
     if now is None:
         import time
@@ -689,12 +738,30 @@ def delete_user(user_id):
     
     current_time = time.time()
     
-    with sqlite3.connect(DB_FILE) as conn:
-        # Set user as inactive instead of deleting
-        conn.execute('''
-            UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?
-        ''', (current_time, user_id))
-        
-        conn.commit()
-        logger.info(f"User {user_id} deactivated successfully")
-        return True
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            # Check if user exists first
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, username FROM users WHERE id = ?', (user_id,))
+            user = cursor.fetchone()
+            
+            if not user:
+                logger.error(f"User {user_id} not found for deletion")
+                return False
+            
+            # Set user as inactive instead of deleting
+            cursor.execute('''
+                UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?
+            ''', (current_time, user_id))
+            
+            if cursor.rowcount > 0:
+                conn.commit()
+                logger.info(f"User {user[1]} (ID: {user_id}) deactivated successfully")
+                return True
+            else:
+                logger.error(f"Failed to update user {user_id} - no rows affected")
+                return False
+                
+    except Exception as e:
+        logger.error(f"Error deleting user {user_id}: {e}")
+        return False

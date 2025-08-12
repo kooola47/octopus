@@ -82,7 +82,7 @@ def register_dashboard_routes(app, cache, logger):
         tasks = get_tasks()
         clients = cache.all()
         now = time.time()
-        active_clients = get_active_clients(clients, now=now, timeout=30)
+        active_clients = get_active_clients(clients, now=now, timeout=60)  # Align with "online" status
         plugin_names = get_plugin_names()
         owner_options = get_owner_options(active_clients)
         
