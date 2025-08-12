@@ -125,6 +125,14 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize plugin cache: {e}")
 
+# Initialize client cache system
+from client_cache_manager import get_client_cache_manager
+try:
+    client_cache = get_client_cache_manager()
+    logger.info("Client cache system initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize client cache: {e}")
+
 # Register routes from other modules
 from pluginhelper import register_plugin_routes
 from heartbeat import register_heartbeat_routes

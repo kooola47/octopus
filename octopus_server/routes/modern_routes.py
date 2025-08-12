@@ -14,6 +14,7 @@ from flask import request, render_template, url_for, jsonify, Response
 from dbhelper import get_db_file, get_tasks, get_active_clients
 from plugin_discovery import PluginDiscovery
 from plugin_cache_manager import get_plugin_cache_manager
+from client_cache_manager import get_client_cache_manager
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -56,7 +57,7 @@ def register_modern_routes(app, cache, logger):
 
     @app.route("/modern/clients")
     def modern_clients():
-        """Modern clients page with pagination"""
+        """Modern clients page with pagination using cache"""
         try:
             # Get pagination parameters
             page = int(request.args.get('page', 1))
@@ -64,8 +65,9 @@ def register_modern_routes(app, cache, logger):
             search = request.args.get('search', '').strip()
             status_filter = request.args.get('status', '').strip()
             
-            # Get clients with filters
-            clients, total_clients = get_clients_paginated(
+            # Get clients from cache
+            client_cache = get_client_cache_manager()
+            clients, total_clients = client_cache.get_clients_paginated(
                 page=page,
                 page_size=page_size,
                 search=search,
@@ -75,8 +77,8 @@ def register_modern_routes(app, cache, logger):
             # Calculate pagination
             total_pages = math.ceil(total_clients / page_size) if total_clients > 0 else 1
             
-            # Get client statistics
-            stats = get_client_stats()
+            # Get client statistics from cache
+            stats = client_cache.get_client_stats()
             
             return render_template('modern_clients.html',
                                  clients=clients,
@@ -126,7 +128,10 @@ def register_modern_routes(app, cache, logger):
             stats = get_task_stats()
             
             # Get available owners for filter dropdown
-            available_owners = get_available_owners()
+            client_cache = get_client_cache_manager()
+            active_clients = client_cache.get_active_clients()
+            legacy_owners = get_available_owners()
+            available_owners = sorted(set(active_clients + legacy_owners))
             
             # Get plugin names for create task modal
             plugin_names = get_available_plugins()
@@ -216,22 +221,15 @@ def register_modern_routes(app, cache, logger):
     # Client Management API Endpoints
     @app.route("/api/clients/<client_id>", methods=["GET"])
     def api_client_details(client_id):
-        """Get detailed information about a specific client"""
+        """Get detailed information about a specific client from cache"""
         try:
-            clients = cache.all()
-            now = time.time()
+            client_cache = get_client_cache_manager()
+            client = client_cache.get_client_by_id(client_id)
             
-            # Find the specific client
-            client = clients.get(client_id)
             if not client:
                 return {"error": "Client not found"}, 404
-                
-            # Calculate uptime
-            last_seen = client.get('last_seen', now)
-            uptime_seconds = now - last_seen
-            uptime_str = format_uptime(uptime_seconds)
             
-            # Get client execution history
+            # Get client execution history from database
             try:
                 with sqlite3.connect(get_db_file()) as conn:
                     conn.row_factory = sqlite3.Row
@@ -248,13 +246,10 @@ def register_modern_routes(app, cache, logger):
                 logger.error(f"Error getting client executions: {e}")
                 executions = []
             
+            # Add execution history to client details
             client_details = {
-                'id': client_id,
-                'status': 'active' if (now - last_seen) < 30 else 'inactive',
-                'last_seen': last_seen,
-                'uptime': uptime_str,
-                'recent_executions': executions,
-                **client
+                **client,
+                'recent_executions': executions
             }
             
             return {"client": client_details}
@@ -322,25 +317,16 @@ def register_modern_routes(app, cache, logger):
 
     @app.route("/api/clients/<client_id>", methods=["DELETE"])
     def api_delete_client(client_id):
-        """Delete a client by removing all its heartbeat records"""
+        """Delete a client using cache manager for dual cache/DB cleanup"""
         try:
-            with sqlite3.connect(get_db_file()) as conn:
-                cursor = conn.cursor()
+            client_cache = get_client_cache_manager()
+            success = client_cache.delete_client(client_id)
+            
+            if not success:
+                return {"error": "Client not found"}, 404
                 
-                # Delete all heartbeat records for this client (username)
-                cursor.execute("DELETE FROM heartbeats WHERE username = ?", (client_id,))
-                deleted_count = cursor.rowcount
-                
-                if deleted_count == 0:
-                    return {"error": "Client not found"}, 404
-                
-                conn.commit()
-                logger.info(f"Deleted {deleted_count} heartbeat records for client {client_id}")
-                
-                return {
-                    "message": f"Client {client_id} removed successfully",
-                    "deleted_records": deleted_count
-                }
+            logger.info(f"Client {client_id} deleted successfully from cache and database")
+            return {"message": f"Client {client_id} removed successfully"}
                 
         except Exception as e:
             logger.error(f"Error deleting client {client_id}: {e}")
@@ -582,6 +568,26 @@ def register_modern_routes(app, cache, logger):
             
         except Exception as e:
             logger.error(f"Error getting cache stats: {e}")
+            return {"error": "Internal server error"}, 500
+
+    @app.route("/api/owners", methods=["GET"])
+    def api_get_available_owners():
+        """Get available owners for task assignment from active clients"""
+        try:
+            client_cache = get_client_cache_manager()
+            # Get active client usernames as potential owners
+            owners = client_cache.get_active_clients()
+            
+            # Also include owners from existing tasks for backward compatibility
+            legacy_owners = get_available_owners()
+            
+            # Combine and deduplicate
+            all_owners = sorted(set(owners + legacy_owners))
+            
+            return jsonify({"owners": all_owners})
+            
+        except Exception as e:
+            logger.error(f"Error getting owners: {e}")
             return {"error": "Internal server error"}, 500
 
 # Helper functions for data retrieval

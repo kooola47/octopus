@@ -256,11 +256,8 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Owner</label>
-                                <select class="form-select" name="owner">
+                                <select class="form-select" name="owner" id="ownerSelect">
                                     <option value="Anyone">Anyone</option>
-                                    {% for owner in owner_options %}
-                                    <option value="{{ owner }}">{{ owner }}</option>
-                                    {% endfor %}
                                 </select>
                             </div>
                         </div>
@@ -275,11 +272,8 @@
                         <div class="col-md-6" id="ownerColumnFallback" style="display: none;">
                             <div class="mb-3">
                                 <label class="form-label">Owner</label>
-                                <select class="form-select" name="owner">
+                                <select class="form-select" name="owner" id="ownerSelectFallback">
                                     <option value="Anyone">Anyone</option>
-                                    {% for owner in owner_options %}
-                                    <option value="{{ owner }}">{{ owner }}</option>
-                                    {% endfor %}
                                 </select>
                             </div>
                         </div>
@@ -435,6 +429,8 @@
         const functionSelect = document.getElementById('functionSelect');
         const parametersContainer = document.getElementById('parametersContainer');
         const ownerFallback = document.getElementById('ownerColumnFallback');
+        const ownerSelect = document.getElementById('ownerSelect');
+        const ownerSelectFallback = document.getElementById('ownerSelectFallback');
         
         if (pluginSelect.value) {
             // Show function selection
@@ -470,6 +466,11 @@
             functionRow.style.display = 'none';
             parametersContainer.style.display = 'none';
             ownerFallback.style.display = 'block';
+            
+            // Sync owner values when switching to fallback
+            if (ownerSelect.value) {
+                ownerSelectFallback.value = ownerSelect.value;
+            }
         }
     }
     
@@ -588,6 +589,42 @@
         });
     }
     
+    // Load dynamic owners when modal opens
+    function loadOwners() {
+        const ownerSelect = document.getElementById('ownerSelect');
+        const ownerSelectFallback = document.getElementById('ownerSelectFallback');
+        
+        fetch('/api/owners')
+            .then(response => response.json())
+            .then(data => {
+                if (data.owners) {
+                    // Clear and populate main owner select
+                    ownerSelect.innerHTML = '<option value="Anyone">Anyone</option>';
+                    
+                    // Clear and populate fallback owner select
+                    ownerSelectFallback.innerHTML = '<option value="Anyone">Anyone</option>';
+                    
+                    data.owners.forEach(owner => {
+                        // Main owner select
+                        const option1 = document.createElement('option');
+                        option1.value = owner;
+                        option1.textContent = owner;
+                        ownerSelect.appendChild(option1);
+                        
+                        // Fallback owner select
+                        const option2 = document.createElement('option');
+                        option2.value = owner;
+                        option2.textContent = owner;
+                        ownerSelectFallback.appendChild(option2);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading owners:', error);
+                // Owners will remain as "Anyone" only if there's an error
+            });
+    }
+    
     function refreshTasks() {
         location.reload();
     }
@@ -595,6 +632,14 @@
     // Initialize filters on page load
     document.addEventListener('DOMContentLoaded', function() {
         setupFilters();
+        
+        // Load owners when create task modal is opened
+        const createTaskModal = document.getElementById('createTaskModal');
+        if (createTaskModal) {
+            createTaskModal.addEventListener('show.bs.modal', function() {
+                loadOwners();
+            });
+        }
     });
 </script>
 {% endblock %}
