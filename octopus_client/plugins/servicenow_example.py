@@ -12,18 +12,47 @@ import time
 import random
 
 
-def create_incident(summary: str, description: str = "", priority: str = "3") -> dict:
+def create_incident(summary: str, description: str = "", priority: str = "3", username: str = "unknown") -> dict:
     """
     Create a ServiceNow incident and return structured response.
+    Now uses user parameters for API credentials and instance configuration.
     
     Args:
         summary: Brief description of the incident
         description: Detailed description 
         priority: Priority level (1-5)
+        username: Username for parameter lookup
     
     Returns:
         Structured plugin response
     """
+    
+    # Get user parameters for ServiceNow configuration
+    try:
+        # Import the helper function
+        import sys
+        import os
+        sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'octopus_server', 'routes'))
+        from user_profile_routes import get_user_parameter, get_user_category_parameters
+        
+        # Get ServiceNow configuration from user parameters
+        api_credentials = get_user_category_parameters(username, 'api_credentials')
+        integrations = get_user_category_parameters(username, 'integrations')
+        
+        # Get specific parameters with defaults
+        api_key = api_credentials.get('servicenow_api_key', 'demo_key')
+        instance_url = integrations.get('servicenow_instance', 'https://demo.service-now.com')
+        default_priority = integrations.get('default_priority', priority)
+        
+        # Use the configured priority if not specified
+        if priority == "3":  # Default priority
+            priority = default_priority
+            
+    except Exception as e:
+        # Fallback to demo values if parameter system not available
+        api_key = 'demo_key'
+        instance_url = 'https://demo.service-now.com'
+        print(f"Warning: Could not load user parameters, using demo values: {e}")
     
     # Simulate API call
     time.sleep(1)  # Simulate network delay
@@ -36,7 +65,7 @@ def create_incident(summary: str, description: str = "", priority: str = "3") ->
         
         response = {
             "status_code": 201,
-            "message": f"Incident {incident_number} created successfully",
+            "message": f"Incident {incident_number} created successfully in {instance_url}",
             "data": [
                 {
                     "type": "cache",
@@ -49,6 +78,11 @@ def create_incident(summary: str, description: str = "", priority: str = "3") ->
                     "value": incident_number
                 },
                 {
+                    "type": "cache",
+                    "name": "servicenow_instance",
+                    "value": instance_url
+                },
+                {
                     "type": "file",
                     "name": f"incident_{incident_number}.json",
                     "value": {
@@ -57,6 +91,8 @@ def create_incident(summary: str, description: str = "", priority: str = "3") ->
                         "summary": summary,
                         "description": description,
                         "priority": priority,
+                        "instance_url": instance_url,
+                        "api_key_used": api_key[:8] + "..." if len(api_key) > 8 else "demo",
                         "created_at": time.time(),
                         "status": "New"
                     }
@@ -69,7 +105,9 @@ def create_incident(summary: str, description: str = "", priority: str = "3") ->
                         "incident_number": incident_number,
                         "summary": summary,
                         "priority": priority,
-                        "created_at": time.time()
+                        "instance": instance_url,
+                        "created_at": time.time(),
+                        "username": username
                     }
                 }
             ]
@@ -78,7 +116,7 @@ def create_incident(summary: str, description: str = "", priority: str = "3") ->
         # Failure case
         response = {
             "status_code": 500,
-            "message": "Failed to create incident: ServiceNow API timeout",
+            "message": f"Failed to create incident in {instance_url}: ServiceNow API timeout",
             "data": [
                 {
                     "type": "cache",
@@ -88,7 +126,7 @@ def create_incident(summary: str, description: str = "", priority: str = "3") ->
                 {
                     "type": "file",
                     "name": "error_log.txt",
-                    "value": f"ServiceNow API timeout occurred at {time.ctime()}\nSummary: {summary}"
+                    "value": f"ServiceNow API timeout occurred at {time.ctime()}\nInstance: {instance_url}\nSummary: {summary}"
                 }
             ]
         }

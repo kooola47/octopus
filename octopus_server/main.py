@@ -156,8 +156,12 @@ register_plugin_routes(app, logger)
 # Register all organized routes
 from routes import register_all_routes
 from routes.modern_routes import register_modern_routes
+from routes.user_profile_routes import user_profile_bp
 register_all_routes(app, cache, logger)
 register_modern_routes(app, cache, logger)
+
+# Register user profile routes
+app.register_blueprint(user_profile_bp)
 
 # Log server startup information
 logger.info(f"Octopus Server starting on {SERVER_HOST}:{SERVER_PORT}")
