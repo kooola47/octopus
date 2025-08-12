@@ -124,6 +124,7 @@
                         </th>
                         <th>Task Details</th>
                         <th>Owner</th>
+                        <th>Executor</th>
                         <th>Plugin</th>
                         <th>Status</th>
                         <th>Created</th>
@@ -156,6 +157,19 @@
                                 <i class="bi bi-person me-1"></i>
                                 {{ task.owner or 'Anyone' }}
                             </span>
+                        </td>
+                        <td>
+                            {% if task.executor and task.executor != '' %}
+                                <span class="badge bg-success text-white">
+                                    <i class="bi bi-person-check me-1"></i>
+                                    {{ task.executor }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-dash me-1"></i>
+                                    Not assigned
+                                </span>
+                            {% endif %}
                         </td>
                         <td>
                             <span class="badge bg-info">
@@ -416,10 +430,34 @@
         // Implementation for creating task
         console.log('Create task:', taskData);
         
-        // Close modal and refresh
-        const modal = bootstrap.Modal.getInstance(document.getElementById('createTaskModal'));
-        modal.hide();
-        refreshTasks();
+        // Actually create the task via API
+        fetch('/api/tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Task created successfully:', data);
+            // Show success message
+            showAlert('Task created successfully!', 'success');
+            
+            // Close modal and refresh
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createTaskModal'));
+            modal.hide();
+            refreshTasks();
+        })
+        .catch(error => {
+            console.error('Error creating task:', error);
+            showAlert('Failed to create task: ' + error.message, 'danger');
+        });
     }
     
     // Dynamic plugin and function loading
@@ -623,6 +661,27 @@
                 console.error('Error loading owners:', error);
                 // Owners will remain as "Anyone" only if there's an error
             });
+    }
+    
+    function showAlert(message, type = 'info') {
+        // Create alert element
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Add to page
+        document.body.appendChild(alertDiv);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
     }
     
     function refreshTasks() {

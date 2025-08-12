@@ -11,7 +11,7 @@ import sqlite3
 import logging
 import os
 from flask import request, render_template, url_for, jsonify, Response
-from dbhelper import get_db_file, get_tasks, get_active_clients
+from dbhelper import get_db_file, get_tasks, get_active_clients, add_task, assign_all_tasks
 from plugin_discovery import PluginDiscovery
 from plugin_cache_manager import get_plugin_cache_manager
 from client_cache_manager import get_client_cache_manager
@@ -131,7 +131,10 @@ def register_modern_routes(app, cache, logger):
             client_cache = get_client_cache_manager()
             active_clients = client_cache.get_active_clients()
             legacy_owners = get_available_owners()
-            available_owners = sorted(set(active_clients + legacy_owners))
+            combined_owners = sorted(set(active_clients + legacy_owners))
+            regular_owners = [owner for owner in combined_owners if owner not in ["ALL", "Anyone"]]
+            # Add special owner options without duplicates
+            available_owners = ["ALL", "Anyone"] + regular_owners
             
             # Get plugin names for create task modal
             plugin_names = get_available_plugins()
@@ -405,6 +408,58 @@ def register_modern_routes(app, cache, logger):
             logger.error(f"Error deleting task: {e}")
             return {"error": "Internal server error"}, 500
 
+    @app.route("/api/tasks", methods=["POST"])
+    def api_create_task():
+        """Create a new task via modern API"""
+        try:
+            task_data = request.get_json()
+            
+            if not task_data:
+                return {"error": "No task data provided"}, 400
+                
+            # Add the task using existing function
+            task_id = add_task(task_data)
+            
+            # Auto-assign the task if owner is set
+            try:
+                client_cache = get_client_cache_manager()
+                
+                # Get active clients for assignment
+                active_clients = client_cache.get_active_clients()
+                logger.info(f"Active clients available for assignment: {active_clients}")
+                
+                if active_clients:
+                    # Create client dict format expected by assign_all_tasks
+                    client_dict = {}
+                    for client_id in active_clients:
+                        client_info = client_cache.get_client_by_id(client_id)
+                        if client_info:
+                            client_dict[client_id] = client_info
+                    
+                    logger.info(f"Client dict created for assignment: {list(client_dict.keys())}")
+                    
+                    # Get the created task and assign it
+                    tasks = get_tasks()
+                    if str(task_id) in tasks:
+                        task_dict = {str(task_id): tasks[str(task_id)]}
+                        logger.info(f"Assigning task {task_id} with data: {task_dict[str(task_id)]}")
+                        assign_all_tasks(task_dict, client_dict)
+                        logger.info(f"Task {task_id} assignment completed")
+                    else:
+                        logger.warning(f"Task {task_id} not found in tasks dict after creation")
+                        
+                else:
+                    logger.warning("No active clients available for task assignment")
+                        
+            except Exception as assign_error:
+                logger.error(f"Task created but assignment failed: {assign_error}", exc_info=True)
+            
+            return {"message": "Task created successfully", "id": task_id}, 201
+            
+        except Exception as e:
+            logger.error(f"Error creating task: {e}")
+            return {"error": "Internal server error"}, 500
+
     # Execution Management API Endpoints
     @app.route("/api/executions/<int:execution_id>", methods=["GET"])
     def api_execution_details(execution_id):
@@ -576,15 +631,19 @@ def register_modern_routes(app, cache, logger):
         try:
             client_cache = get_client_cache_manager()
             # Get active client usernames as potential owners
-            owners = client_cache.get_active_clients()
+            active_clients = client_cache.get_active_clients()
             
             # Also include owners from existing tasks for backward compatibility
             legacy_owners = get_available_owners()
             
-            # Combine and deduplicate
-            all_owners = sorted(set(owners + legacy_owners))
+            # Combine and deduplicate, excluding special owners from the combined list
+            combined_owners = sorted(set(active_clients + legacy_owners))
+            regular_owners = [owner for owner in combined_owners if owner not in ["ALL", "Anyone"]]
             
-            return jsonify({"owners": all_owners})
+            # Add special owner options at the beginning
+            final_owners = ["ALL", "Anyone"] + regular_owners
+            
+            return jsonify({"owners": final_owners})
             
         except Exception as e:
             logger.error(f"Error getting owners: {e}")
@@ -967,6 +1026,7 @@ def get_tasks_paginated(page=1, page_size=25, search='', status_filter='', type_
                 'name': task_data.get('plugin', f'Task {task_id[:8]}'),
                 'description': f"Plugin: {task_data.get('plugin', 'Unknown')} | Action: {task_data.get('action', 'run')}",
                 'owner': task_data.get('owner', 'System'),
+                'executor': task_data.get('executor', ''),
                 'plugin': task_data.get('plugin', 'unknown'),
                 'status': task_data.get('status', 'pending'),
                 'type': task_data.get('type', 'scheduled'),
