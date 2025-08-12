@@ -68,6 +68,20 @@ def init_db():
                     updated_at REAL
                 )
             ''')
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS heartbeats (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL,
+                    hostname TEXT,
+                    ip_address TEXT,
+                    cpu_usage REAL DEFAULT 0.0,
+                    memory_usage REAL DEFAULT 0.0,
+                    login_time REAL,
+                    since_last_heartbeat REAL,
+                    timestamp REAL NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
             
             # Create indexes for better performance
             conn.execute('CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)')
@@ -77,6 +91,10 @@ def init_db():
             conn.execute('CREATE INDEX IF NOT EXISTS idx_executions_client ON executions(client)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_executions_created_at ON executions(created_at)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_executions_updated_at ON executions(updated_at)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_heartbeats_username ON heartbeats(username)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_heartbeats_hostname ON heartbeats(hostname)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_heartbeats_timestamp ON heartbeats(timestamp)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_heartbeats_user_host_time ON heartbeats(username, hostname, timestamp)')
             
             # Migrate existing tables to add missing columns
             migrate_tasks_table(conn)
