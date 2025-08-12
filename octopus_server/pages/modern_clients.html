@@ -130,7 +130,7 @@
                             <small class="text-muted">Last Heartbeat</small>
                             <small class="{% if client.status == 'online' %}text-success{% else %}text-muted{% endif %}">
                                 {% if client.last_heartbeat %}
-                                    {{ moment(client.last_heartbeat).fromNow() if moment else 'Recently' }}
+                                    {{ client.last_heartbeat | datetimeformat }}
                                 {% else %}
                                     Never
                                 {% endif %}

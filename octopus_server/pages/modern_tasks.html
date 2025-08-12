@@ -308,6 +308,7 @@
                             <div class="mb-3">
                                 <label class="form-label">Owner</label>
                                 <select class="form-select" name="owner" id="ownerSelect">
+                                    <option value="ALL">ALL</option>
                                     <option value="Anyone">Anyone</option>
                                 </select>
                             </div>
@@ -324,6 +325,7 @@
                             <div class="mb-3">
                                 <label class="form-label">Owner</label>
                                 <select class="form-select" name="owner" id="ownerSelectFallback">
+                                    <option value="ALL">ALL</option>
                                     <option value="Anyone">Anyone</option>
                                 </select>
                             </div>
@@ -722,11 +724,9 @@
             .then(response => response.json())
             .then(data => {
                 if (data.owners) {
-                    // Clear and populate main owner select
-                    ownerSelect.innerHTML = '<option value="Anyone">Anyone</option>';
-                    
-                    // Clear and populate fallback owner select
-                    ownerSelectFallback.innerHTML = '<option value="Anyone">Anyone</option>';
+                    // Clear owner selects
+                    ownerSelect.innerHTML = '';
+                    ownerSelectFallback.innerHTML = '';
                     
                     data.owners.forEach(owner => {
                         // Main owner select

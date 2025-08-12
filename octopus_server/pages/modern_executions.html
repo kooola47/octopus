@@ -195,11 +195,9 @@
                         <td>
                             <div>
                                 {% if execution.started_at %}
-                                    <div class="fw-medium">{{ execution.started_at.strftime('%m/%d %H:%M') if execution.started_at.strftime else 'Recently' }}</div>
-                                    <small class="text-muted">{{ execution.started_at.strftime('%Y') if execution.started_at.strftime else '' }}</small>
+                                    <div class="fw-medium">{{ execution.started_at | datetimeformat }}</div>
                                 {% elif execution.updated_at %}
-                                    <div class="fw-medium">{{ moment(execution.updated_at).format('MM/DD HH:mm') if moment else 'Recently' }}</div>
-                                    <small class="text-muted">{{ moment(execution.updated_at).format('YYYY') if moment else '' }}</small>
+                                    <div class="fw-medium">{{ execution.updated_at | datetimeformat }}</div>
                                 {% else %}
                                     <span class="text-muted">Unknown</span>
                                 {% endif %}
@@ -250,7 +248,7 @@
                             </div>
                             <small class="text-muted">
                                 {% if execution.started_at %}
-                                    {{ execution.started_at.strftime('%H:%M') if execution.started_at.strftime else 'Recently' }}
+                                    {{ execution.started_at | datetimeformat }}
                                 {% else %}
                                     Unknown
                                 {% endif %}

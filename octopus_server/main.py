@@ -53,7 +53,7 @@ def datetimeformat(value):
         # If it's a timestamp (float), convert to datetime
         if isinstance(value, (int, float)):
             dt = datetime.fromtimestamp(value)
-            return dt.strftime('%m/%d/%Y %H:%M')
+            return dt.strftime('%m/%d/%Y %H:%M:%S')
         else:
             return str(value)
     except:

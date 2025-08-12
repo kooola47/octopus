@@ -95,6 +95,31 @@ class ClientCacheManager:
         else:
             status = 'offline'
         
+        # Calculate task execution statistics
+        tasks_executed = 0
+        success_rate = 0.0
+        
+        try:
+            with sqlite3.connect(get_db_file()) as conn:
+                cursor = conn.cursor()
+                
+                # Get execution count for this client
+                cursor.execute("SELECT COUNT(*) as count FROM executions WHERE client = ?", 
+                             (heartbeat_row['username'],))
+                exec_result = cursor.fetchone()
+                tasks_executed = exec_result[0] if exec_result else 0
+                
+                # Get success rate
+                if tasks_executed > 0:
+                    cursor.execute("SELECT COUNT(*) as count FROM executions WHERE client = ? AND status = 'success'", 
+                                 (heartbeat_row['username'],))
+                    success_result = cursor.fetchone()
+                    success_count = success_result[0] if success_result else 0
+                    success_rate = (success_count / tasks_executed * 100)
+                    
+        except Exception as e:
+            self.logger.error(f"Error calculating task stats for {heartbeat_row['username']}: {e}")
+        
         return {
             'id': heartbeat_row['username'],
             'name': heartbeat_row['username'],
@@ -106,6 +131,8 @@ class ClientCacheManager:
             'last_seen': heartbeat_row['timestamp'],
             'cpu_usage': round(heartbeat_row.get('cpu_usage', 0.0), 1),
             'memory_usage': round(heartbeat_row.get('memory_usage', 0.0), 1),
+            'tasks_executed': tasks_executed,
+            'success_rate': round(success_rate, 1),
             'version': 'v2.0.0',
             'time_diff': time_diff
         }

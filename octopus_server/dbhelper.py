@@ -401,48 +401,75 @@ def assign_all_tasks(tasks, clients):
     """
     import random
     import logging
+    import threading
+    import time
     
     logger = logging.getLogger("octopus_server")
-    # Only use clients that are currently online (pre-filtered by caller)
-    available_users = [str(client['username']) for client in clients.values() if 'username' in client]
-    logger.info(f"Available users for task assignment: {available_users}")
     
-    for tid, task in tasks.items():
-        owner = task.get("owner")
-        executor = task.get("executor")
-        status = task.get("status", "")
+    # Global lock to prevent concurrent task assignments
+    if not hasattr(assign_all_tasks, '_assignment_lock'):
+        assign_all_tasks._assignment_lock = threading.Lock()
+        assign_all_tasks._last_assignment = 0
+    
+    # Rate limiting: prevent assignments more than once per second
+    current_time = time.time()
+    if current_time - assign_all_tasks._last_assignment < 1.0:
+        logger.debug("Skipping task assignment due to rate limiting")
+        return
+    
+    # Try to acquire lock, but don't block if another assignment is in progress
+    if not assign_all_tasks._assignment_lock.acquire(blocking=False):
+        logger.debug("Skipping task assignment - another assignment in progress")
+        return
+    
+    try:
+        assign_all_tasks._last_assignment = current_time
         
-        logger.info(f"Processing task {tid}: owner={owner}, executor={executor}, status={status}")
+        # Only use clients that are currently online (pre-filtered by caller)
+        available_users = [str(client['username']) for client in clients.values() if 'username' in client]
+        logger.info(f"Available users for task assignment: {available_users}")
         
-        # Skip if task is already done
-        if status in ("success", "failed", "Done"):
-            continue
+        for tid, task in tasks.items():
+            owner = task.get("owner")
+            executor = task.get("executor")
+            status = task.get("status", "")
             
-        # Handle different owner types
-        if owner == "ALL":
-            # ALL tasks should be marked as Active immediately so all clients can pick them up
-            if not executor:
+            logger.debug(f"Processing task {tid}: owner={owner}, executor={executor}, status={status}")
+            
+            # Skip if task is already done
+            if status in ("success", "failed", "Done"):
+                continue
+                
+            # Skip if task already has an executor (prevent re-assignment)
+            if executor and executor.strip():
+                continue
+                
+            # Handle different owner types
+            if owner == "ALL":
+                # ALL tasks should be marked as Active immediately so all clients can pick them up
                 logger.info(f"Assigning ALL task {tid} to all clients")
                 update_task(tid, {"executor": "ALL", "status": "Active"})
                 task["executor"] = "ALL"
-                
-        elif owner == "Anyone":
-            # Assign to a random available client
-            if (not executor or executor == "") and available_users:
-                chosen = random.choice(available_users)
-                logger.info(f"Assigning Anyone task {tid} to {chosen}")
-                update_task(tid, {"executor": chosen, "status": "Active"})
-                task["executor"] = chosen
-                
-        else:
-            # Specific user assignment
-            if owner in available_users:
-                if not executor or executor == "":
+                    
+            elif owner == "Anyone":
+                # Assign to a random available client
+                if available_users:
+                    chosen = random.choice(available_users)
+                    logger.info(f"Assigning Anyone task {tid} to {chosen}")
+                    update_task(tid, {"executor": chosen, "status": "Active"})
+                    task["executor"] = chosen
+                    
+            else:
+                # Specific user assignment
+                if owner in available_users:
                     logger.info(f"Assigning specific user task {tid} to {owner}")
                     update_task(tid, {"executor": owner, "status": "Active"}) 
                     task["executor"] = owner
-            else:
-                logger.warning(f"Task {tid} owner '{owner}' is not in available users: {available_users}")
+                else:
+                    logger.warning(f"Task {tid} owner '{owner}' is not in available users: {available_users}")
+                    
+    finally:
+        assign_all_tasks._assignment_lock.release()
 
 def compute_task_status(task, clients):
     """
