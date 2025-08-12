@@ -320,9 +320,28 @@
     }
     
     function removeClient(clientId) {
-        if (confirm('Remove this client from the list?')) {
-            console.log('Remove client:', clientId);
-            // Implementation for removing client
+        if (confirm('Are you sure you want to remove this client? This will delete all heartbeat records for this client.')) {
+            // Call the API to delete the client
+            fetch(`/api/clients/${clientId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast('Error removing client: ' + data.error, 'danger');
+                } else {
+                    showToast(data.message, 'success');
+                    // Refresh the clients page
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error removing client:', error);
+                showToast('Error removing client. Please try again.', 'danger');
+            });
         }
     }
     
@@ -351,6 +370,32 @@
         document.body.appendChild(toast);
         const bsToast = new bootstrap.Toast(toast);
         bsToast.show();
+    }
+    
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        const bgClass = type === 'success' ? 'bg-success' : type === 'danger' ? 'bg-danger' : 'bg-info';
+        const icon = type === 'success' ? 'bi-check-circle' : type === 'danger' ? 'bi-exclamation-triangle' : 'bi-info-circle';
+        
+        toast.className = `toast align-items-center text-white ${bgClass} border-0`;
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi ${icon} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        // Remove toast element after it's hidden
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
+        });
     }
     
     function refreshClients() {

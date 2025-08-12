@@ -317,6 +317,32 @@ def register_modern_routes(app, cache, logger):
             logger.error(f"Error assigning task: {e}")
             return {"error": "Internal server error"}, 500
 
+    @app.route("/api/clients/<client_id>", methods=["DELETE"])
+    def api_delete_client(client_id):
+        """Delete a client by removing all its heartbeat records"""
+        try:
+            with sqlite3.connect(get_db_file()) as conn:
+                cursor = conn.cursor()
+                
+                # Delete all heartbeat records for this client (username)
+                cursor.execute("DELETE FROM heartbeats WHERE username = ?", (client_id,))
+                deleted_count = cursor.rowcount
+                
+                if deleted_count == 0:
+                    return {"error": "Client not found"}, 404
+                
+                conn.commit()
+                logger.info(f"Deleted {deleted_count} heartbeat records for client {client_id}")
+                
+                return {
+                    "message": f"Client {client_id} removed successfully",
+                    "deleted_records": deleted_count
+                }
+                
+        except Exception as e:
+            logger.error(f"Error deleting client {client_id}: {e}")
+            return {"error": "Internal server error"}, 500
+
     # Task Management API Endpoints
     @app.route("/api/tasks/<int:task_id>", methods=["GET"])
     def api_task_details(task_id):
