@@ -1,0 +1,2422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🐙 Octopus Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --octopus-primary: #6366f1;
+            --octopus-primary-dark: #4f46e5;
+            --octopus-secondary: #8b5cf6;
+            --octopus-success: #10b981;
+            --octopus-warning: #f59e0b;
+            --octopus-danger: #ef4444;
+            --octopus-info: #3b82f6;
+            --octopus-light: #f8fafc;
+            --octopus-dark: #1e293b;
+            --octopus-border: #e2e8f0;
+            --octopus-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --octopus-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header Styles */
+        .octopus-header {
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--octopus-shadow-lg);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .octopus-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--octopus-primary), var(--octopus-secondary), var(--octopus-info));
+        }
+
+        .octopus-header h1 {
+            margin: 0;
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .octopus-subtitle {
+            color: #64748b;
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+            font-weight: 400;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            background: rgba(255,255,255,0.9);
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--octopus-shadow);
+            border: none;
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            margin: 0 0.25rem;
+            color: #64748b;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-tabs .nav-link:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--octopus-primary);
+            transform: translateY(-2px);
+        }
+
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-primary-dark));
+            color: white;
+            box-shadow: var(--octopus-shadow);
+            transform: translateY(-2px);
+        }
+
+        .nav-tabs .nav-link i {
+            margin-right: 0.5rem;
+        }
+
+        /* Card Styles */
+        .octopus-card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--octopus-shadow-lg);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .octopus-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .octopus-section-title {
+            color: var(--octopus-dark);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .octopus-section-title i {
+            margin-right: 0.75rem;
+            color: var(--octopus-primary);
+        }
+
+        /* Table Styles */
+        .octopus-table {
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: var(--octopus-shadow);
+            margin-bottom: 0;
+        }
+
+        .octopus-table thead th {
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-primary-dark));
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            padding: 1rem;
+            border: none;
+        }
+
+        .octopus-table tbody tr {
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .octopus-table tbody tr:nth-child(even) {
+            background: rgba(248, 250, 252, 0.8);
+        }
+
+        .octopus-table tbody tr:hover {
+            background: rgba(99, 102, 241, 0.1);
+            transform: scale(1.01);
+        }
+
+        .octopus-table td {
+            padding: 1rem;
+            border: none;
+            vertical-align: middle;
+        }
+
+        /* ID Column Styles */
+        .task-id-cell, .execution-id-cell {
+            min-width: 150px;
+            max-width: 300px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .task-id-cell code, .execution-id-cell code, .task-id-code {
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            background: rgba(0,0,0,0.05);
+            transition: background-color 0.2s ease;
+            display: inline-block;
+            max-width: 100%;
+            word-break: break-all;
+            white-space: normal;
+        }
+
+        .task-id-cell code:hover, .execution-id-cell code:hover, .task-id-code:hover {
+            background: rgba(0,0,0,0.1);
+        }
+
+        /* Query Builder Styles */
+        .query-builder-container {
+            position: relative;
+        }
+
+        .query-display {
+            min-height: 45px;
+            cursor: text;
+            border: 2px solid #e9ecef;
+            transition: border-color 0.15s ease-in-out;
+        }
+
+        .query-display:focus-within {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        .query-chips {
+            gap: 0.25rem;
+        }
+
+        .query-chip {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            color: #1565c0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            white-space: nowrap;
+        }
+
+        .query-chip-remove {
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 0.25rem;
+            color: #1976d2;
+        }
+
+        .query-chip-remove:hover {
+            color: #d32f2f;
+        }
+
+        .query-input {
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+            background: transparent;
+            min-width: 200px;
+        }
+
+        .query-suggestions {
+            border-radius: 0.375rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .suggestion-item {
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f8f9fa !important;
+        }
+
+        .hover-bg-light:hover {
+            background-color: #f8f9fa !important;
+        }
+
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        .id-tooltip {
+            position: relative;
+        }
+
+        .id-tooltip:hover::after {
+            content: "Click to copy";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 1000;
+        }
+
+        /* Button Styles */
+        .octopus-btn {
+            border-radius: 0.5rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .octopus-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--octopus-shadow);
+        }
+
+        /* Enhanced Filter Control Buttons */
+        .filter-control-buttons {
+            display: flex;
+            gap: 0.5rem;
+            align-items: stretch;
+        }
+
+        .filter-control-buttons .btn {
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            padding: 0.65rem 1.25rem;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-height: 44px;
+        }
+
+        .filter-control-buttons .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .filter-control-buttons .btn:hover::before {
+            left: 100%;
+        }
+
+        .filter-control-buttons .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .filter-control-buttons .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Clear Button Styling */
+        .btn-outline-secondary.filter-clear {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border: 2px solid #cbd5e1;
+            color: #475569;
+        }
+
+        .btn-outline-secondary.filter-clear:hover {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border-color: #dc2626;
+            color: white;
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-outline-secondary.filter-clear i {
+            transition: transform 0.3s ease;
+        }
+
+        .btn-outline-secondary.filter-clear:hover i {
+            transform: rotate(90deg);
+        }
+
+        /* More Button Styling */
+        .btn-outline-primary.filter-more {
+            background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+            border: 2px solid #a5b4fc;
+            color: #4338ca;
+        }
+
+        .btn-outline-primary.filter-more:hover {
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-primary-dark));
+            border-color: var(--octopus-primary-dark);
+            color: white;
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-outline-primary.filter-more i {
+            transition: transform 0.3s ease;
+        }
+
+        .btn-outline-primary.filter-more:hover i {
+            transform: scale(1.1);
+        }
+
+        /* Filter button animations */
+        @keyframes filterButtonPulse {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+
+        .filter-control-buttons .btn.active {
+            animation: filterButtonPulse 2s infinite;
+        }
+
+        /* Active Filters Display Styling */
+        .active-filters-container {
+            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            border: 1px solid #cbd5e1;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .active-filters-container:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .filter-tag {
+            background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 1rem;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin: 0.2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+        }
+
+        .filter-tag:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(99, 102, 241, 0.4);
+        }
+
+        .filter-tag .btn-close {
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            opacity: 0.8;
+            transition: all 0.2s ease;
+        }
+
+        .filter-tag .btn-close:hover {
+            background: rgba(255,255,255,0.5);
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .filter-tag.tag-search {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+        }
+
+        .filter-tag.tag-status {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        }
+
+        .filter-tag.tag-time {
+            background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+        }
+
+        .filter-tag.tag-taskId {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+        }
+
+        .filter-tag.tag-client {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-primary-dark));
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--octopus-success), #059669);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--octopus-danger), #dc2626);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--octopus-warning), #d97706);
+        }
+
+        /* Form Styles */
+        .form-control, .form-select {
+            border: 2px solid var(--octopus-border);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.9);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--octopus-primary);
+            box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+            background: white;
+        }
+
+        /* Status Badges */
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+        }
+
+        .bg-success {
+            background: linear-gradient(135deg, var(--octopus-success), #059669) !important;
+        }
+
+        .bg-danger {
+            background: linear-gradient(135deg, var(--octopus-danger), #dc2626) !important;
+        }
+
+        .bg-warning {
+            background: linear-gradient(135deg, var(--octopus-warning), #d97706) !important;
+        }
+
+        .bg-secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--octopus-shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--octopus-primary);
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+
+        /* Auto-refresh indicator */
+        .refresh-indicator {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(255,255,255,0.9);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            color: #64748b;
+            box-shadow: var(--octopus-shadow);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .refresh-indicator i {
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+
+            .octopus-header {
+                padding: 1.5rem;
+            }
+
+            .octopus-header h1 {
+                font-size: 2rem;
+            }
+
+            .octopus-card {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .refresh-indicator {
+                position: static;
+                margin-bottom: 1rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--octopus-border);
+            border-top: 4px solid var(--octopus-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Modal Styles */
+        .modal-content {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: var(--octopus-shadow-lg);
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--octopus-border);
+            border-radius: 1rem 1rem 0 0;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--octopus-border);
+            border-radius: 0 0 1rem 1rem;
+        }
+
+        .modal-title {
+            font-weight: 600;
+        }
+
+        /* Form validation styles */
+        .form-control.is-invalid,
+        .form-select.is-invalid {
+            border-color: var(--octopus-danger);
+            box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
+        }
+
+        .form-text {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .was-validated .form-control:invalid,
+        .was-validated .form-select:invalid {
+            border-color: var(--octopus-danger);
+            box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
+        }
+
+        .was-validated .form-control:valid,
+        .was-validated .form-select:valid {
+            border-color: var(--octopus-success);
+            box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25);
+        }
+
+        /* Enhance modal backdrop */
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+        }
+
+        /* Pagination Styles */
+        .pagination-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .pagination {
+            margin-bottom: 0;
+        }
+
+        .pagination .page-link {
+            color: var(--octopus-primary);
+            border: 1px solid #dee2e6;
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .pagination .page-link:hover {
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--octopus-primary), #1976d2);
+            border-color: var(--octopus-primary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+        }
+
+        .pagination .page-item.active .page-link {
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--octopus-primary), #1976d2);
+            border-color: var(--octopus-primary);
+            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+        }
+
+        .pagination .page-item.disabled .page-link {
+            color: #6c757d;
+            background: #f8f9fa;
+            border-color: #dee2e6;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .pagination .page-item.disabled .page-link:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .pagination-sm .page-link {
+            padding: 0.375rem 0.625rem;
+            font-size: 0.875rem;
+        }
+
+        #tasksPagination, #executionsPagination {
+            background: linear-gradient(135deg, #f8f9fc, #ffffff);
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .pagination-info small {
+            color: #64748b;
+            font-weight: 500;
+        }
+    </style>
+    <script>
+        let refreshInterval = null;
+        let refreshCountdown = 30;  // Changed from 10 to 30 seconds
+        let countdownInterval = null;
+        let currentData = null;
+
+        function startAutoRefresh() {
+            if (refreshInterval) return;
+            
+            refreshInterval = setInterval(function() {
+                if (!document.activeElement || document.activeElement.tagName === "BODY") {
+                    refreshDashboardData();
+                }
+            }, 30000);  // Changed from 10000ms (10s) to 30000ms (30s)
+
+            startCountdown();
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            updateRefreshIndicator("Paused");
+        }
+
+        function startCountdown() {
+            refreshCountdown = 30;  // Changed from 10 to 30 seconds
+            countdownInterval = setInterval(function() {
+                refreshCountdown--;
+                updateRefreshIndicator(`Refresh in ${refreshCountdown}s`);
+                if (refreshCountdown <= 0) {
+                    refreshCountdown = 10;
+                }
+            }, 1000);
+        }
+
+        function updateRefreshIndicator(text) {
+            const indicator = document.querySelector('.refresh-text');
+            if (indicator) indicator.textContent = text;
+        }
+
+        function refreshDashboardData() {
+            showLoading();
+            fetch('/api/dashboard-data')
+                .then(response => response.json())
+                .then(data => {
+                    currentData = data;
+                    updateDashboardViews(data);
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error refreshing dashboard:', error);
+                    hideLoading();
+                });
+        }
+
+        function updateDashboardViews(data) {
+            updateClientsView(data.clients, data.now);
+            
+            // Don't update tasks view if we're on the dedicated tasks tab
+            // The tasks tab manages its own pagination
+            const tasksTab = document.getElementById('tasks-tab');
+            const isTasksTabActive = tasksTab && tasksTab.classList.contains('active');
+            
+            if (!isTasksTabActive) {
+                updateTasksView(data.tasks);
+            } else {
+                console.log('Skipping tasks update - tasks tab is active with its own pagination');
+            }
+            
+            // Don't update executions view if we're on the dedicated executions tab
+            // The executions tab manages its own pagination
+            const executionsTab = document.getElementById('executions-tab');
+            const isExecutionsTabActive = executionsTab && executionsTab.classList.contains('active');
+            
+            if (!isExecutionsTabActive) {
+                updateExecutionsView(data.executions);
+            } else {
+                console.log('Skipping executions update - executions tab is active with its own pagination');
+            }
+        }
+
+        function updateClientsView(clients, now) {
+            const activeClients = [];
+            const offlineClients = [];
+            
+            for (const [key, client] of Object.entries(clients)) {
+                if (client.last_heartbeat && (now - client.last_heartbeat) <= 30) {
+                    activeClients.push(client);
+                } else {
+                    offlineClients.push(client);
+                }
+            }
+
+            // Update statistics
+            const totalClients = Object.keys(clients).length;
+            const activeCount = activeClients.length;
+            const offlineCount = offlineClients.length;
+            const uptime = totalClients > 0 ? ((activeCount / totalClients) * 100).toFixed(1) : '0.0';
+
+            updateStatCard('clients', 0, totalClients);
+            updateStatCard('clients', 1, activeCount);
+            updateStatCard('clients', 2, offlineCount);
+            updateStatCard('clients', 3, uptime + '%');
+
+            // Update table
+            updateClientsTable(clients, now);
+        }
+
+        function updateTasksView(tasks) {
+            const totalTasks = Object.keys(tasks).length;
+            let activeTasks = 0, completedTasks = 0, pendingTasks = 0, failedTasks = 0;
+
+            for (const [id, task] of Object.entries(tasks)) {
+                const status = task.status || '';
+                if (status === 'Running' || status === 'Assigned' || status === 'Active') {
+                    activeTasks++;
+                } else if (status === 'Done' || status === 'completed' || status === 'success') {
+                    completedTasks++;
+                } else if (status === 'failed' || status === 'error' || status === 'Failed') {
+                    failedTasks++;
+                } else {
+                    pendingTasks++;
+                }
+            }
+
+            updateStatCard('tasks', 0, totalTasks);
+            updateStatCard('tasks', 1, activeTasks);
+            updateStatCard('tasks', 2, completedTasks);
+            updateStatCard('tasks', 3, failedTasks);
+
+            updateTasksTable(tasks);
+            
+            // Update the allTasks variable in the tasks view if it exists
+            if (typeof window.allTasks !== 'undefined') {
+                window.allTasks = tasks;
+                console.log('Updated allTasks with', Object.keys(tasks).length, 'tasks');
+                
+                // If tasks filters exist, apply them to show the data properly
+                if (typeof applyTaskFilters === 'function') {
+                    console.log('Applying task filters after data update');
+                    applyTaskFilters();
+                }
+            }
+        }
+
+        function updateExecutionsView(executions) {
+            // Check if there are active filters in the executions view
+            const executionsView = document.getElementById('executions');
+            let hasActiveFilters = false;
+            
+            if (executionsView) {
+                // Check if any filter inputs have values - use correct selectors
+                const taskIdFilter = document.getElementById('filterExecutionTaskId');
+                const clientFilter = document.getElementById('filterExecutionClient');
+                const statusFilter = document.getElementById('filterExecutionStatus');
+                const resultFilter = document.getElementById('filterExecutionResult');
+                const quickSearch = document.getElementById('executionQuickSearch');
+                
+                hasActiveFilters = (taskIdFilter && taskIdFilter.value.trim() !== '') ||
+                                  (clientFilter && clientFilter.value.trim() !== '') ||
+                                  (statusFilter && statusFilter.value.trim() !== '') ||
+                                  (resultFilter && resultFilter.value.trim() !== '') ||
+                                  (quickSearch && quickSearch.value.trim() !== '');
+                                  
+                console.log('Filter check in updateExecutionsView:');
+                console.log('- taskIdFilter:', taskIdFilter ? taskIdFilter.value : 'not found');
+                console.log('- hasActiveFilters:', hasActiveFilters);
+            }
+            
+            const totalExecutions = executions.length;
+            let successCount = 0, failedCount = 0;
+
+            executions.forEach(exec => {
+                const status = exec.status.toLowerCase();
+                if (status === 'success' || status === 'completed' || status === 'done') {
+                    successCount++;
+                } else if (status === 'failed' || status === 'error') {
+                    failedCount++;
+                }
+            });
+
+            const successRate = totalExecutions > 0 ? ((successCount / totalExecutions) * 100).toFixed(1) : '0.0';
+
+            // Only update stat cards if no filters are active - filtered view handles its own stats
+            if (!hasActiveFilters) {
+                updateStatCard('executions', 0, totalExecutions);
+                updateStatCard('executions', 1, successCount);
+                updateStatCard('executions', 2, failedCount);
+                updateStatCard('executions', 3, successRate + '%');
+            } else {
+                console.log('Skipping stat card updates - filters are active');
+            }
+
+            // Only update the executions table if no filters are active
+            if (!hasActiveFilters) {
+                updateExecutionsTable(executions);
+            } else {
+                console.log('Skipping executions table update - filters are active');
+            }
+        }
+
+        function updateStatCard(viewId, index, value) {
+            const view = document.getElementById(viewId);
+            if (view) {
+                const statCards = view.querySelectorAll('.stat-card .stat-number');
+                if (statCards[index]) {
+                    statCards[index].textContent = value;
+                }
+            }
+        }
+
+        function updateClientsTable(clients, now) {
+            const tbody = document.querySelector('#clients tbody');
+            if (!tbody) return;
+
+            let html = '';
+            const clientEntries = Object.entries(clients);
+            
+            if (clientEntries.length === 0) {
+                html = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-people display-4"></i>
+                            <div class="mt-2">No clients connected</div>
+                            <small>Start a client to see it appear here</small>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                clientEntries.forEach(([key, client]) => {
+                    const timeDiff = client.last_heartbeat ? now - client.last_heartbeat : null;
+                    const lastHeartbeat = client.last_heartbeat ? 
+                        new Date(client.last_heartbeat * 1000).toLocaleString() : 'Never';
+                    const loginTime = client.login_time ? 
+                        new Date(client.login_time * 1000).toLocaleString() : 'Unknown';
+                    
+                    let offlineBadge, statusBadge;
+                    if (timeDiff !== null) {
+                        if (timeDiff <= 30) {
+                            offlineBadge = `<span class="badge bg-success"><i class="bi bi-wifi"></i> ${formatTimeDiff(timeDiff)}</span>`;
+                            statusBadge = `<span class="badge bg-success"><i class="bi bi-check-circle"></i> Online</span>`;
+                        } else if (timeDiff <= 120) {
+                            offlineBadge = `<span class="badge bg-warning"><i class="bi bi-wifi-1"></i> ${formatTimeDiff(timeDiff)}</span>`;
+                            statusBadge = `<span class="badge bg-warning"><i class="bi bi-exclamation-triangle"></i> Warning</span>`;
+                        } else {
+                            offlineBadge = `<span class="badge bg-danger"><i class="bi bi-wifi-off"></i> ${formatTimeDiff(timeDiff)}</span>`;
+                            statusBadge = `<span class="badge bg-danger"><i class="bi bi-x-circle"></i> Offline</span>`;
+                        }
+                    } else {
+                        offlineBadge = `<span class="badge bg-secondary"><i class="bi bi-question"></i> Unknown</span>`;
+                        statusBadge = `<span class="badge bg-danger"><i class="bi bi-x-circle"></i> Offline</span>`;
+                    }
+
+                    html += `
+                        <tr>
+                            <td><span class="badge bg-primary"><i class="bi bi-person"></i> ${client.username}</span></td>
+                            <td><span class="badge bg-secondary"><i class="bi bi-pc-display"></i> ${client.hostname}</span></td>
+                            <td><code>${client.ip}</code></td>
+                            <td><small class="text-muted"><i class="bi bi-clock"></i> ${lastHeartbeat}</small></td>
+                            <td>${offlineBadge}</td>
+                            <td><small class="text-muted"><i class="bi bi-calendar3"></i> ${loginTime}</small></td>
+                            <td>${statusBadge}</td>
+                        </tr>
+                    `;
+                });
+            }
+            tbody.innerHTML = html;
+        }
+
+        function updateTasksTable(tasks) {
+            // Update the tasks table in the tasks view
+            const tasksTableBody = document.querySelector('#tasks #tasksTableBody');
+            if (!tasksTableBody) {
+                console.log('Tasks table body not found, tasks view may not be loaded yet');
+                return;
+            }
+            
+            let html = '';
+            
+            if (!tasks || Object.keys(tasks).length === 0) {
+                html = `
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-4"></i>
+                            <div class="mt-2">No tasks found</div>
+                            <small>Create some tasks to see them here</small>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                for (const [id, task] of Object.entries(tasks)) {
+                    const statusClass = task.status === 'Active' ? 'success' : 
+                                      task.status === 'Done' ? 'primary' : 
+                                      task.status === 'failed' ? 'danger' : 'secondary';
+                    
+                    const typeIcon = task.type === 'Schedule' ? '🔄' : '⚡';
+                    const executorDisplay = task.executor || 'Anyone';
+                    const updatedAt = task.updated_at ? new Date(task.updated_at * 1000).toLocaleString() : 'N/A';
+                    
+                    html += `
+                        <tr>
+                            <td><span class="task-id">${task.id || id}</span></td>
+                            <td><span class="badge bg-info">${typeIcon} ${task.type || 'Adhoc'}</span></td>
+                            <td>${task.owner || 'N/A'}</td>
+                            <td>${task.plugin || 'N/A'}</td>
+                            <td>${task.action || 'N/A'}</td>
+                            <td><span class="badge bg-${statusClass}">${task.status || 'Unknown'}</span></td>
+                            <td>${executorDisplay}</td>
+                            <td>${updatedAt}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            onclick="viewTaskExecutions('${task.id || id}')" title="View Executions">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                            onclick="editTaskDetails(this)" title="Edit Task"
+                                            data-task-id="${task.id || id}"
+                                            data-task-type="${task.type || 'Adhoc'}"
+                                            data-task-owner="${task.owner || 'N/A'}"
+                                            data-task-plugin="${task.plugin || 'N/A'}"
+                                            data-task-action="${task.action || 'N/A'}"
+                                            data-task-args="${task.args || '[]'}"
+                                            data-task-kwargs="${task.kwargs || '{}'}"
+                                            data-task-start="${task.execution_start_time || ''}"
+                                            data-task-end="${task.execution_end_time || ''}"
+                                            data-task-interval="${task.interval || ''}">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteTaskFromFilter('${task.id || id}')" title="Delete Task">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+            
+            tasksTableBody.innerHTML = html;
+            console.log('Tasks table updated with', Object.keys(tasks).length, 'tasks');
+        }
+
+        function updateExecutionsTable(executions) {
+            // Update statistics
+            const successfulExecs = executions.filter(exec => {
+                const status = exec.status.toLowerCase();
+                return status === 'success' || status === 'completed' || status === 'done';
+            }).length;
+            const failedExecs = executions.filter(exec => {
+                const status = exec.status.toLowerCase();
+                return status === 'failed' || status === 'error';
+            }).length;
+            const totalExecs = executions.length;
+            const successRate = totalExecs > 0 ? ((successfulExecs / totalExecs) * 100).toFixed(1) : 0;
+
+            // Update stat cards within the executions view specifically
+            const executionsView = document.getElementById('executions');
+            if (executionsView) {
+                const statCards = executionsView.querySelectorAll('.stat-card .stat-number');
+                if (statCards.length >= 4) {
+                    statCards[0].textContent = totalExecs;
+                    statCards[1].textContent = successfulExecs;
+                    statCards[2].textContent = failedExecs;
+                    statCards[3].textContent = successRate + '%';
+                }
+            }
+
+            // Update executions table
+            const executionsTableBody = document.querySelector('#executions .octopus-table tbody');
+            if (executionsTableBody) {
+                let html = '';
+                
+                if (executions.length === 0) {
+                    html = `
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox display-4"></i>
+                                <div class="mt-2">No execution records found</div>
+                                <small>Execute some tasks to see results here</small>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    executions.forEach((exec, index) => {
+                        let statusBadge;
+                        let resultClass;
+                        const status = exec.status.toLowerCase();
+                        
+                        if (status === 'success' || status === 'completed' || status === 'done') {
+                            statusBadge = '<span class="badge bg-success"><i class="bi bi-check-lg"></i> ' + 
+                                        exec.status.charAt(0).toUpperCase() + exec.status.slice(1) + '</span>';
+                            resultClass = 'text-success';
+                        } else if (status === 'failed' || status === 'error') {
+                            statusBadge = '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> ' + 
+                                        exec.status.charAt(0).toUpperCase() + exec.status.slice(1) + '</span>';
+                            resultClass = 'text-danger';
+                        } else {
+                            statusBadge = '<span class="badge bg-secondary"><i class="bi bi-clock"></i> ' + 
+                                        exec.status.charAt(0).toUpperCase() + exec.status.slice(1) + '</span>';
+                            resultClass = 'text-muted';
+                        }
+                        
+                        const updatedAt = exec.updated_at ? new Date(exec.updated_at * 1000).toLocaleString() : 'Unknown';
+                        
+                        html += `
+                            <tr>
+                                <td>
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-key"></i> ${exec.id}
+                                    </span>
+                                </td>
+                                <td class="task-id-cell">
+                                    <code class="text-info id-tooltip" onclick="copyToClipboard('${exec.task_id}')" title="${exec.task_id}">${exec.task_id}</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">
+                                        <i class="bi bi-person"></i> ${exec.client}
+                                    </span>
+                                </td>
+                                <td>${statusBadge}</td>
+                                <td style="max-width:300px;">
+                                    <div class="text-truncate" title="${exec.result || ''}">
+                                        <small class="${resultClass}">${exec.result || 'No result'}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock"></i>
+                                        ${updatedAt}
+                                    </small>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+                executionsTableBody.innerHTML = html;
+            }
+        }
+
+        function formatTimeDiff(seconds) {
+            if (seconds < 60) return `${Math.floor(seconds)}s`;
+            if (seconds < 3600) return `${Math.floor(seconds/60)}m ${Math.floor(seconds%60)}s`;
+            if (seconds < 86400) return `${Math.floor(seconds/3600)}h ${Math.floor((seconds%3600)/60)}m`;
+            const days = Math.floor(seconds/86400);
+            const hours = Math.floor((seconds%86400)/3600);
+            return `${days}d ${hours}h`;
+        }
+
+        function showTab(tabId) {
+            // Hide all views
+            document.querySelectorAll('.octopus-view').forEach(function(el) {
+                el.style.display = 'none';
+            });
+            
+            // Show selected view
+            document.getElementById(tabId).style.display = 'block';
+            
+            // Update tab active state
+            document.querySelectorAll('.nav-link').forEach(function(el) {
+                el.classList.remove('active');
+            });
+            document.getElementById(tabId + '-tab').classList.add('active');
+            
+            // Load data for specific tabs when they are shown
+            if (tabId === 'executions' && typeof loadExecutions === 'function') {
+                loadExecutions();
+            }
+            
+            // Load tasks data when tasks tab is shown
+            if (tabId === 'tasks') {
+                if (typeof loadTasksData === 'function') {
+                    loadTasksData();
+                } else {
+                    loadTasksPage(1);
+                }
+            }
+            
+            // Update URL
+            if (history.pushState) {
+                const url = new URL(window.location);
+                url.searchParams.set('tab', tabId);
+                window.history.replaceState({}, '', url);
+            }
+        }
+
+        function showLoading() {
+            document.querySelector('.loading-overlay').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.querySelector('.loading-overlay').classList.remove('show');
+        }
+
+        window.onload = function() {
+            hideLoading();
+            startAutoRefresh();
+            
+            // Pause refresh when focusing on form elements
+            document.querySelectorAll('input,select,textarea').forEach(function(el) {
+                el.addEventListener('focus', stopAutoRefresh);
+                el.addEventListener('blur', startAutoRefresh);
+            });
+            
+            // Show the correct tab
+            const activeTab = "{{ active_tab|default('executions') }}";
+            showTab(activeTab);
+            
+            // Do initial data refresh
+            refreshDashboardData();
+        };
+
+        // Modal handling for task creation
+        function setupTaskModal() {
+            const createTaskModal = document.getElementById('createTaskModal');
+            const createTaskForm = document.getElementById('createTaskForm');
+            
+            if (createTaskModal && createTaskForm) {
+                // Clear form when modal is closed
+                createTaskModal.addEventListener('hidden.bs.modal', function () {
+                    createTaskForm.reset();
+                    // Reset to default values
+                    const actionField = createTaskForm.querySelector('input[name="action"]');
+                    if (actionField) actionField.value = 'main';
+                    
+                    const argsField = createTaskForm.querySelector('textarea[name="args"]');
+                    if (argsField) argsField.value = '[]';
+                    
+                    const kwargsField = createTaskForm.querySelector('textarea[name="kwargs"]');
+                    if (kwargsField) kwargsField.value = '{}';
+                    
+                    // Clear validation states
+                    createTaskForm.classList.remove('was-validated');
+                    const invalidFields = createTaskForm.querySelectorAll('.is-invalid');
+                    invalidFields.forEach(field => field.classList.remove('is-invalid'));
+                });
+
+                // Form validation
+                createTaskForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    // Generate args and kwargs from dynamic form
+                    generateArgsAndKwargs();
+                    
+                    let isValid = true;
+                    const requiredFields = createTaskForm.querySelectorAll('[required]');
+                    
+                    requiredFields.forEach(field => {
+                        if (!field.value.trim()) {
+                            field.classList.add('is-invalid');
+                            isValid = false;
+                        } else {
+                            field.classList.remove('is-invalid');
+                        }
+                    });
+
+                    // Validate JSON fields
+                    const argsField = createTaskForm.querySelector('textarea[name="args"]');
+                    const kwargsField = createTaskForm.querySelector('textarea[name="kwargs"]');
+                    
+                    if (argsField) {
+                        try {
+                            JSON.parse(argsField.value || '[]');
+                            argsField.classList.remove('is-invalid');
+                        } catch (e) {
+                            argsField.classList.add('is-invalid');
+                            isValid = false;
+                        }
+                    }
+                    
+                    if (kwargsField) {
+                        try {
+                            JSON.parse(kwargsField.value || '{}');
+                            kwargsField.classList.remove('is-invalid');
+                        } catch (e) {
+                            kwargsField.classList.add('is-invalid');
+                            isValid = false;
+                        }
+                    }
+
+                    if (isValid) {
+                        // Submit the form
+                        createTaskForm.submit();
+                    } else {
+                        createTaskForm.classList.add('was-validated');
+                    }
+                });
+            }
+        }
+
+        // Dynamic form generation functions
+        let currentPluginFunctions = {};
+
+        function loadPluginFunctions() {
+            const pluginSelect = document.querySelector('select[name="plugin"]');
+            const actionSelect = document.querySelector('select[name="action"]');
+            const parametersContainer = document.getElementById('dynamicParametersContainer');
+            
+            if (!pluginSelect.value) {
+                actionSelect.innerHTML = '<option value="">Select Function</option>';
+                parametersContainer.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> Select a plugin and function to see available parameters</div>';
+                return;
+            }
+            
+            // Show loading state
+            actionSelect.innerHTML = '<option value="">Loading functions...</option>';
+            parametersContainer.innerHTML = '<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> Loading plugin functions...</div>';
+            
+            // Fetch plugin functions
+            fetch(`/api/plugin-functions?plugin=${encodeURIComponent(pluginSelect.value)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        actionSelect.innerHTML = '<option value="">Error loading functions</option>';
+                        parametersContainer.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${data.error}</div>`;
+                        return;
+                    }
+                    
+                    currentPluginFunctions = data.functions;
+                    
+                    // Populate action dropdown
+                    actionSelect.innerHTML = '<option value="">Select Function</option>';
+                    Object.keys(data.functions).forEach(funcName => {
+                        const option = document.createElement('option');
+                        option.value = funcName;
+                        option.textContent = funcName;
+                        actionSelect.appendChild(option);
+                    });
+                    
+                    // Clear parameters container
+                    parametersContainer.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> Select a function to see its parameters</div>';
+                })
+                .catch(error => {
+                    console.error('Error loading plugin functions:', error);
+                    actionSelect.innerHTML = '<option value="">Error loading functions</option>';
+                    parametersContainer.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Failed to load plugin functions</div>';
+                });
+        }
+
+        function loadFunctionParameters() {
+            const actionSelect = document.querySelector('select[name="action"]');
+            const parametersContainer = document.getElementById('dynamicParametersContainer');
+            
+            if (!actionSelect.value || !currentPluginFunctions[actionSelect.value]) {
+                parametersContainer.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> Select a function to see its parameters</div>';
+                return;
+            }
+            
+            const functionInfo = currentPluginFunctions[actionSelect.value];
+            const parameters = functionInfo.parameters;
+            
+            // Generate dynamic parameter form
+            let html = '';
+            
+            if (functionInfo.docstring && functionInfo.docstring !== 'No description available') {
+                html += `<div class="alert alert-light">
+                    <strong><i class="bi bi-info-circle"></i> Function Description:</strong><br>
+                    <small>${escapeHtml(functionInfo.docstring)}</small>
+                </div>`;
+            }
+            
+            if (Object.keys(parameters).length === 0) {
+                html += '<div class="alert alert-success"><i class="bi bi-check-circle"></i> This function requires no parameters</div>';
+            } else {
+                html += '<div class="row g-3">';
+                
+                Object.entries(parameters).forEach(([paramName, paramInfo]) => {
+                    const isRequired = paramInfo.required;
+                    const fieldId = `param_${paramName}`;
+                    
+                    html += `<div class="col-md-6">
+                        <label for="${fieldId}" class="form-label">
+                            ${paramName}
+                            ${isRequired ? '<span class="text-danger">*</span>' : ''}
+                            <small class="text-muted">(${paramInfo.type})</small>
+                        </label>`;
+                    
+                    // Generate appropriate input based on type
+                    if (paramInfo.type === 'bool') {
+                        html += `<select class="form-select" id="${fieldId}" data-param="${paramName}" ${isRequired ? 'required' : ''}>
+                            <option value="">Select...</option>
+                            <option value="true">True</option>
+                            <option value="false">False</option>
+                        </select>`;
+                    } else if (paramInfo.type === 'int') {
+                        html += `<input type="number" class="form-control" id="${fieldId}" 
+                                data-param="${paramName}" ${isRequired ? 'required' : ''} 
+                                placeholder="Enter integer value"`;
+                        if (paramInfo.default !== undefined) {
+                            html += ` value="${paramInfo.default}"`;
+                        }
+                        html += `>`;
+                    } else if (paramInfo.type === 'float') {
+                        html += `<input type="number" step="any" class="form-control" id="${fieldId}" 
+                                data-param="${paramName}" ${isRequired ? 'required' : ''} 
+                                placeholder="Enter decimal value"`;
+                        if (paramInfo.default !== undefined) {
+                            html += ` value="${paramInfo.default}"`;
+                        }
+                        html += `>`;
+                    } else {
+                        // Default to text input for str and other types
+                        html += `<input type="text" class="form-control" id="${fieldId}" 
+                                data-param="${paramName}" ${isRequired ? 'required' : ''} 
+                                placeholder="Enter ${paramInfo.type} value"`;
+                        if (paramInfo.default !== undefined) {
+                            html += ` value="${paramInfo.default}"`;
+                        }
+                        html += `>`;
+                    }
+                    
+                    if (paramInfo.default !== undefined) {
+                        html += `<div class="form-text">Default: ${paramInfo.default}</div>`;
+                    } else if (isRequired) {
+                        html += `<div class="form-text text-danger">Required parameter</div>`;
+                    } else {
+                        html += `<div class="form-text">Optional parameter</div>`;
+                    }
+                    
+                    html += `</div>`;
+                });
+                
+                html += '</div>';
+            }
+            
+            parametersContainer.innerHTML = html;
+        }
+
+        function generateArgsAndKwargs() {
+            const actionSelect = document.querySelector('select[name="action"]');
+            if (!actionSelect.value || !currentPluginFunctions[actionSelect.value]) {
+                return;
+            }
+            
+            const functionInfo = currentPluginFunctions[actionSelect.value];
+            const parameters = functionInfo.parameters;
+            
+            const args = [];
+            const kwargs = {};
+            
+            // Collect parameter values
+            Object.entries(parameters).forEach(([paramName, paramInfo]) => {
+                const field = document.getElementById(`param_${paramName}`);
+                if (field && field.value !== '') {
+                    let value = field.value;
+                    
+                    // Convert value to appropriate type
+                    if (paramInfo.type === 'bool') {
+                        value = value === 'true';
+                    } else if (paramInfo.type === 'int') {
+                        value = parseInt(value);
+                    } else if (paramInfo.type === 'float') {
+                        value = parseFloat(value);
+                    }
+                    // For str and others, keep as string
+                    
+                    kwargs[paramName] = value;
+                }
+            });
+            
+            // Update hidden fields
+            document.getElementById('hiddenArgs').value = JSON.stringify(args);
+            document.getElementById('hiddenKwargs').value = JSON.stringify(kwargs);
+        }
+
+        // Initialize everything when the page loads
+        window.onload = function() {
+            hideLoading();
+            startAutoRefresh();
+            setupTaskModal();
+            
+            // Pause refresh when focusing on form elements
+            document.querySelectorAll('input,select,textarea').forEach(function(el) {
+                el.addEventListener('focus', stopAutoRefresh);
+                el.addEventListener('blur', startAutoRefresh);
+            });
+            
+            // Check URL parameter for active tab
+            const urlParams = new URLSearchParams(window.location.search);
+            const activeTab = urlParams.get('tab') || "{{ active_tab|default('executions') }}";
+            
+            // Show the correct tab
+            showTab(activeTab);
+            
+            // Handle other URL parameters
+            handleUrlParameters();
+            
+            // Do initial data refresh
+            refreshDashboardData();
+        };
+
+        // Handle browser back/forward navigation
+        window.addEventListener('popstate', function(event) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const activeTab = urlParams.get('tab') || 'executions';
+            showTab(activeTab);
+        });
+
+        // Helper function to format timestamp
+        function formatTimestamp(timestamp) {
+            if (!timestamp || timestamp === 'Unknown' || timestamp === '') {
+                return 'Unknown';
+            }
+            
+            try {
+                // Convert Unix timestamp (seconds) to milliseconds for JavaScript Date
+                const date = new Date(parseFloat(timestamp) * 1000);
+                
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                    return timestamp; // Return original if can't parse
+                }
+                
+                // Format as readable date and time
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                });
+            } catch (error) {
+                console.error('Error formatting timestamp:', timestamp, error);
+                return timestamp;
+            }
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Helper function to copy text to clipboard
+        function copyToClipboard(text) {
+            if (!text || text === 'N/A') return;
+            
+            navigator.clipboard.writeText(text).then(function() {
+                // Show success feedback
+                showNotification('ID copied to clipboard!', 'success');
+            }).catch(function(err) {
+                console.error('Failed to copy to clipboard:', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showNotification('ID copied to clipboard!', 'success');
+                } catch (err) {
+                    showNotification('Failed to copy ID', 'error');
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+
+        // Helper function to show notifications
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 10000;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                opacity: 0;
+                transform: translateX(100%);
+            `;
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Task Details Modal Functions
+        function viewTaskDetails(button) {
+            console.log('viewTaskDetails called', button);
+            
+            try {
+                // Get data from button attributes
+                const taskId = button.getAttribute('data-task-id');
+                console.log('Task ID:', taskId);
+                
+                document.getElementById('detailTaskId').textContent = taskId;
+                document.getElementById('detailType').textContent = button.getAttribute('data-task-type');
+                document.getElementById('detailOwner').textContent = button.getAttribute('data-task-owner');
+                document.getElementById('detailPlugin').textContent = button.getAttribute('data-task-plugin');
+                document.getElementById('detailAction').textContent = button.getAttribute('data-task-action');
+                document.getElementById('detailStatus').textContent = button.getAttribute('data-task-status');
+                document.getElementById('detailExecutor').textContent = button.getAttribute('data-task-executor') || 'Unassigned';
+                
+                // Format the timestamp for better readability
+                const rawTimestamp = button.getAttribute('data-task-updated');
+                document.getElementById('detailUpdated').textContent = formatTimestamp(rawTimestamp);
+                
+                document.getElementById('detailArgs').textContent = button.getAttribute('data-task-args') || '[]';
+                document.getElementById('detailKwargs').textContent = button.getAttribute('data-task-kwargs') || '{}';
+                
+                // Format start and end times if they exist
+                const startTime = button.getAttribute('data-task-start');
+                const endTime = button.getAttribute('data-task-end');
+                document.getElementById('detailStartTime').textContent = formatTimestamp(startTime) || 'Not set';
+                document.getElementById('detailEndTime').textContent = formatTimestamp(endTime) || 'Not set';
+                document.getElementById('detailInterval').textContent = button.getAttribute('data-task-interval') || 'Not set';
+                
+                console.log('Data populated successfully');
+                // Modal will be shown by Bootstrap automatically due to data-bs-toggle and data-bs-target
+            } catch (error) {
+                console.error('Error in viewTaskDetails:', error);
+                alert('Error opening task details: ' + error.message);
+            }
+        }
+
+        function editTaskDetails(button) {
+            const modal = new bootstrap.Modal(document.getElementById('editTaskModal'));
+            
+            // Populate edit form with current values
+            document.getElementById('editTaskId').value = button.getAttribute('data-task-id');
+            document.getElementById('editType').value = button.getAttribute('data-task-type');
+            document.getElementById('editOwner').value = button.getAttribute('data-task-owner');
+            document.getElementById('editPlugin').value = button.getAttribute('data-task-plugin');
+            document.getElementById('editAction').value = button.getAttribute('data-task-action');
+            document.getElementById('editArgs').value = button.getAttribute('data-task-args') || '[]';
+            document.getElementById('editKwargs').value = button.getAttribute('data-task-kwargs') || '{}';
+            document.getElementById('editStartTime').value = button.getAttribute('data-task-start') || '';
+            document.getElementById('editEndTime').value = button.getAttribute('data-task-end') || '';
+            document.getElementById('editInterval').value = button.getAttribute('data-task-interval') || '';
+            
+            modal.show();
+        }
+
+        function deleteTaskFromFilter(taskId) {
+            window.location.href = `/tasks-ui/delete/${taskId}?tab=tasks`;
+        }
+
+        // Handle URL parameters for NLP task creation
+        function handleUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const createTask = urlParams.get('createTask');
+            const editTask = urlParams.get('editTask');
+            
+            if (createTask) {
+                try {
+                    const taskData = JSON.parse(decodeURIComponent(createTask));
+                    populateCreateTaskForm(taskData);
+                    showTab('tasks');
+                    setTimeout(() => {
+                        const modal = new bootstrap.Modal(document.getElementById('createTaskModal'));
+                        modal.show();
+                    }, 500);
+                } catch (error) {
+                    console.error('Error parsing task data from URL:', error);
+                }
+            } else if (editTask) {
+                try {
+                    const taskData = JSON.parse(decodeURIComponent(editTask));
+                    populateCreateTaskForm(taskData);
+                    showTab('tasks');
+                    setTimeout(() => {
+                        const modal = new bootstrap.Modal(document.getElementById('createTaskModal'));
+                        modal.show();
+                    }, 500);
+                } catch (error) {
+                    console.error('Error parsing task data from URL:', error);
+                }
+            }
+        }
+
+        function populateCreateTaskForm(taskData) {
+            if (taskData.owner) document.getElementById('createOwner').value = taskData.owner;
+            if (taskData.plugin) document.getElementById('createPlugin').value = taskData.plugin;
+            if (taskData.action) document.getElementById('createAction').value = taskData.action;
+            if (taskData.type) document.getElementById('createType').value = taskData.type;
+            if (taskData.priority) document.getElementById('createPriority').value = taskData.priority;
+            if (taskData.args) document.getElementById('createArgs').value = JSON.stringify(taskData.args);
+            if (taskData.kwargs) document.getElementById('createKwargs').value = JSON.stringify(taskData.kwargs);
+            if (taskData.execution_start_time) document.getElementById('createStartTime').value = taskData.execution_start_time.slice(0, 16);
+            if (taskData.execution_end_time) document.getElementById('createEndTime').value = taskData.execution_end_time.slice(0, 16);
+            if (taskData.interval) document.getElementById('createInterval').value = taskData.interval;
+        }
+
+        // Initialize page
+        window.addEventListener('load', function() {
+            handleUrlParameters();
+            
+            // Handle NLP task data from server via JSON script tags to avoid templating inside JS
+            const nlpDataEl = document.getElementById('nlpTaskDataJson');
+            const editModeEl = document.getElementById('nlpEditModeJson');
+            const nlpTaskData = nlpDataEl ? JSON.parse(nlpDataEl.textContent || 'null') : null;
+            const editMode = editModeEl ? JSON.parse(editModeEl.textContent || 'false') : false;
+
+            if (nlpTaskData) {
+                console.log('NLP task data detected, processing...');
+                console.log('NLP task data:', nlpTaskData);
+                console.log('Edit mode:', editMode);
+                
+                // Check if auto-submit is requested (future feature)
+                const urlParams = new URLSearchParams(window.location.search);
+                const autoSubmit = urlParams.get('autoSubmit') === 'true';
+                
+                // Show the Tasks tab
+                const tasksTab = document.querySelector('[data-bs-target="#tasks"]');
+                if (tasksTab) {
+                    console.log('Switching to Tasks tab...');
+                    const tab = new bootstrap.Tab(tasksTab);
+                    tab.show();
+                }
+                
+                // Populate the create task form and show modal with extended delay
+                setTimeout(() => {
+                    console.log('Processing NLP task data and clicking Create Task button...');
+                    populateCreateTaskForm(nlpTaskData);
+                    
+                    // Find and click the Create Task button to open the modal
+                    const createTaskButton = document.querySelector('button[data-bs-target="#createTaskModal"]');
+                    if (createTaskButton) {
+                        console.log('Found Create Task button, clicking to open modal...');
+                        createTaskButton.click();
+                        
+                        // Update modal title after a short delay
+                        setTimeout(() => {
+                            const modalTitle = document.querySelector('#createTaskModal .modal-title');
+                            if (modalTitle) {
+                                modalTitle.textContent = editMode ? '🤖 Edit NLP Task' : '🤖 Review & Create NLP Task';
+                                console.log('Modal title updated for NLP mode');
+                            }
+                        }, 500);
+                    } else {
+                        console.error('Create Task button not found - modal cannot be opened');
+                    }
+                }, 2000); // Increased timeout to 2 seconds to ensure everything is loaded
+            } else {
+                console.log('No NLP task data detected');
+            }
+        });
+    </script>
+    
+    {# Preload NLP Task Data as JSON to avoid templating inside JS #}
+    {% set _nlp = None %}
+    {% if nlp_task_data %}
+        {% if nlp_task_data.task and nlp_task_data.task.action %}
+            {% set _nlp = nlp_task_data.task %}
+        {% elif nlp_task_data.action %}
+            {% set _nlp = nlp_task_data %}
+        {% endif %}
+    {% endif %}
+    <script id="nlpTaskDataJson" type="application/json">{{ _nlp | tojson }}</script>
+    <script id="nlpEditModeJson" type="application/json">{{ edit_mode | tojson }}</script>
+</head>
+<body>
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="refresh-indicator">
+        <i class="bi bi-arrow-clockwise"></i>
+        <span class="refresh-text">Refresh in 10s</span>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="octopus-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1>🐙 Octopus Dashboard</h1>
+                    <p class="octopus-subtitle">Distributed Task Orchestration System</p>
+                </div>
+                <div>
+                    <a href="/nlp-test" class="btn btn-outline-primary">
+                        <i class="bi bi-brain"></i> NLP Task Creator
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link" id="statistics-tab" href="javascript:void(0);" onclick="showTab('statistics')">
+                    <i class="bi bi-graph-up"></i>Statistics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="clients-tab" href="javascript:void(0);" onclick="showTab('clients')">
+                    <i class="bi bi-people"></i>Clients
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" id="tasks-tab" href="javascript:void(0);" onclick="showTab('tasks')">
+                    <i class="bi bi-list-task"></i>Tasks
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="executions-tab" href="javascript:void(0);" onclick="showTab('executions')">
+                    <i class="bi bi-play-circle"></i>Executions
+                </a>
+            </li>
+        </ul>
+
+        <div id="statistics" class="octopus-view" style="display:none;">
+            {% include "dashboard_statistics.html" %}
+        </div>
+        <div id="clients" class="octopus-view" style="display:none;">
+            {% include "dashboard_clients.html" %}
+        </div>
+        <div id="tasks" class="octopus-view" style="display:block;">
+            {% include "dashboard_tasks.html" %}
+        </div>
+        <div id="executions" class="octopus-view" style="display:none;">
+            {% include "dashboard_executions.html" %}
+        </div>
+    </div>
+
+    <!-- Create Task Modal -->
+    <div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));">
+                    <h5 class="modal-title" id="createTaskModalLabel">
+                        <i class="bi bi-plus-circle text-primary"></i>
+                        Create New Task
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{{ url_for('dashboard') }}" id="createTaskForm">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <!-- Basic Task Information -->
+                            <div class="col-12">
+                                <h6 class="text-muted mb-3">
+                                    <i class="bi bi-gear"></i> Basic Configuration
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Owner</label>
+                                <select name="owner" class="form-select" required>
+                                    <option value="">Select Owner</option>
+                                    {% for option in owner_options %}
+                                        <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Who should execute this task</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Type</label>
+                                <select name="type" class="form-select">
+                                    <option value="Adhoc">Adhoc (One-time)</option>
+                                    <option value="Schedule">Schedule (Recurring)</option>
+                                </select>
+                                <div class="form-text">Task execution pattern</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Plugin</label>
+                                <select name="plugin" class="form-select" required onchange="loadPluginFunctions()">
+                                    <option value="">Select Plugin</option>
+                                    {% for plugin in plugin_names %}
+                                        <option value="{{ plugin }}">{{ plugin }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Plugin containing the functionality</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Action</label>
+                                <select name="action" class="form-select" onchange="loadFunctionParameters()">
+                                    <option value="">Select Function</option>
+                                </select>
+                                <div class="form-text">Function to execute</div>
+                            </div>
+                            
+                            <!-- Dynamic Parameters Section -->
+                            <div class="col-12">
+                                <hr class="my-3">
+                                <h6 class="text-muted mb-3">
+                                    <i class="bi bi-sliders"></i> Function Parameters
+                                </h6>
+                            </div>
+                            <div class="col-12" id="dynamicParametersContainer">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    Select a plugin and function to see available parameters
+                                </div>
+                            </div>
+                            
+                            <!-- Hidden fields for args/kwargs (will be populated automatically) -->
+                            <input type="hidden" name="args" id="hiddenArgs" value="[]">
+                            <input type="hidden" name="kwargs" id="hiddenKwargs" value="{}">
+                            
+                            <!-- Scheduling Options -->
+                            <div class="col-12">
+                                <hr class="my-3">
+                                <h6 class="text-muted mb-3">
+                                    <i class="bi bi-clock"></i> Scheduling Options <small class="text-muted">(Optional)</small>
+                                </h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Start Time</label>
+                                <input name="execution_start_time" type="datetime-local" class="form-control" 
+                                       title="When to start executing this task">
+                                <div class="form-text">When to begin execution</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">End Time</label>
+                                <input name="execution_end_time" type="datetime-local" class="form-control" 
+                                       title="When to stop executing this task">
+                                <div class="form-text">When to stop execution</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Interval (seconds)</label>
+                                <input name="interval" type="number" class="form-control" placeholder="3600" 
+                                       title="Repeat interval in seconds (e.g., 3600 for hourly)" min="1">
+                                <div class="form-text">Repeat every X seconds</div>
+                            </div>
+                            
+                            <!-- Examples Section -->
+                            <div class="col-12">
+                                <div class="alert alert-info mt-3">
+                                    <h6 class="mb-2">
+                                        <i class="bi bi-lightbulb"></i> Example Configurations
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>Simple Task:</strong><br>
+                                            <small>
+                                                Owner: <code>Anyone</code>, Plugin: <code>create_incident</code><br>
+                                                Args: <code>["P1", "Database issue"]</code>
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Scheduled Task:</strong><br>
+                                            <small>
+                                                Type: <code>Schedule</code>, Interval: <code>3600</code><br>
+                                                For hourly execution
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-success octopus-btn">
+                            <i class="bi bi-plus"></i> Create Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Details Modal -->
+    <div class="modal fade" id="taskDetailsModal" tabindex="-1" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));">
+                    <h5 class="modal-title" id="taskDetailsModalLabel">
+                        <i class="bi bi-eye text-info"></i>
+                        Task Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Task ID</label>
+                            <div class="form-control-plaintext"><code id="detailTaskId"></code></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Type</label>
+                            <div class="form-control-plaintext" id="detailType"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Owner</label>
+                            <div class="form-control-plaintext" id="detailOwner"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Plugin</label>
+                            <div class="form-control-plaintext" id="detailPlugin"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Action</label>
+                            <div class="form-control-plaintext"><code id="detailAction"></code></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Status</label>
+                            <div class="form-control-plaintext" id="detailStatus"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Executor</label>
+                            <div class="form-control-plaintext" id="detailExecutor"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Last Updated</label>
+                            <div class="form-control-plaintext" id="detailUpdated"></div>
+                        </div>
+                        <div class="col-12">
+                            <hr>
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-list"></i> Arguments & Parameters
+                            </h6>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Arguments</label>
+                            <pre class="form-control-plaintext bg-light p-2 rounded"><code id="detailArgs"></code></pre>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Keyword Arguments</label>
+                            <pre class="form-control-plaintext bg-light p-2 rounded"><code id="detailKwargs"></code></pre>
+                        </div>
+                        <div class="col-12">
+                            <hr>
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-clock"></i> Scheduling Information
+                            </h6>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Start Time</label>
+                            <div class="form-control-plaintext" id="detailStartTime"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">End Time</label>
+                            <div class="form-control-plaintext" id="detailEndTime"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Interval</label>
+                            <div class="form-control-plaintext" id="detailInterval"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x"></i> Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));">
+                    <h5 class="modal-title" id="editTaskModalLabel">
+                        <i class="bi bi-pencil text-primary"></i>
+                        Edit Task
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{{ url_for('dashboard') }}" id="editTaskForm">
+                    <input type="hidden" id="editTaskId" name="id">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Type</label>
+                                <select id="editType" name="type" class="form-select">
+                                    <option value="Adhoc">Adhoc (One-time)</option>
+                                    <option value="Schedule">Schedule (Recurring)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Owner</label>
+                                <input id="editOwner" name="owner" type="text" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Plugin</label>
+                                <input id="editPlugin" name="plugin" type="text" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Action</label>
+                                <input id="editAction" name="action" type="text" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Arguments (JSON Array)</label>
+                                <textarea id="editArgs" name="args" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Keyword Arguments (JSON Object)</label>
+                                <textarea id="editKwargs" name="kwargs" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Start Time</label>
+                                <input id="editStartTime" name="execution_start_time" type="datetime-local" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">End Time</label>
+                                <input id="editEndTime" name="execution_end_time" type="datetime-local" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Interval (seconds)</label>
+                                <input id="editInterval" name="interval" type="number" class="form-control" min="1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary octopus-btn">
+                            <i class="bi bi-save"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Filter Notification for Pagination -->
+    <script>
+        // Pagination state - default to 10 records per page
+        let currentTaskPage = 1;
+        let currentExecutionPage = 1;
+        let tasksPerPage = 10;
+        let executionsPerPage = 10;
+        
+        // Show filter notification when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add pagination controls to tasks and executions views
+            addPaginationControls();
+        });
+        
+        function addPaginationControls() {
+            // Add pagination controls after tables
+            addTasksPagination();
+            addExecutionsPagination();
+        }
+        
+        function addTasksPagination() {
+            const tasksContainer = document.querySelector('#tasks .table-responsive');
+            if (tasksContainer) {
+                const paginationHtml = `
+                    <div id="tasksPagination" class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="pagination-info">
+                            <small class="text-muted">
+                                <span id="tasksPageInfo">Page 1 of 1 (0 total records)</span>
+                            </small>
+                        </div>
+                        <nav aria-label="Tasks pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item" id="tasksPrevPage">
+                                    <a class="page-link" href="#" onclick="goToTaskPage(currentTaskPage - 1)">
+                                        <i class="bi bi-chevron-left"></i> Previous
+                                    </a>
+                                </li>
+                                <li class="page-item active" id="tasksCurrentPage">
+                                    <span class="page-link">1</span>
+                                </li>
+                                <li class="page-item" id="tasksNextPage">
+                                    <a class="page-link" href="#" onclick="goToTaskPage(currentTaskPage + 1)">
+                                        Next <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                `;
+                tasksContainer.insertAdjacentHTML('afterend', paginationHtml);
+            }
+        }
+        
+        function addExecutionsPagination() {
+            const executionsContainer = document.querySelector('#executions .table-responsive');
+            if (executionsContainer) {
+                const paginationHtml = `
+                    <div id="executionsPagination" class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="pagination-info">
+                            <small class="text-muted">
+                                <span id="executionsPageInfo">Page 1 of 1 (0 total records)</span>
+                            </small>
+                        </div>
+                        <nav aria-label="Executions pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item" id="executionsPrevPage">
+                                    <a class="page-link" href="#" onclick="goToExecutionPage(currentExecutionPage - 1)">
+                                        <i class="bi bi-chevron-left"></i> Previous
+                                    </a>
+                                </li>
+                                <li class="page-item active" id="executionsCurrentPage">
+                                    <span class="page-link">1</span>
+                                </li>
+                                <li class="page-item" id="executionsNextPage">
+                                    <a class="page-link" href="#" onclick="goToExecutionPage(currentExecutionPage + 1)">
+                                        Next <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                `;
+                executionsContainer.insertAdjacentHTML('afterend', paginationHtml);
+            }
+        }
+        
+        function goToTaskPage(page) {
+            if (page < 1) return;
+            currentTaskPage = page;
+            loadTasksPage(page);
+        }
+        
+        function goToExecutionPage(page) {
+            if (page < 1) return;
+            currentExecutionPage = page;
+            loadExecutionsPage(page);
+        }
+        
+        function loadTasksPage(page) {
+            showLoading();
+            fetch(`/api/tasks?page=${page}&per_page=${tasksPerPage}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateTasksView(data.tasks);  // Pass data.tasks, not data
+                    updateTasksPagination(data.pagination);
+                })
+                .catch(error => {
+                    console.error('Error loading tasks page:', error);
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        }
+        
+        function loadExecutionsPage(page) {
+            showLoading();
+            fetch(`/api/executions?page=${page}&per_page=${executionsPerPage}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateExecutionsView(data.executions);  // Pass data.executions, not data
+                    updateExecutionsPagination(data.pagination);
+                })
+                .catch(error => {
+                    console.error('Error loading executions page:', error);
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        }
+        
+        function updateTasksPagination(pagination) {
+            if (!pagination) return;
+            
+            // Update page info
+            const pageInfo = document.getElementById('tasksPageInfo');
+            if (pageInfo) {
+                const start = (pagination.page - 1) * pagination.per_page + 1;
+                const end = Math.min(start + pagination.per_page - 1, pagination.total_count);
+                pageInfo.textContent = `Page ${pagination.page} of ${pagination.total_pages} (${start}-${end} of ${pagination.total_count} total)`;
+            }
+            
+            // Update pagination controls
+            const prevPage = document.getElementById('tasksPrevPage');
+            const nextPage = document.getElementById('tasksNextPage');
+            const currentPage = document.getElementById('tasksCurrentPage');
+            
+            if (prevPage) {
+                prevPage.classList.toggle('disabled', !pagination.has_prev);
+            }
+            
+            if (nextPage) {
+                nextPage.classList.toggle('disabled', !pagination.has_next);
+            }
+            
+            if (currentPage) {
+                currentPage.querySelector('span').textContent = pagination.page;
+            }
+        }
+        
+        function updateExecutionsPagination(pagination) {
+            if (!pagination) return;
+            
+            // Update page info
+            const pageInfo = document.getElementById('executionsPageInfo');
+            if (pageInfo) {
+                const start = (pagination.page - 1) * pagination.per_page + 1;
+                const end = Math.min(start + pagination.per_page - 1, pagination.total_count);
+                pageInfo.textContent = `Page ${pagination.page} of ${pagination.total_pages} (${start}-${end} of ${pagination.total_count} total)`;
+            }
+            
+            // Update pagination controls
+            const prevPage = document.getElementById('executionsPrevPage');
+            const nextPage = document.getElementById('executionsNextPage');
+            const currentPage = document.getElementById('executionsCurrentPage');
+            
+            if (prevPage) {
+                prevPage.classList.toggle('disabled', !pagination.has_prev);
+            }
+            
+            if (nextPage) {
+                nextPage.classList.toggle('disabled', !pagination.has_next);
+            }
+            
+            if (currentPage) {
+                currentPage.querySelector('span').textContent = pagination.page;
+            }
+        }
+    </script>
+</body>
+</html>

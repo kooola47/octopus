@@ -1,0 +1,491 @@
+{% extends "modern_layout.html" %}
+
+{% block title %}Executions - Octopus{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-0 d-flex align-items-center">
+                    <i class="bi bi-play-circle me-3 text-primary"></i>
+                    Execution History
+                </h1>
+                <p class="text-muted mb-0">Monitor task execution results and performance</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary" onclick="refreshExecutions()">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                </button>
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="bi bi-download me-1"></i> Export
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-file-text me-2"></i>Export as CSV</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-file-earmark-code me-2"></i>Export as JSON</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="row mb-4">
+    <div class="col-lg-4">
+        <div class="input-group">
+            <span class="input-group-text bg-white border-end-0">
+                <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="text" id="executionSearch" class="form-control search-box border-start-0" 
+                   placeholder="Search by task, client, or result...">
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="d-flex gap-2">
+            <select class="form-select" id="statusFilter">
+                <option value="">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="running">Running</option>
+                <option value="failed">Failed</option>
+                <option value="pending">Pending</option>
+            </select>
+            <select class="form-select" id="clientFilter">
+                <option value="">All Clients</option>
+                {% for client_id in clients.keys() %}
+                <option value="{{ client_id }}">{{ client_id }}</option>
+                {% endfor %}
+            </select>
+            <select class="form-select" id="dateFilter">
+                <option value="">All Time</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+            </select>
+            <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                <i class="bi bi-x-circle"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stats-card success h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle mb-2" style="font-size: 2rem;"></i>
+                <h4 class="mb-1">{{ stats.completed_executions or 0 }}</h4>
+                <small class="text-white-50">Completed</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-play-circle mb-2" style="font-size: 2rem;"></i>
+                <h4 class="mb-1">{{ stats.running_executions or 0 }}</h4>
+                <small class="text-white-50">Running</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stats-card bg-danger h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-triangle mb-2" style="font-size: 2rem;"></i>
+                <h4 class="mb-1">{{ stats.failed_executions or 0 }}</h4>
+                <small class="text-white-50">Failed</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stats-card warning h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-clock mb-2" style="font-size: 2rem;"></i>
+                <h4 class="mb-1">{{ stats.avg_duration or 0 }}s</h4>
+                <small class="text-white-50">Avg Duration</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Executions Table -->
+<div class="card">
+    <div class="card-header bg-transparent border-0">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-list me-2"></i>
+                Execution History ({{ executions|length if executions else 0 }})
+            </h5>
+            <div class="d-flex gap-2">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary active" onclick="setView('table')">
+                        <i class="bi bi-table"></i> Table
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="setView('timeline')">
+                        <i class="bi bi-clock-history"></i> Timeline
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if executions %}
+        <div id="tableView" class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Execution Details</th>
+                        <th>Task</th>
+                        <th>Client</th>
+                        <th>Status</th>
+                        <th>Duration</th>
+                        <th>Started</th>
+                        <th width="120">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for execution in executions %}
+                    <tr class="execution-item">
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                                     style="width: 40px; height: 40px; min-width: 40px;">
+                                    <i class="bi bi-play text-white"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-medium">Execution #{{ execution.id }}</div>
+                                    <small class="text-muted">{{ execution.execution_id[:8] if execution.execution_id else 'N/A' }}...</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <div class="fw-medium">{{ execution.task_name or execution.task_id or 'Unknown Task' }}</div>
+                                {% if execution.task_id %}
+                                <small class="text-muted">{{ execution.task_id[:8] }}...</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">
+                                <i class="bi bi-hdd me-1"></i>
+                                {{ execution.client_id or execution.client or 'Unknown' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if execution.status == 'completed' or execution.status == 'Done' %}bg-success{% elif execution.status == 'failed' %}bg-danger{% elif execution.status == 'running' %}bg-primary{% else %}bg-warning{% endif %}">
+                                <i class="bi bi-{% if execution.status == 'completed' or execution.status == 'Done' %}check-circle{% elif execution.status == 'failed' %}x-circle{% elif execution.status == 'running' %}play-circle{% else %}clock{% endif %} me-1"></i>
+                                {% if execution.status == 'Done' %}Completed{% else %}{{ execution.status|title or 'Pending' }}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-muted">
+                                {% if execution.duration %}
+                                    {{ execution.duration|round(2) }}s
+                                {% elif execution.started_at and execution.updated_at %}
+                                    {{ ((execution.updated_at - execution.started_at) | round(2)) if execution.updated_at > execution.started_at else 'N/A' }}s
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div>
+                                {% if execution.started_at %}
+                                    <div class="fw-medium">{{ execution.started_at.strftime('%m/%d %H:%M') if execution.started_at.strftime else 'Recently' }}</div>
+                                    <small class="text-muted">{{ execution.started_at.strftime('%Y') if execution.started_at.strftime else '' }}</small>
+                                {% elif execution.updated_at %}
+                                    <div class="fw-medium">{{ moment(execution.updated_at).format('MM/DD HH:mm') if moment else 'Recently' }}</div>
+                                    <small class="text-muted">{{ moment(execution.updated_at).format('YYYY') if moment else '' }}</small>
+                                {% else %}
+                                    <span class="text-muted">Unknown</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" title="View Details" onclick="viewExecution({{ execution.id }})">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                {% if execution.result %}
+                                <button class="btn btn-outline-info" title="View Result" onclick="viewResult({{ execution.id }})">
+                                    <i class="bi bi-file-text"></i>
+                                </button>
+                                {% endif %}
+                                {% if execution.status == 'failed' %}
+                                <button class="btn btn-outline-success" title="Retry" onclick="retryExecution({{ execution.id }})">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-outline-secondary" title="Download Log" onclick="downloadLog({{ execution.id }})">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Timeline View (Hidden by default) -->
+        <div id="timelineView" class="p-4" style="display: none;">
+            <div class="timeline">
+                {% for execution in executions[:20] %}
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-{% if execution.status == 'completed' or execution.status == 'Done' %}success{% elif execution.status == 'failed' %}danger{% elif execution.status == 'running' %}primary{% else %}warning{% endif %}">
+                        <i class="bi bi-{% if execution.status == 'completed' or execution.status == 'Done' %}check{% elif execution.status == 'failed' %}x{% elif execution.status == 'running' %}play{% else %}clock{% endif %}"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ execution.task_name or 'Task Execution' }}</h6>
+                                <p class="text-muted mb-1">Client: {{ execution.client or 'Unknown' }}</p>
+                                {% if execution.result %}
+                                <p class="small mb-0">{{ execution.result[:100] }}{% if execution.result|length > 100 %}...{% endif %}</p>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">
+                                {% if execution.started_at %}
+                                    {{ execution.started_at.strftime('%H:%M') if execution.started_at.strftime else 'Recently' }}
+                                {% else %}
+                                    Unknown
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-play-circle display-1 text-muted"></i>
+            <h5 class="mt-3 text-muted">No Executions Found</h5>
+            <p class="text-muted">Task executions will appear here once tasks start running</p>
+            <a href="{{ url_for('modern_tasks') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Create and Run Task
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Execution Details Modal -->
+<div class="modal fade" id="executionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-play-circle me-2"></i>
+                    Execution Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="executionDetails">
+                <!-- Content loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="downloadExecutionLog()">
+                    <i class="bi bi-download me-1"></i> Download Log
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-item:not(:last-child):before {
+    content: '';
+    position: absolute;
+    left: -19px;
+    top: 30px;
+    bottom: -20px;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -24px;
+    top: 5px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-left: 20px;
+}
+</style>
+
+<script>
+    // Initialize search
+    setupSearch('executionSearch', '.execution-item');
+    
+    // Filter functionality
+    function setupFilters() {
+        const filters = ['statusFilter', 'clientFilter', 'dateFilter'];
+        filters.forEach(filterId => {
+            const filter = document.getElementById(filterId);
+            if (filter) {
+                filter.addEventListener('change', applyFilters);
+            }
+        });
+    }
+    
+    function applyFilters() {
+        const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+        const clientFilter = document.getElementById('clientFilter').value;
+        const dateFilter = document.getElementById('dateFilter').value;
+        const rows = document.querySelectorAll('.execution-item');
+        
+        rows.forEach(row => {
+            const status = row.querySelector('.badge').textContent.toLowerCase().trim();
+            const client = row.querySelectorAll('.badge')[1]?.textContent.trim() || '';
+            
+            const statusMatch = !statusFilter || status.includes(statusFilter);
+            const clientMatch = !clientFilter || client.includes(clientFilter);
+            const dateMatch = true; // TODO: Implement date filtering
+            
+            if (statusMatch && clientMatch && dateMatch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    function clearFilters() {
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('clientFilter').value = '';
+        document.getElementById('dateFilter').value = '';
+        document.getElementById('executionSearch').value = '';
+        
+        document.querySelectorAll('.execution-item').forEach(row => {
+            row.style.display = '';
+        });
+    }
+    
+    // View toggle functionality
+    function setView(viewType) {
+        const tableView = document.getElementById('tableView');
+        const timelineView = document.getElementById('timelineView');
+        const buttons = document.querySelectorAll('.btn-group button');
+        
+        buttons.forEach(btn => btn.classList.remove('active'));
+        
+        if (viewType === 'table') {
+            tableView.style.display = 'block';
+            timelineView.style.display = 'none';
+            buttons[0].classList.add('active');
+        } else {
+            tableView.style.display = 'none';
+            timelineView.style.display = 'block';
+            buttons[1].classList.add('active');
+        }
+    }
+    
+    // Execution actions
+    function viewExecution(executionId) {
+        // Load execution details
+        const modal = new bootstrap.Modal(document.getElementById('executionModal'));
+        const detailsContainer = document.getElementById('executionDetails');
+        
+        detailsContainer.innerHTML = `
+            <div class="text-center py-3">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+        
+        modal.show();
+        
+        // Simulate loading execution details
+        setTimeout(() => {
+            detailsContainer.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Execution Information</h6>
+                        <table class="table table-sm">
+                            <tr><th>ID:</th><td>${executionId}</td></tr>
+                            <tr><th>Status:</th><td><span class="badge bg-success">Completed</span></td></tr>
+                            <tr><th>Duration:</th><td>2.34s</td></tr>
+                            <tr><th>Started:</th><td>2025-08-12 07:15:23</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Task Information</h6>
+                        <table class="table table-sm">
+                            <tr><th>Task ID:</th><td>abc123...</td></tr>
+                            <tr><th>Plugin:</th><td>web_utils</td></tr>
+                            <tr><th>Action:</th><td>main</td></tr>
+                            <tr><th>Client:</th><td>aries-38880</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <h6>Result</h6>
+                    <pre class="bg-light p-3 rounded"><code>Task completed successfully
+Output: Data processed and saved
+Files created: 3
+Errors: 0</code></pre>
+                </div>
+            `;
+        }, 1000);
+    }
+    
+    function viewResult(executionId) {
+        console.log('View result for execution:', executionId);
+    }
+    
+    function retryExecution(executionId) {
+        if (confirm('Retry this failed execution?')) {
+            console.log('Retry execution:', executionId);
+        }
+    }
+    
+    function downloadLog(executionId) {
+        console.log('Download log for execution:', executionId);
+    }
+    
+    function downloadExecutionLog() {
+        console.log('Download current execution log');
+    }
+    
+    function refreshExecutions() {
+        location.reload();
+    }
+    
+    // Initialize filters on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        setupFilters();
+    });
+</script>
+{% endblock %}

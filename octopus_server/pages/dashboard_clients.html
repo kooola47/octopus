@@ -1,0 +1,25 @@
+<h3>💻 Active Clients</h3>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Client ID</th>
+                <th>Hostname</th>
+                <th>Last Heartbeat</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for client_id, client in active_clients.items() %}
+            <tr>
+                <td>{{ client_id }}</td>
+                <td>{{ client.hostname }}</td>
+                <td>{{ client.last_heartbeat|datetimeformat }}</td>
+                <td>
+                    <span class="badge bg-success">Online</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

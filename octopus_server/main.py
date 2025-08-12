@@ -32,6 +32,16 @@ app = Flask(
     template_folder=PAGES_DIR,  # Use pages directory for modern templates
     static_folder=STATIC_DIR
 )
+
+# Configure Flask secret key for sessions (required for authentication)
+app.secret_key = 'octopus-secret-key-change-in-production'
+
+# Configure session settings for proper persistence
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+
 cache = Cache()
 
 # Custom template filter for datetime formatting

@@ -279,26 +279,3 @@ body {
 .execution-icon.failed { background-color: var(--octopus-danger); }
 .execution-icon.running { background-color: var(--octopus-warning); }
 .execution-icon.pending { background-color: var(--octopus-secondary); }
-
-/* Task ID Display */
-.task-id-cell {
-    max-width: 250px;
-}
-
-.task-id-code {
-    font-size: 0.75rem;
-    line-height: 1.2;
-    max-width: 100%;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    hyphens: auto;
-}
-
-/* Execution ID Display */
-.execution-id-cell {
-    max-width: 200px;
-}
-
-.execution-id-code {
-    font-size: 0.8rem;
-}

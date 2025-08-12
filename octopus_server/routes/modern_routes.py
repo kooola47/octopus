@@ -9,10 +9,8 @@ import time
 import math
 import sqlite3
 import logging
-import uuid
-from flask import request, render_template, url_for, Response, jsonify
+from flask import request, render_template, url_for, jsonify, Response
 from dbhelper import get_db_file, get_tasks, get_active_clients
-from config import SERVER_PORT
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -26,7 +24,7 @@ def register_modern_routes(app, cache, logger):
         """Modern dashboard page"""
         try:
             # Get dashboard statistics
-            stats = get_dashboard_stats()
+            stats = get_dashboard_stats(cache)
             
             # Get recent activity
             recent_activity = get_recent_activity(limit=10)
@@ -38,7 +36,7 @@ def register_modern_routes(app, cache, logger):
             # Get system health info
             system_health = get_system_health()
             
-            return render_template('dashboard.html',
+            return render_template('modern_dashboard.html',
                                  stats=stats,
                                  recent_activity=recent_activity,
                                  recent_tasks=recent_tasks,
@@ -46,7 +44,7 @@ def register_modern_routes(app, cache, logger):
                                  system_health=system_health)
         except Exception as e:
             logger.error(f"Error loading modern dashboard: {e}")
-            return render_template('dashboard.html',
+            return render_template('modern_dashboard.html',
                                  stats={},
                                  recent_activity=[],
                                  recent_tasks=[],
@@ -65,7 +63,6 @@ def register_modern_routes(app, cache, logger):
             
             # Get clients with filters
             clients, total_clients = get_clients_paginated(
-                cache=cache,
                 page=page,
                 page_size=page_size,
                 search=search,
@@ -76,9 +73,9 @@ def register_modern_routes(app, cache, logger):
             total_pages = math.ceil(total_clients / page_size) if total_clients > 0 else 1
             
             # Get client statistics
-            stats = get_client_stats(cache)
+            stats = get_client_stats()
             
-            return render_template('clients.html',
+            return render_template('modern_clients.html',
                                  clients=clients,
                                  stats=stats,
                                  current_page=page,
@@ -88,7 +85,7 @@ def register_modern_routes(app, cache, logger):
                                  current_timestamp=time.time())
         except Exception as e:
             logger.error(f"Error loading modern clients page: {e}")
-            return render_template('clients.html',
+            return render_template('modern_clients.html',
                                  clients=[],
                                  stats={},
                                  current_page=1,
@@ -128,10 +125,15 @@ def register_modern_routes(app, cache, logger):
             # Get available owners for filter dropdown
             available_owners = get_available_owners()
             
-            return render_template('tasks.html',
+            # Get plugin names for create task modal
+            plugin_names = get_available_plugins()
+            
+            return render_template('modern_tasks.html',
                                  tasks=tasks,
                                  stats=stats,
                                  available_owners=available_owners,
+                                 plugin_names=plugin_names,
+                                 owner_options=available_owners,
                                  current_page=page,
                                  page_size=page_size,
                                  total_pages=total_pages,
@@ -139,10 +141,12 @@ def register_modern_routes(app, cache, logger):
                                  current_timestamp=time.time())
         except Exception as e:
             logger.error(f"Error loading modern tasks page: {e}")
-            return render_template('tasks.html',
+            return render_template('modern_tasks.html',
                                  tasks=[],
                                  stats={},
                                  available_owners=[],
+                                 plugin_names=['web_utils', 'file_utils', 'system_utils'],
+                                 owner_options=[],
                                  current_page=1,
                                  page_size=25,
                                  total_pages=1,
@@ -180,10 +184,14 @@ def register_modern_routes(app, cache, logger):
             # Get available clients for filter dropdown
             available_clients = get_available_clients()
             
-            return render_template('executions.html',
+            # Get all clients data for client filter
+            clients = get_all_clients_dict()
+            
+            return render_template('modern_executions.html',
                                  executions=executions,
                                  stats=stats,
                                  available_clients=available_clients,
+                                 clients=clients,
                                  current_page=page,
                                  page_size=page_size,
                                  total_pages=total_pages,
@@ -191,19 +199,279 @@ def register_modern_routes(app, cache, logger):
                                  current_timestamp=time.time())
         except Exception as e:
             logger.error(f"Error loading modern executions page: {e}")
-            return render_template('executions.html',
+            return render_template('modern_executions.html',
                                  executions=[],
                                  stats={},
                                  available_clients=[],
+                                 clients={},
                                  current_page=1,
                                  page_size=25,
                                  total_pages=1,
                                  total_executions=0,
                                  current_timestamp=time.time())
 
+    # Client Management API Endpoints
+    @app.route("/api/clients/<client_id>", methods=["GET"])
+    def api_client_details(client_id):
+        """Get detailed information about a specific client"""
+        try:
+            clients = cache.all()
+            now = time.time()
+            
+            # Find the specific client
+            client = clients.get(client_id)
+            if not client:
+                return {"error": "Client not found"}, 404
+                
+            # Calculate uptime
+            last_seen = client.get('last_seen', now)
+            uptime_seconds = now - last_seen
+            uptime_str = format_uptime(uptime_seconds)
+            
+            # Get client execution history
+            try:
+                with sqlite3.connect(get_db_file()) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT id, task_id, status, start_time, end_time, result
+                        FROM executions 
+                        WHERE client = ? 
+                        ORDER BY start_time DESC 
+                        LIMIT 10
+                    """, (client_id,))
+                    executions = [dict(row) for row in cursor.fetchall()]
+            except Exception as e:
+                logger.error(f"Error getting client executions: {e}")
+                executions = []
+            
+            client_details = {
+                'id': client_id,
+                'status': 'active' if (now - last_seen) < 30 else 'inactive',
+                'last_seen': last_seen,
+                'uptime': uptime_str,
+                'recent_executions': executions,
+                **client
+            }
+            
+            return {"client": client_details}
+            
+        except Exception as e:
+            logger.error(f"Error getting client details: {e}")
+            return {"error": "Internal server error"}, 500
+    
+    @app.route("/api/clients/<client_id>/assign-task", methods=["POST"])
+    def api_assign_task_to_client(client_id):
+        """Assign a task to a specific client"""
+        try:
+            data = request.get_json()
+            task_id = data.get('task_id')
+            
+            if not task_id:
+                return {"error": "Task ID is required"}, 400
+                
+            # Check if client exists and is active
+            clients = cache.all()
+            client = clients.get(client_id)
+            if not client:
+                return {"error": "Client not found"}, 404
+                
+            now = time.time()
+            last_seen = client.get('last_seen', now)
+            if (now - last_seen) > 30:
+                return {"error": "Client is not active"}, 400
+                
+            # Check if task exists
+            try:
+                with sqlite3.connect(get_db_file()) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+                    task = cursor.fetchone()
+                    if not task:
+                        return {"error": "Task not found"}, 404
+            except Exception as e:
+                logger.error(f"Error checking task: {e}")
+                return {"error": "Error checking task"}, 500
+                
+            # Create execution record
+            try:
+                with sqlite3.connect(get_db_file()) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        INSERT INTO executions (task_id, client, status, start_time, result)
+                        VALUES (?, ?, 'pending', ?, 'Task assigned to client')
+                    """, (task_id, client_id, now))
+                    conn.commit()
+                    execution_id = cursor.lastrowid
+            except Exception as e:
+                logger.error(f"Error creating execution: {e}")
+                return {"error": "Error creating execution"}, 500
+                
+            return {
+                "message": f"Task {task_id} assigned to client {client_id}",
+                "execution_id": execution_id
+            }
+            
+        except Exception as e:
+            logger.error(f"Error assigning task: {e}")
+            return {"error": "Internal server error"}, 500
+
+    # Task Management API Endpoints
+    @app.route("/api/tasks/<int:task_id>", methods=["GET"])
+    def api_task_details(task_id):
+        """Get detailed information about a specific task"""
+        try:
+            with sqlite3.connect(get_db_file()) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+                task = cursor.fetchone()
+                
+                if not task:
+                    return {"error": "Task not found"}, 404
+                    
+                return {"task": dict(task)}
+                
+        except Exception as e:
+            logger.error(f"Error getting task details: {e}")
+            return {"error": "Internal server error"}, 500
+    
+    @app.route("/api/tasks/<int:task_id>/run", methods=["POST"])
+    def api_run_task(task_id):
+        """Run a specific task"""
+        try:
+            with sqlite3.connect(get_db_file()) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+                task = cursor.fetchone()
+                
+                if not task:
+                    return {"error": "Task not found"}, 404
+                    
+                # Create execution record
+                now = time.time()
+                cursor.execute("""
+                    INSERT INTO executions (task_id, status, start_time, result)
+                    VALUES (?, 'pending', ?, 'Task started manually')
+                """, (task_id, now))
+                conn.commit()
+                execution_id = cursor.lastrowid
+                
+                return {
+                    "message": f"Task {task_id} started successfully",
+                    "execution_id": execution_id
+                }
+                
+        except Exception as e:
+            logger.error(f"Error running task: {e}")
+            return {"error": "Internal server error"}, 500
+    
+    @app.route("/api/tasks/<int:task_id>", methods=["DELETE"])
+    def api_delete_task(task_id):
+        """Delete a specific task"""
+        try:
+            with sqlite3.connect(get_db_file()) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id FROM tasks WHERE id = ?", (task_id,))
+                task = cursor.fetchone()
+                
+                if not task:
+                    return {"error": "Task not found"}, 404
+                    
+                # Delete the task
+                cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+                conn.commit()
+                
+                return {"message": f"Task {task_id} deleted successfully"}
+                
+        except Exception as e:
+            logger.error(f"Error deleting task: {e}")
+            return {"error": "Internal server error"}, 500
+
+    # Execution Management API Endpoints
+    @app.route("/api/executions/<int:execution_id>", methods=["GET"])
+    def api_execution_details(execution_id):
+        """Get detailed information about a specific execution"""
+        try:
+            with sqlite3.connect(get_db_file()) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM executions WHERE id = ?", (execution_id,))
+                execution = cursor.fetchone()
+                
+                if not execution:
+                    return {"error": "Execution not found"}, 404
+                    
+                return {"execution": dict(execution)}
+                
+        except Exception as e:
+            logger.error(f"Error getting execution details: {e}")
+            return {"error": "Internal server error"}, 500
+    
+    @app.route("/api/executions/<int:execution_id>/retry", methods=["POST"])
+    def api_retry_execution(execution_id):
+        """Retry a failed execution"""
+        try:
+            with sqlite3.connect(get_db_file()) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM executions WHERE id = ?", (execution_id,))
+                execution = cursor.fetchone()
+                
+                if not execution:
+                    return {"error": "Execution not found"}, 404
+                    
+                # Create new execution record
+                now = time.time()
+                cursor.execute("""
+                    INSERT INTO executions (task_id, client, status, start_time, result)
+                    VALUES (?, ?, 'pending', ?, 'Retrying failed execution')
+                """, (execution['task_id'], execution['client'], now))
+                conn.commit()
+                new_execution_id = cursor.lastrowid
+                
+                return {
+                    "message": f"Execution {execution_id} retried successfully",
+                    "execution_id": new_execution_id
+                }
+                
+        except Exception as e:
+            logger.error(f"Error retrying execution: {e}")
+            return {"error": "Internal server error"}, 500
+    
+    @app.route("/api/executions/<int:execution_id>/download", methods=["GET"])
+    def api_download_execution_result(execution_id):
+        """Download execution result as a file"""
+        try:
+            with sqlite3.connect(get_db_file()) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("SELECT result FROM executions WHERE id = ?", (execution_id,))
+                execution = cursor.fetchone()
+                
+                if not execution:
+                    return {"error": "Execution not found"}, 404
+                    
+                result = execution['result'] or 'No result available'
+                
+                # Return as downloadable file
+                return Response(
+                    result,
+                    mimetype='text/plain',
+                    headers={
+                        'Content-Disposition': f'attachment; filename=execution_{execution_id}_result.txt'
+                    }
+                )
+                
+        except Exception as e:
+            logger.error(f"Error downloading execution result: {e}")
+            return {"error": "Internal server error"}, 500
+
 # Helper functions for data retrieval
 
-def get_dashboard_stats():
+def get_dashboard_stats(cache):
     """Get dashboard statistics from real data"""
     try:
         with sqlite3.connect(get_db_file()) as conn:
@@ -214,22 +482,18 @@ def get_dashboard_stats():
             cursor.execute("SELECT COUNT(*) as count FROM tasks")
             total_tasks = cursor.fetchone()['count']
             
-            # Get active clients (check heartbeats table)
-            cutoff_time = time.time() - 60  # Consider active if heartbeat within last 60 seconds
+            # Get active clients from cache (heartbeat system)
+            active_clients = 0
             try:
-                cursor.execute("""
-                    SELECT COUNT(DISTINCT username) as count 
-                    FROM heartbeats
-                    WHERE timestamp > ?
-                """, (cutoff_time,))
-                active_clients = cursor.fetchone()['count']
-            except:
-                # If heartbeats table doesn't exist or has issues, try alternative
-                try:
-                    cursor.execute("SELECT COUNT(DISTINCT client) as count FROM executions WHERE created_at > ?", (time.time() - 3600,))
-                    active_clients = cursor.fetchone()['count']
-                except:
-                    active_clients = 0
+                clients = cache.all()
+                now = time.time()
+                for client_id, client_data in clients.items():
+                    last_heartbeat = client_data.get('last_heartbeat', 0)
+                    if now - last_heartbeat < 60:  # Active within last 60 seconds
+                        active_clients += 1
+            except Exception as e:
+                logger.error(f"Error getting active clients from cache: {e}")
+                active_clients = 0
             
             # Get running tasks
             cursor.execute("SELECT COUNT(*) as count FROM tasks WHERE status IN ('running', 'Active')")
@@ -309,26 +573,13 @@ def get_recent_activity(limit=10):
         return []
 
 def get_recent_tasks(limit=5):
-    """Get recent tasks for dashboard using real database data"""
+    """Get recent tasks for dashboard"""
     try:
-        tasks_dict = get_tasks()
-        tasks_list = []
-        
-        # Convert dictionary to list format with proper data
-        for task_id, task_data in tasks_dict.items():
-            tasks_list.append({
-                'id': task_id,
-                'plugin': task_data.get('plugin', 'Unknown'),
-                'owner': task_data.get('owner', 'System'),
-                'status': task_data.get('status', 'pending'),
-                'created_at': task_data.get('created_at', 0)
-            })
-        
+        tasks = get_tasks()
         # Sort by created_at and limit
-        recent = sorted(tasks_list, key=lambda x: x.get('created_at', 0), reverse=True)[:limit]
+        recent = sorted(tasks, key=lambda x: x.get('created_at', 0), reverse=True)[:limit]
         return recent
-    except Exception as e:
-        logger.error(f"Error getting recent tasks: {e}")
+    except Exception:
         return []
 
 def get_recent_executions(limit=5):
@@ -354,117 +605,119 @@ def get_recent_executions(limit=5):
         return []
 
 def get_system_health():
-    """Get system health metrics using real system data"""
-    import psutil
-    import os
-    
-    try:
-        # Get CPU usage
-        cpu_usage = psutil.cpu_percent(interval=1)
-        
-        # Get memory usage
-        memory = psutil.virtual_memory()
-        memory_usage = memory.percent
-        
-        # Get database size
-        db_file = get_db_file()
-        if os.path.exists(db_file):
-            db_size_bytes = os.path.getsize(db_file)
-            if db_size_bytes < 1024 * 1024:  # Less than 1MB
-                db_size = f"{db_size_bytes / 1024:.1f} KB"
-            else:
-                db_size = f"{db_size_bytes / (1024 * 1024):.1f} MB"
-        else:
-            db_size = "0 KB"
-        
-        return {
-            'cpu_usage': round(cpu_usage, 1),
-            'memory_usage': round(memory_usage, 1),
-            'db_size': db_size
-        }
-    except ImportError:
-        # If psutil is not available, provide fallback data
-        logger.warning("psutil not available, using fallback system health data")
-        return {
-            'cpu_usage': 25.0,
-            'memory_usage': 45.0,
-            'db_size': '2.3 MB'
-        }
-    except Exception as e:
-        logger.error(f"Error getting system health: {e}")
-        return {
-            'cpu_usage': 0,
-            'memory_usage': 0,
-            'db_size': 'Unknown'
-        }
+    """Get system health metrics"""
+    # Mock data for now - in real implementation, this would collect actual metrics
+    return {
+        'cpu_usage': 25,
+        'memory_usage': 45,
+        'db_size': '2.3 MB'
+    }
 
-def get_clients_paginated(cache, page=1, page_size=25, search='', status_filter=''):
-    """Get clients with pagination and filters from cache heartbeat data"""
+def get_clients_paginated(page=1, page_size=25, search='', status_filter=''):
+    """Get clients with pagination and filters from real heartbeat data"""
     try:
-        # Get all clients from cache (heartbeat data)
-        all_cached_clients = cache.all()
-        logger.info(f"Found {len(all_cached_clients)} clients in cache")
-        
-        # Convert cache data to client objects
-        current_time = time.time()
-        all_clients = []
-        
         with sqlite3.connect(get_db_file()) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            for client_key, client_data in all_cached_clients.items():
-                try:
-                    # Parse client key (format: username@hostname)
-                    if '@' in client_key:
-                        username, hostname = client_key.split('@', 1)
-                    else:
-                        username = client_key
-                        hostname = client_data.get('hostname', 'unknown')
-                    
-                    # Calculate status based on last heartbeat
-                    last_heartbeat = client_data.get('last_heartbeat', 0)
-                    time_diff = current_time - last_heartbeat
-                    
-                    if time_diff < 60:  # Less than 1 minute
+            # Try to get client data from heartbeats table
+            try:
+                # Get unique clients with their latest heartbeat
+                base_query = """
+                    SELECT 
+                        username as name,
+                        hostname,
+                        ip_address,
+                        MAX(timestamp) as last_heartbeat,
+                        COUNT(*) as heartbeat_count
+                    FROM heartbeats 
+                    WHERE username IS NOT NULL
+                    GROUP BY username, hostname, ip_address
+                """
+                
+                cursor.execute(base_query)
+                heartbeat_data = cursor.fetchall()
+                
+                # Convert to client objects
+                current_time = time.time()
+                all_clients = []
+                
+                for i, row in enumerate(heartbeat_data):
+                    time_diff = current_time - row['last_heartbeat']
+                    if time_diff < 60:
                         status = 'online'
-                    elif time_diff < 300:  # Less than 5 minutes
+                    elif time_diff < 300:  # 5 minutes
                         status = 'idle'
                     else:
                         status = 'offline'
                     
                     # Get execution count for this client
-                    cursor.execute("SELECT COUNT(*) as count FROM executions WHERE client = ?", (username,))
+                    cursor.execute("SELECT COUNT(*) as count FROM executions WHERE client = ?", (row['name'],))
                     exec_result = cursor.fetchone()
                     tasks_executed = exec_result['count'] if exec_result else 0
                     
                     # Get success rate
-                    cursor.execute("SELECT COUNT(*) as count FROM executions WHERE client = ? AND status = 'success'", (username,))
+                    cursor.execute("SELECT COUNT(*) as count FROM executions WHERE client = ? AND status = 'success'", (row['name'],))
                     success_result = cursor.fetchone()
                     success_count = success_result['count'] if success_result else 0
                     success_rate = (success_count / tasks_executed * 100) if tasks_executed > 0 else 0
                     
                     client = {
-                        'id': client_key,  # Use full key for unique identification
-                        'name': username,
+                        'id': row['name'],
+                        'name': row['name'],
                         'status': status,
-                        'hostname': hostname,
-                        'ip_address': client_data.get('ip_address', client_data.get('ip', '127.0.0.1')),
-                        'last_heartbeat': last_heartbeat,
+                        'hostname': row['hostname'] or 'unknown',
+                        'ip_address': row['ip_address'] or '127.0.0.1',
+                        'last_heartbeat': row['last_heartbeat'],
                         'tasks_executed': tasks_executed,
                         'success_rate': round(success_rate, 1),
-                        'cpu_usage': client_data.get('cpu_usage', 0),
-                        'memory_usage': client_data.get('memory_usage', 0),
-                        'version': client_data.get('version', 'v2.0.0'),
-                        'python_version': client_data.get('python_version', '3.11'),
-                        'platform': client_data.get('platform', 'Unknown'),
-                        'pid': client_data.get('pid', 0)
+                        'cpu_usage': 25 + (i % 30),  # Mock data for now
+                        'memory_usage': 30 + (i % 40),  # Mock data for now
+                        'version': 'v2.0.0'
                     }
                     all_clients.append(client)
+                
+            except Exception as e:
+                logger.error(f"Error getting heartbeat data: {e}")
+                # Fallback to execution data if heartbeats table issues
+                cursor.execute("SELECT DISTINCT client FROM executions WHERE client IS NOT NULL ORDER BY client")
+                client_names = [row[0] for row in cursor.fetchall()]
+                
+                all_clients = []
+                current_time = time.time()
+                for i, client_name in enumerate(client_names):
+                    # Get latest execution time as approximation for last seen
+                    cursor.execute("SELECT MAX(created_at) as last_seen FROM executions WHERE client = ?", (client_name,))
+                    result = cursor.fetchone()
+                    last_seen = result['last_seen'] if result and result['last_seen'] else current_time - 3600
                     
-                except Exception as e:
-                    logger.error(f"Error processing client {client_key}: {e}")
-                    continue
+                    time_diff = current_time - last_seen
+                    status = 'online' if time_diff < 3600 else 'offline'  # 1 hour threshold
+                    
+                    # Get execution stats
+                    cursor.execute("SELECT COUNT(*) as count FROM executions WHERE client = ?", (client_name,))
+                    exec_result = cursor.fetchone()
+                    tasks_executed = exec_result['count'] if exec_result else 0
+                    
+                    cursor.execute("SELECT COUNT(*) as count FROM executions WHERE client = ? AND status = 'success'", (client_name,))
+                    success_result = cursor.fetchone()
+                    success_count = success_result['count'] if success_result else 0
+                    success_rate = (success_count / tasks_executed * 100) if tasks_executed > 0 else 0
+                    
+                    client = {
+                        'id': client_name,
+                        'name': client_name,
+                        'status': status,
+                        'hostname': f'host-{client_name}',
+                        'ip_address': '192.168.1.100',
+                        'last_heartbeat': last_seen,
+                        'tasks_executed': tasks_executed,
+                        'success_rate': round(success_rate, 1),
+                        'cpu_usage': 25 + (i % 30),
+                        'memory_usage': 30 + (i % 40),
+                        'version': 'v2.0.0'
+                    }
+                    all_clients.append(client)
         
         # Apply filters
         filtered_clients = all_clients
@@ -484,47 +737,67 @@ def get_clients_paginated(cache, page=1, page_size=25, search='', status_filter=
         logger.error(f"Error getting clients: {e}")
         return [], 0
 
-def get_client_stats(cache):
-    """Get client statistics from cache data"""
+def get_client_stats():
+    """Get client statistics from real data"""
     try:
-        # Get all clients from cache
-        all_cached_clients = cache.all()
-        current_time = time.time()
-        
-        online_clients = 0
-        offline_clients = 0
-        idle_clients = 0
-        
-        for client_key, client_data in all_cached_clients.items():
-            last_heartbeat = client_data.get('last_heartbeat', 0)
-            time_diff = current_time - last_heartbeat
+        with sqlite3.connect(get_db_file()) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
             
-            if time_diff < 60:  # Less than 1 minute
-                online_clients += 1
-            elif time_diff < 300:  # Less than 5 minutes
-                idle_clients += 1
-            else:
-                offline_clients += 1
-        
-        total_clients = len(all_cached_clients)
-        uptime_percentage = (online_clients / total_clients * 100) if total_clients > 0 else 0
-        
-        return {
-            'total': total_clients,
-            'online': online_clients,
-            'offline': offline_clients,
-            'idle': idle_clients,
-            'uptime_percentage': round(uptime_percentage, 1)
-        }
-        
+            current_time = time.time()
+            online_clients = 0
+            offline_clients = 0
+            busy_clients = 0
+            
+            try:
+                # Try heartbeats table first
+                cursor.execute("""
+                    SELECT username, MAX(timestamp) as last_heartbeat
+                    FROM heartbeats 
+                    WHERE username IS NOT NULL
+                    GROUP BY username
+                """)
+                
+                for row in cursor.fetchall():
+                    time_diff = current_time - row['last_heartbeat']
+                    if time_diff < 60:
+                        online_clients += 1
+                    elif time_diff < 300:
+                        busy_clients += 1
+                    else:
+                        offline_clients += 1
+                        
+            except Exception:
+                # Fallback to executions table
+                cursor.execute("SELECT DISTINCT client FROM executions WHERE client IS NOT NULL")
+                client_names = [row[0] for row in cursor.fetchall()]
+                
+                for client_name in client_names:
+                    cursor.execute("SELECT MAX(created_at) as last_seen FROM executions WHERE client = ?", (client_name,))
+                    result = cursor.fetchone()
+                    last_seen = result['last_seen'] if result and result['last_seen'] else current_time - 3600
+                    
+                    time_diff = current_time - last_seen
+                    if time_diff < 3600:  # 1 hour
+                        online_clients += 1
+                    else:
+                        offline_clients += 1
+            
+            total_clients = online_clients + offline_clients + busy_clients
+            
+            return {
+                'online_clients': online_clients,
+                'offline_clients': offline_clients,
+                'busy_clients': busy_clients,
+                'total_clients': total_clients
+            }
     except Exception as e:
         logger.error(f"Error getting client stats: {e}")
         return {
-            'total': 0,
-            'online': 0,
-            'offline': 0,
-            'idle': 0,
-            'uptime_percentage': 0
+            'online_clients': 0,
+            'offline_clients': 0,
+            'busy_clients': 0,
+            'total_clients': 0
         }
 
 def get_tasks_paginated(page=1, page_size=25, search='', status_filter='', type_filter='', owner_filter=''):
@@ -711,10 +984,10 @@ def get_executions_paginated(page=1, page_size=25, search='', status_filter='', 
                 else:
                     exec_dict['duration'] = None
                 
-                # Add additional computed fields
-                exec_dict['client_online'] = exec_dict['status'] in ['success', 'running']
-                exec_dict['plugin'] = 'system'  # Default plugin type
-                exec_dict['retry_count'] = 0    # Default retry count
+                # Mock additional fields
+                exec_dict['client_online'] = True
+                exec_dict['plugin'] = 'unknown'
+                exec_dict['retry_count'] = 0
                 
                 executions.append(exec_dict)
             
@@ -759,6 +1032,21 @@ def get_execution_stats():
             'running_executions': 0
         }
 
+def format_uptime(seconds):
+    """Format uptime seconds into human readable string"""
+    if seconds < 60:
+        return f"{int(seconds)}s"
+    elif seconds < 3600:
+        return f"{int(seconds/60)}m {int(seconds%60)}s"
+    elif seconds < 86400:
+        hours = int(seconds/3600)
+        minutes = int((seconds%3600)/60)
+        return f"{hours}h {minutes}m"
+    else:
+        days = int(seconds/86400)
+        hours = int((seconds%86400)/3600)
+        return f"{days}d {hours}h"
+
 def get_available_clients():
     """Get list of available clients for filtering"""
     try:
@@ -770,347 +1058,30 @@ def get_available_clients():
     except Exception:
         return []
 
-    # API Endpoints for task actions
-    @app.route('/api/plugins', methods=['GET'])
-    def api_get_plugins():
-        """Get available plugins from the plugins directory"""
-        try:
-            import os
-            import glob
-            
-            plugins = []
-            
-            # Check both server plugins and root plugins directories
-            plugin_dirs = [
-                os.path.join(os.path.dirname(os.path.dirname(__file__)), 'plugins'),  # octopus_server/plugins
-                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'plugins')  # root/plugins
-            ]
-            
-            for plugin_dir in plugin_dirs:
-                if os.path.exists(plugin_dir):
-                    # Get all Python files in plugins directory
-                    plugin_files = glob.glob(os.path.join(plugin_dir, "*.py"))
-                    
-                    for plugin_file in plugin_files:
-                        plugin_name = os.path.basename(plugin_file)
-                        
-                        # Skip __init__.py and setup files
-                        if plugin_name.startswith('__') or plugin_name in ['plugin_setup.py']:
-                            continue
-                            
-                        # Remove .py extension
-                        plugin_name = plugin_name[:-3]
-                        
-                        # Try to get plugin description by reading the file
-                        description = ""
-                        try:
-                            with open(plugin_file, 'r', encoding='utf-8') as f:
-                                content = f.read()
-                                # Look for docstring or description
-                                lines = content.split('\n')
-                                for line in lines[:10]:  # Check first 10 lines
-                                    if '"""' in line or "'''" in line:
-                                        desc_line = line.strip().replace('"""', '').replace("'''", '').strip()
-                                        if desc_line and not desc_line.startswith('#'):
-                                            description = desc_line
-                                            break
-                                    elif line.strip().startswith('#') and 'description' in line.lower():
-                                        description = line.strip().replace('#', '').strip()
-                                        break
-                        except:
-                            pass
-                        
-                        plugin_info = {
-                            'name': plugin_name,
-                            'display_name': plugin_name.replace('_', ' ').title(),
-                            'description': description or f"Plugin for {plugin_name.replace('_', ' ')}"
-                        }
-                        
-                        # Avoid duplicates
-                        if not any(p['name'] == plugin_name for p in plugins):
-                            plugins.append(plugin_info)
-            
-            # Sort by name
-            plugins.sort(key=lambda x: x['name'])
-            
-            return {
-                'success': True,
-                'plugins': plugins
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting plugins: {e}")
-            return {
-                'success': False,
-                'message': f'Error getting plugins: {str(e)}',
-                'plugins': []
-            }
+def get_available_plugins():
+    """Get list of available plugins for task creation"""
+    try:
+        with sqlite3.connect(get_db_file()) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT DISTINCT plugin FROM tasks WHERE plugin IS NOT NULL ORDER BY plugin")
+            plugins = [row[0] for row in cursor.fetchall()]
+            # If no plugins in tasks, return some default plugin names
+            if not plugins:
+                plugins = ['web_utils', 'file_utils', 'system_utils', 'email_utils']
+            return plugins
+    except Exception:
+        return ['web_utils', 'file_utils', 'system_utils', 'email_utils']
 
-    @app.route('/api/tasks', methods=['POST'])
-    def api_create_task():
-        """Create a new task via API"""
-        try:
-            from dbhelper import add_task
-            import uuid
-            import time
-            
-            task_data = request.get_json()
-            
-            # Generate unique task ID
-            task_id = str(int(time.time() * 1000))
-            
-            # Prepare task for database
-            db_task = {
-                'id': task_id,
-                'owner': task_data.get('owner'),
-                'plugin': task_data.get('plugin'),
-                'action': task_data.get('action', 'run'),
-                'args': task_data.get('args', []),
-                'kwargs': task_data.get('kwargs', {}),
-                'type': task_data.get('type', 'scheduled'),
-                'interval': task_data.get('interval', ''),
-                'status': 'Active',
-                'description': task_data.get('description', '')
-            }
-            
-            # Add task to database
-            add_task(db_task)
-            
-            return {
-                'success': True,
-                'message': 'Task created successfully',
-                'task_id': task_id
-            }
-            
-        except Exception as e:
-            logger.error(f"Error creating task: {e}")
-            return {
-                'success': False,
-                'message': f'Error creating task: {str(e)}'
-            }, 500
-
-    # API Endpoints for execution actions
-    @app.route("/api/executions/<execution_id>", methods=['GET'])
-    def api_get_execution(execution_id):
-        """Get single execution details"""
-        try:
-            with sqlite3.connect(get_db_file()) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT execution_id, task_id, client, status, result, created_at, updated_at
-                    FROM executions 
-                    WHERE execution_id = ?
-                """, (execution_id,))
-                
-                row = cursor.fetchone()
-                if row:
-                    execution = dict(row)
-                    return execution
-                else:
-                    return {"error": "Execution not found"}, 404
-        except Exception as e:
-            logger.error(f"Error getting execution {execution_id}: {e}")
-            return {"error": "Internal server error"}, 500
-
-    @app.route("/api/executions/<execution_id>/result", methods=['GET'])
-    def api_get_execution_result(execution_id):
-        """Get execution result as downloadable file"""
-        try:
-            with sqlite3.connect(get_db_file()) as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT result FROM executions WHERE execution_id = ?", (execution_id,))
-                row = cursor.fetchone()
-                
-                if row and row[0]:
-                    from flask import Response
-                    return Response(
-                        row[0],
-                        mimetype='text/plain',
-                        headers={'Content-Disposition': f'attachment; filename=execution_{execution_id}_result.txt'}
-                    )
-                else:
-                    return {"error": "No result found"}, 404
-        except Exception as e:
-            logger.error(f"Error getting execution result {execution_id}: {e}")
-            return {"error": "Internal server error"}, 500
-
-    @app.route("/api/executions/<execution_id>/retry", methods=['POST'])
-    def api_retry_execution(execution_id):
-        """Retry a failed execution"""
-        try:
-            with sqlite3.connect(get_db_file()) as conn:
-                cursor = conn.cursor()
-                
-                # Get original execution details
-                cursor.execute("""
-                    SELECT task_id, client FROM executions WHERE execution_id = ?
-                """, (execution_id,))
-                row = cursor.fetchone()
-                
-                if not row:
-                    return {"success": False, "message": "Original execution not found"}, 404
-                
-                task_id, client = row
-                
-                # Create new execution (simplified - in real implementation you'd use task manager)
-                import time
-                import uuid
-                new_execution_id = str(uuid.uuid4())
-                now = time.time()
-                
-                cursor.execute("""
-                    INSERT INTO executions (execution_id, task_id, client, status, created_at, updated_at)
-                    VALUES (?, ?, ?, 'pending', ?, ?)
-                """, (new_execution_id, task_id, client, now, now))
-                
-                conn.commit()
-                
-                return {
-                    "success": True, 
-                    "message": "Execution retry initiated",
-                    "new_execution_id": new_execution_id
-                }
-                
-        except Exception as e:
-            logger.error(f"Error retrying execution {execution_id}: {e}")
-            return {"success": False, "message": "Internal server error"}, 500
-
-    @app.route("/api/clients/<client_id>/restart", methods=["POST"])
-    def restart_client_endpoint(client_id):
-        """Send restart command to a specific client"""
-        try:
-            logger.info(f"🔄 Restart request for client: {client_id}")
-            
-            # Extract hostname from client_id (format: username@hostname)
-            if '@' in client_id:
-                hostname = client_id.split('@')[1]
-            else:
-                hostname = client_id
-            
-            # Queue restart command for the client using the commands endpoint
-            restart_command = {
-                "plugin": "client_control",
-                "action": "restart_client",
-                "args": [],
-                "kwargs": {},
-                "timestamp": time.time()
-            }
-            
-            # Use shared commands manager
-            from commands_manager import add_command
-            
-            success = add_command(hostname, restart_command)
-            
-            logger.info(f"✅ Restart command queued for client {client_id} (hostname: {hostname})")
-            
-            return jsonify({
-                "success": True,
-                "message": f"Restart command sent to client {client_id}",
-                "command": restart_command
-            })
-            
-        except Exception as e:
-            logger.error(f"❌ Error sending restart command to client {client_id}: {e}")
-            return jsonify({
-                "success": False,
-                "message": f"Failed to send restart command: {str(e)}"
-            }), 500
-
-    @app.route("/api/clients/<client_id>/shutdown", methods=["POST", "OPTIONS"])
-    def shutdown_client_endpoint(client_id):
-        """Send shutdown command to a specific client"""
-        
-        # Handle CORS preflight
-        if request.method == "OPTIONS":
-            response = jsonify({})
-            response.headers.add("Access-Control-Allow-Origin", "*")
-            response.headers.add("Access-Control-Allow-Headers", "Content-Type")
-            response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
-            return response
-            
-        try:
-            logger.info(f"⛔ Shutdown request for client: {client_id}")
-            
-            # Extract hostname from client_id (format: username@hostname)
-            if '@' in client_id:
-                hostname = client_id.split('@')[1]
-            else:
-                hostname = client_id
-            
-            # Queue shutdown command for the client
-            shutdown_command = {
-                "plugin": "client_control",
-                "action": "shutdown_client",
-                "args": [],
-                "kwargs": {},
-                "timestamp": time.time()
-            }
-            
-            # Use shared commands manager
-            from commands_manager import add_command
-            
-            success = add_command(hostname, shutdown_command)
-            
-            logger.info(f"✅ Shutdown command queued for client {client_id} (hostname: {hostname})")
-            
-            response = jsonify({
-                "success": True,
-                "message": f"Shutdown command sent to client {client_id}",
-                "command": shutdown_command
-            })
-            
-            # Add CORS headers
-            response.headers.add("Access-Control-Allow-Origin", "*")
-            return response
-            
-        except Exception as e:
-            logger.error(f"❌ Error sending shutdown command to client {client_id}: {e}")
-            
-            response = jsonify({
-                "success": False,
-                "message": f"Failed to send shutdown command: {str(e)}"
-            })
-            response.headers.add("Access-Control-Allow-Origin", "*")
-            return response, 500
-
-    @app.route("/api/clients/<client_id>/info", methods=["GET"])
-    def get_client_info_endpoint(client_id):
-        """Get detailed information from a specific client"""
-        try:
-            logger.info(f"📊 Info request for client: {client_id}")
-            
-            # Extract hostname from client_id (format: username@hostname)
-            if '@' in client_id:
-                hostname = client_id.split('@')[1]
-            else:
-                hostname = client_id
-            
-            # Queue info command for the client
-            info_command = {
-                "plugin": "client_control",
-                "action": "get_client_info",
-                "args": [],
-                "kwargs": {},
-                "timestamp": time.time()
-            }
-            
-            # Use shared commands manager
-            from commands_manager import add_command
-            
-            success = add_command(hostname, info_command)
-            
-            logger.info(f"✅ Info command queued for client {client_id} (hostname: {hostname})")
-            
-            return jsonify({
-                "success": True,
-                "message": f"Info request sent to client {client_id}",
-                "command": info_command
-            })
-            
-        except Exception as e:
-            logger.error(f"❌ Error sending info request to client {client_id}: {e}")
-            return jsonify({
-                "success": False,
-                "message": f"Failed to send info request: {str(e)}"
-            }), 500
+def get_all_clients_dict():
+    """Get all clients as a dictionary for template use"""
+    try:
+        with sqlite3.connect(get_db_file()) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT DISTINCT client FROM executions WHERE client IS NOT NULL")
+            clients = {}
+            for row in cursor.fetchall():
+                client_id = row[0]
+                clients[client_id] = client_id
+            return clients
+    except Exception:
+        return {}

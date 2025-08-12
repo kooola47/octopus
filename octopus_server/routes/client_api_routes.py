@@ -36,18 +36,18 @@ def register_client_api_routes(app, cache, logger):
             </ul>
         """, task=latest_task)
 
-    # Import shared commands manager
-    from commands_manager import add_command, get_commands
+    # In-memory command queue for demonstration
+    COMMANDS = {}
 
     @app.route("/commands/<hostname>", methods=["GET", "POST"])
     def commands(hostname):
         """Handle commands for specific hostname"""
         if request.method == "POST":
             cmd = request.json
-            add_command(hostname, cmd)
+            COMMANDS.setdefault(hostname, []).append(cmd)
             return {"status": "queued"}
         else:
-            cmds = get_commands(hostname)
+            cmds = COMMANDS.pop(hostname, [])
             return jsonify(cmds)
 
     @app.route("/tasks", methods=["GET", "POST"])

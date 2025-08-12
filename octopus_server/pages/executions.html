@@ -185,11 +185,11 @@
                         <td>
                             <div class="task-id-cell">
                                 {% if execution.task_id %}
-                                <code class="task-id-code bg-secondary text-white px-2 py-1 rounded d-inline-block" style="max-width: 100%; word-break: break-all; white-space: normal;">
-                                    {{ execution.task_id }}
+                                <code class="task-id-code bg-secondary text-white px-2 py-1 rounded">
+                                    {{ execution.task_id[:12] }}{% if execution.task_id|length > 12 %}...{% endif %}
                                 </code>
                                 <br>
-                                <small class="text-muted">
+                                <small class="text-muted" data-bs-toggle="tooltip" title="{{ execution.task_id }}">
                                     {{ execution.plugin or 'Unknown Plugin' }}
                                 </small>
                                 {% else %}
@@ -445,85 +445,103 @@ function clearAllFilters() {
 }
 
 function viewExecutionDetails(executionId) {
-    // Create and show modal with execution details
-    const modalHtml = `
-        <div class="modal fade" id="executionModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="bi bi-info-circle me-2"></i>
-                            Execution Details
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="d-flex justify-content-center">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Loading...</span>
+    console.log('View execution details:', executionId);
+    
+    // Fetch execution details from API
+    fetch(`/api/executions/${executionId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            const execution = data.execution;
+            
+            // Create modal content
+            const modalContent = `
+                <div class="modal fade" id="executionDetailsModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Execution Details - ID ${execution.id}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <strong>Status:</strong> 
+                                        <span class="badge bg-${execution.status === 'success' ? 'success' : execution.status === 'error' ? 'danger' : 'warning'}">${execution.status}</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Task ID:</strong> ${execution.task_id}
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <strong>Client:</strong> ${execution.client || 'Not assigned'}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Duration:</strong> ${execution.end_time ? 
+                                            ((execution.end_time - execution.start_time).toFixed(2) + 's') : 
+                                            'Still running'}
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <strong>Start Time:</strong> ${new Date(execution.start_time * 1000).toLocaleString()}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>End Time:</strong> ${execution.end_time ? 
+                                            new Date(execution.end_time * 1000).toLocaleString() : 
+                                            'Not finished'}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Result:</strong>
+                                    <pre class="bg-light p-2" style="max-height: 300px; overflow-y: auto;">${execution.result || 'No result available'}</pre>
+                                </div>
+                                ${execution.error ? `
+                                    <div class="mb-3">
+                                        <strong>Error:</strong>
+                                        <pre class="bg-danger text-white p-2" style="max-height: 200px; overflow-y: auto;">${execution.error}</pre>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                ${execution.status === 'error' ? `
+                                    <button type="button" class="btn btn-warning" onclick="retryExecutionFromModal(${execution.id})">Retry</button>
+                                ` : ''}
+                                <button type="button" class="btn btn-info" onclick="viewTaskFromModal(${execution.task_id})">View Task</button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    `;
-    
-    // Remove existing modal if any
-    const existing = document.getElementById('executionModal');
-    if (existing) existing.remove();
-    
-    // Add modal to DOM
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('executionModal'));
-    modal.show();
-    
-    // Fetch execution details
-    fetch(`/api/executions/${executionId}`)
-        .then(response => response.json())
-        .then(data => {
-            const modalBody = document.querySelector('#executionModal .modal-body');
-            modalBody.innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="fw-bold mb-3">Execution Information</h6>
-                        <table class="table table-sm">
-                            <tr><td class="fw-semibold">ID:</td><td><code>${data.execution_id || executionId}</code></td></tr>
-                            <tr><td class="fw-semibold">Task ID:</td><td><code>${data.task_id || 'N/A'}</code></td></tr>
-                            <tr><td class="fw-semibold">Client:</td><td>${data.client || 'Unknown'}</td></tr>
-                            <tr><td class="fw-semibold">Status:</td><td><span class="badge bg-${data.status === 'success' ? 'success' : data.status === 'failed' ? 'danger' : 'warning'}">${data.status || 'Unknown'}</span></td></tr>
-                            <tr><td class="fw-semibold">Created:</td><td>${data.created_at ? new Date(data.created_at * 1000).toLocaleString() : 'N/A'}</td></tr>
-                            <tr><td class="fw-semibold">Updated:</td><td>${data.updated_at ? new Date(data.updated_at * 1000).toLocaleString() : 'N/A'}</td></tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="fw-bold mb-3">Result</h6>
-                        <div class="bg-light p-3 rounded">
-                            <pre class="mb-0" style="max-height: 200px; overflow-y: auto; font-size: 0.85em;">${data.result || 'No result available'}</pre>
-                        </div>
-                    </div>
-                </div>
             `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('executionDetailsModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalContent);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('executionDetailsModal'));
+            modal.show();
         })
         .catch(error => {
-            const modalBody = document.querySelector('#executionModal .modal-body');
-            modalBody.innerHTML = `
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    Could not load execution details. Showing basic information for: <code>${executionId}</code>
-                </div>
-            `;
+            console.error('Error fetching execution details:', error);
+            alert('Error fetching execution details');
         });
 }
 
 function retryExecution(executionId) {
-    if (confirm('Are you sure you want to retry this execution? This will create a new execution with the same task.')) {
-        const btn = event.target.closest('button');
-        const originalContent = btn.innerHTML;
-        btn.innerHTML = '<i class="spinner-border spinner-border-sm me-1"></i>Retrying...';
-        btn.disabled = true;
+    if (confirm('Are you sure you want to retry this execution?')) {
+        console.log('Retry execution:', executionId);
         
         fetch(`/api/executions/${executionId}/retry`, {
             method: 'POST',
@@ -533,181 +551,152 @@ function retryExecution(executionId) {
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                // Show success message
-                showNotification('Execution retry initiated successfully!', 'success');
-                // Reload page after short delay
-                setTimeout(() => window.location.reload(), 1500);
-            } else {
-                showNotification(data.message || 'Failed to retry execution', 'error');
-                btn.innerHTML = originalContent;
-                btn.disabled = false;
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
             }
+            
+            alert(`Execution retried successfully! New execution ID: ${data.execution_id}`);
+            
+            // Refresh the page to show updated data
+            location.reload();
         })
         .catch(error => {
-            showNotification('Error occurred while retrying execution', 'error');
-            btn.innerHTML = originalContent;
-            btn.disabled = false;
+            console.error('Error retrying execution:', error);
+            alert('Error retrying execution');
         });
     }
 }
 
 function viewTaskDetails(taskId) {
     if (taskId) {
-        // Navigate to tasks page with this task ID highlighted
-        window.location.href = `/modern/tasks?search=${encodeURIComponent(taskId)}`;
-    } else {
-        showNotification('No task ID available for this execution', 'warning');
+        console.log('View task details:', taskId);
+        // Navigate to tasks page with specific task highlighted
+        window.location.href = `/modern/tasks?highlight=${taskId}`;
     }
 }
 
 function downloadResult(executionId) {
-    // Create a download link for the execution result
-    fetch(`/api/executions/${executionId}/result`)
+    console.log('Download result for execution:', executionId);
+    
+    fetch(`/api/executions/${executionId}/download`)
         .then(response => {
-            if (response.ok) {
-                return response.blob();
+            if (!response.ok) {
+                throw new Error('Download failed');
             }
-            throw new Error('Failed to download result');
+            return response.blob();
         })
         .then(blob => {
+            // Create download link
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
+            a.style.display = 'none';
             a.href = url;
             a.download = `execution_${executionId}_result.txt`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-            showNotification('Result downloaded successfully!', 'success');
         })
         .catch(error => {
-            // Fallback: copy result to clipboard
-            fetch(`/api/executions/${executionId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.result) {
-                        navigator.clipboard.writeText(data.result).then(() => {
-                            showNotification('Result copied to clipboard!', 'success');
-                        });
-                    } else {
-                        showNotification('No result available to download', 'warning');
-                    }
-                })
-                .catch(() => {
-                    showNotification('Failed to download or copy result', 'error');
-                });
+            console.error('Error downloading result:', error);
+            alert('Error downloading result');
         });
 }
 
 function showFullResult(executionId) {
-    // Create and show modal with full result
-    const modalHtml = `
-        <div class="modal fade" id="resultModal" tabindex="-1">
-            <div class="modal-dialog modal-xl">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="bi bi-file-text me-2"></i>
-                            Full Execution Result
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="d-flex justify-content-center">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Loading result...</span>
+    console.log('Show full result for execution:', executionId);
+    
+    // Fetch execution details to get the full result
+    fetch(`/api/executions/${executionId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            const execution = data.execution;
+            
+            // Create modal content for full result
+            const modalContent = `
+                <div class="modal fade" id="fullResultModal" tabindex="-1">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Full Result - Execution ${execution.id}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="copyToClipboard('fullResultText')">Copy to Clipboard</button>
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="downloadResult(${executionId})">Download</button>
+                                </div>
+                                <pre id="fullResultText" class="bg-light p-3" style="max-height: 70vh; overflow-y: auto;">${execution.result || 'No result available'}</pre>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" onclick="copyResultToClipboard('${executionId}')">
-                            <i class="bi bi-clipboard me-1"></i> Copy
-                        </button>
-                        <button type="button" class="btn btn-outline-primary" onclick="downloadResult('${executionId}')">
-                            <i class="bi bi-download me-1"></i> Download
-                        </button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Remove existing modal if any
-    const existing = document.getElementById('resultModal');
-    if (existing) existing.remove();
-    
-    // Add modal to DOM
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('resultModal'));
-    modal.show();
-    
-    // Fetch full result
-    fetch(`/api/executions/${executionId}`)
-        .then(response => response.json())
-        .then(data => {
-            const modalBody = document.querySelector('#resultModal .modal-body');
-            modalBody.innerHTML = `
-                <div class="mb-3">
-                    <small class="text-muted">Execution ID: <code>${executionId}</code></small>
-                </div>
-                <div class="bg-dark text-light p-3 rounded" style="max-height: 60vh; overflow-y: auto;">
-                    <pre class="mb-0 text-light">${data.result || 'No result available'}</pre>
                 </div>
             `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('fullResultModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalContent);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('fullResultModal'));
+            modal.show();
         })
         .catch(error => {
-            const modalBody = document.querySelector('#resultModal .modal-body');
-            modalBody.innerHTML = `
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    Could not load execution result for: <code>${executionId}</code>
-                </div>
-            `;
+            console.error('Error fetching execution result:', error);
+            alert('Error fetching execution result');
         });
 }
 
-function copyResultToClipboard(executionId) {
-    fetch(`/api/executions/${executionId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.result) {
-                navigator.clipboard.writeText(data.result).then(() => {
-                    showNotification('Result copied to clipboard!', 'success');
-                });
-            } else {
-                showNotification('No result available to copy', 'warning');
-            }
-        })
-        .catch(() => {
-            showNotification('Failed to copy result', 'error');
-        });
+function retryExecutionFromModal(executionId) {
+    // Close the modal first
+    const modal = bootstrap.Modal.getInstance(document.getElementById('executionDetailsModal'));
+    modal.hide();
+    
+    // Retry the execution
+    retryExecution(executionId);
 }
 
-function showNotification(message, type = 'info') {
-    const alertClass = type === 'success' ? 'alert-success' : 
-                      type === 'error' ? 'alert-danger' : 
-                      type === 'warning' ? 'alert-warning' : 'alert-info';
+function viewTaskFromModal(taskId) {
+    // Close the modal first
+    const modal = bootstrap.Modal.getInstance(document.getElementById('executionDetailsModal'));
+    modal.hide();
     
-    const notification = document.createElement('div');
-    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
-    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
+    // View the task
+    viewTaskDetails(taskId);
+}
+
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        navigator.clipboard.writeText(element.textContent).then(() => {
+            // Create temporary feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.classList.add('btn-success');
+            btn.classList.remove('btn-secondary');
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-secondary');
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            alert('Failed to copy to clipboard');
+        });
+    }
 }
 </script>
 {% endblock %}

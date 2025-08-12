@@ -225,18 +225,21 @@ class OctopusUI {
     }
 
     viewTask(taskId) {
-        // Implementation for viewing task details
+        // Navigate to tasks page with specific task highlighted
         console.log('View task:', taskId);
+        window.location.href = `/modern/tasks?highlight=${taskId}`;
     }
 
     viewExecution(executionId) {
-        // Implementation for viewing execution details
+        // Navigate to executions page with specific execution highlighted
         console.log('View execution:', executionId);
+        window.location.href = `/modern/executions?highlight=${executionId}`;
     }
 
     viewClient(clientId) {
-        // Implementation for viewing client details
+        // Navigate to clients page with specific client highlighted
         console.log('View client:', clientId);
+        window.location.href = `/modern/clients?highlight=${clientId}`;
     }
 
     // Utility functions

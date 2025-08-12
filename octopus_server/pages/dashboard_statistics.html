@@ -1,0 +1,35 @@
+<h3>📊 System Statistics</h3>
+<div class="row">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h4>{{ tasks|length }}</h4>
+                <p>Total Tasks</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h4>{{ active_clients|length }}</h4>
+                <p>Active Clients</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h4>{{ executions|length }}</h4>
+                <p>Total Executions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h4>{{ plugins|length }}</h4>
+                <p>Available Plugins</p>
+            </div>
+        </div>
+    </div>
+</div>

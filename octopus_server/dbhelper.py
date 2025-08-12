@@ -462,3 +462,221 @@ def add_execution_result(task_id, client, status, result):
         conn.commit()
         logger.info(f"Execution result added successfully: execution_id={execution_id}, task_id={task_id}")
     return execution_id
+
+
+# ========================================
+# USER MANAGEMENT FUNCTIONS
+# ========================================
+
+def hash_password(password, salt=None):
+    """Hash a password with salt using SHA-256"""
+    import hashlib
+    import secrets
+    
+    if salt is None:
+        salt = secrets.token_hex(16)
+    
+    password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+    return f"{salt}:{password_hash}"
+
+def verify_password(password, stored_hash):
+    """Verify a password against the stored hash"""
+    import hashlib
+    
+    try:
+        salt, password_hash = stored_hash.split(':')
+        return hashlib.sha256((password + salt).encode()).hexdigest() == password_hash
+    except ValueError:
+        return False
+
+def authenticate_user(username, password):
+    """Authenticate a user and return user info if valid"""
+    import time
+    import logging
+    logger = logging.getLogger("octopus_server")
+    
+    init_db()
+    
+    with sqlite3.connect(DB_FILE) as conn:
+        user_row = conn.execute('''
+            SELECT id, username, email, password_hash, role, is_active, last_login
+            FROM users WHERE username = ? AND is_active = 1
+        ''', (username,)).fetchone()
+        
+        if user_row and verify_password(password, user_row[3]):
+            # Update last login time
+            current_time = time.time()
+            conn.execute('''
+                UPDATE users SET last_login = ?, updated_at = ? WHERE id = ?
+            ''', (current_time, current_time, user_row[0]))
+            conn.commit()
+            
+            return {
+                'id': user_row[0],
+                'username': user_row[1],
+                'email': user_row[2],
+                'role': user_row[4],
+                'is_active': user_row[5],
+                'last_login': current_time
+            }
+    return None
+
+def create_user(username, password, email='', role='user', is_active=True):
+    """Create a new user"""
+    import time
+    import logging
+    logger = logging.getLogger("octopus_server")
+    
+    init_db()
+    
+    # Validate role
+    if role not in ['admin', 'user']:
+        logger.error(f"Invalid role: {role}")
+        return None
+    
+    # Hash password
+    password_hash = hash_password(password)
+    current_time = time.time()
+    
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            cursor = conn.execute('''
+                INSERT INTO users (username, email, password_hash, role, is_active, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (username, email, password_hash, role, is_active, current_time, current_time))
+            
+            user_id = cursor.lastrowid
+            conn.commit()
+            logger.info(f"User created successfully: {username} (ID: {user_id})")
+            return user_id
+            
+    except sqlite3.IntegrityError:
+        logger.error(f"User creation failed: username {username} already exists")
+        return None
+
+def get_user_by_id(user_id):
+    """Get user by ID"""
+    init_db()
+    
+    with sqlite3.connect(DB_FILE) as conn:
+        user_row = conn.execute('''
+            SELECT id, username, email, role, is_active, created_at, updated_at, last_login
+            FROM users WHERE id = ?
+        ''', (user_id,)).fetchone()
+        
+        if user_row:
+            return {
+                'id': user_row[0],
+                'username': user_row[1],
+                'email': user_row[2],
+                'role': user_row[3],
+                'is_active': user_row[4],
+                'created_at': user_row[5],
+                'updated_at': user_row[6],
+                'last_login': user_row[7]
+            }
+    return None
+
+def get_all_users():
+    """Get all active users"""
+    init_db()
+    
+    with sqlite3.connect(DB_FILE) as conn:
+        user_rows = conn.execute('''
+            SELECT id, username, email, role, is_active, created_at, updated_at, last_login
+            FROM users WHERE is_active = 1 ORDER BY created_at DESC
+        ''').fetchall()
+        
+        users = []
+        for row in user_rows:
+            users.append({
+                'id': row[0],
+                'username': row[1],
+                'email': row[2],
+                'role': row[3],
+                'is_active': row[4],
+                'created_at': row[5],
+                'updated_at': row[6],
+                'last_login': row[7]
+            })
+        return users
+
+def update_user(user_id, **kwargs):
+    """Update user information"""
+    import time
+    import logging
+    logger = logging.getLogger("octopus_server")
+    
+    init_db()
+    
+    # Build update query dynamically
+    allowed_fields = ['username', 'email', 'role', 'is_active']
+    update_fields = []
+    update_values = []
+    
+    for field, value in kwargs.items():
+        if field in allowed_fields:
+            update_fields.append(f"{field} = ?")
+            update_values.append(value)
+    
+    if not update_fields:
+        return False
+    
+    # Add updated_at
+    update_fields.append("updated_at = ?")
+    update_values.append(time.time())
+    update_values.append(user_id)
+    
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            conn.execute(f'''
+                UPDATE users SET {', '.join(update_fields)} WHERE id = ?
+            ''', update_values)
+            
+            conn.commit()
+            logger.info(f"User {user_id} updated successfully")
+            return True
+            
+    except sqlite3.IntegrityError:
+        logger.error(f"User update failed: constraint violation")
+        return False
+
+def update_user_password(user_id, new_password):
+    """Update user password"""
+    import time
+    import logging
+    logger = logging.getLogger("octopus_server")
+    
+    init_db()
+    
+    password_hash = hash_password(new_password)
+    current_time = time.time()
+    
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.execute('''
+            UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?
+        ''', (password_hash, current_time, user_id))
+        
+        conn.commit()
+        logger.info(f"Password updated for user {user_id}")
+        return True
+
+def delete_user(user_id):
+    """Delete user (actually sets is_active to False)"""
+    import time
+    import logging
+    logger = logging.getLogger("octopus_server")
+    
+    init_db()
+    
+    current_time = time.time()
+    
+    with sqlite3.connect(DB_FILE) as conn:
+        # Set user as inactive instead of deleting
+        conn.execute('''
+            UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?
+        ''', (current_time, user_id))
+        
+        conn.commit()
+        logger.info(f"User {user_id} deactivated successfully")
+        return True
