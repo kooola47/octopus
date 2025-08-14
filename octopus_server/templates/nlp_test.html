@@ -4,448 +4,510 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🐙 NLP Task Creator - Octopus</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --octopus-primary: #6366f1;
+            --octopus-primary-dark: #4f46e5;
+            --octopus-secondary: #8b5cf6;
+            --octopus-success: #10b981;
+            --octopus-warning: #f59e0b;
+            --octopus-danger: #ef4444;
+            --octopus-info: #3b82f6;
+            --octopus-light: #f8fafc;
+            --octopus-dark: #1e293b;
+            --octopus-border: #e2e8f0;
+            --octopus-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --octopus-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 1rem;
         }
-        
-        .main-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header Styles */
+        .octopus-header {
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%);
             backdrop-filter: blur(10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-        
-        .nlp-input-area {
-            background: #f8f9fa;
-            border-radius: 15px;
-            border: 2px solid #e9ecef;
-            transition: all 0.3s ease;
-        }
-        
-        .nlp-input-area:focus-within {
-            border-color: #667eea;
-            box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
-        }
-        
-        .result-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 15px;
-            border: none;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-        
-        .result-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-        }
-        
-        .confidence-bar {
-            height: 8px;
-            border-radius: 4px;
-            background: linear-gradient(90deg, #dc3545 0%, #ffc107 50%, #28a745 100%);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--octopus-shadow-lg);
+            text-align: center;
             position: relative;
             overflow: hidden;
         }
-        
-        .confidence-indicator {
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 4px;
-            transition: width 0.8s ease;
+
+        .octopus-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--octopus-primary), var(--octopus-secondary), var(--octopus-info));
         }
-        
-        .entity-tag {
-            display: inline-block;
-            padding: 4px 8px;
-            margin: 2px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: 500;
+
+        .octopus-header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        
-        .entity-person { background: #e3f2fd; color: #1976d2; }
-        .entity-email { background: #f3e5f5; color: #7b1fa2; }
-        .entity-path { background: #e8f5e8; color: #388e3c; }
-        .entity-number { background: #fff3e0; color: #f57c00; }
-        .entity-time { background: #fce4ec; color: #c2185b; }
-        .entity-default { background: #f5f5f5; color: #616161; }
-        
-        .suggestion-item {
-            padding: 8px 12px;
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            margin: 4px 0;
-            font-size: 0.9em;
+
+        .octopus-subtitle {
+            color: #64748b;
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+            font-weight: 400;
         }
-        
-        .task-preview {
-            background: #f8f9fa;
-            border: 2px dashed #dee2e6;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 15px 0;
+
+        /* Card Styles */
+        .octopus-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1rem;
+            box-shadow: var(--octopus-shadow);
+            transition: all 0.3s ease;
+            overflow: hidden;
         }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        .octopus-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--octopus-shadow-lg);
+        }
+
+        .octopus-card-header {
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-primary-dark));
+            color: white;
+            padding: 1rem 1.5rem;
             border: none;
-            border-radius: 25px;
-            padding: 12px 30px;
             font-weight: 600;
+        }
+
+        .octopus-card-body {
+            padding: 1.5rem;
+        }
+
+        /* Input Styles */
+        .nlp-input-container {
+            background: var(--octopus-light);
+            border: 2px solid var(--octopus-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
             transition: all 0.3s ease;
         }
-        
-        .btn-primary:hover {
+
+        .nlp-input-container:focus-within {
+            border-color: var(--octopus-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .nlp-textarea {
+            border: none !important;
+            background: transparent !important;
+            resize: none;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .nlp-textarea:focus {
+            box-shadow: none !important;
+            outline: none !important;
+        }
+
+        /* Button Styles */
+        .btn-octopus-primary {
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-primary-dark));
+            border: none;
+            color: white;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-octopus-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: var(--octopus-shadow-lg);
+            color: white;
         }
-        
-        .spinner-border {
-            color: #667eea;
+
+        .btn-octopus-success {
+            background: linear-gradient(135deg, var(--octopus-success), #0d9488);
+            border: none;
+            color: white;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
         }
-        
+
+        .btn-octopus-success:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--octopus-shadow-lg);
+            color: white;
+        }
+
+        /* Examples */
         .example-card {
             background: rgba(255, 255, 255, 0.8);
-            border-radius: 10px;
-            padding: 15px;
-            margin: 10px 0;
-            border-left: 4px solid #667eea;
+            border: 1px solid var(--octopus-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
             cursor: pointer;
             transition: all 0.3s ease;
+            border-left: 4px solid var(--octopus-primary);
         }
-        
+
         .example-card:hover {
             background: rgba(255, 255, 255, 1);
-            transform: translateX(5px);
+            transform: translateX(8px);
+            box-shadow: var(--octopus-shadow);
+        }
+
+        /* Confidence Bar */
+        .confidence-container {
+            background: var(--octopus-light);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .confidence-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .confidence-indicator {
+            height: 100%;
+            background: linear-gradient(90deg, var(--octopus-danger) 0%, var(--octopus-warning) 50%, var(--octopus-success) 100%);
+            border-radius: 4px;
+            transition: width 0.8s ease;
+            position: relative;
+        }
+
+        /* Task Preview */
+        .task-preview {
+            background: var(--octopus-light);
+            border: 2px dashed var(--octopus-border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        /* Entity Tags */
+        .entity-tag {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            margin: 0.125rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .entity-person { background: #dbeafe; color: #1d4ed8; }
+        .entity-email { background: #f3e8ff; color: #7c3aed; }
+        .entity-path { background: #dcfce7; color: #16a34a; }
+        .entity-number { background: #fed7aa; color: #ea580c; }
+        .entity-time { background: #fce7f3; color: #be185d; }
+        .entity-default { background: var(--octopus-light); color: #64748b; }
+
+        /* Loading */
+        .loading-spinner {
+            color: var(--octopus-primary);
+        }
+
+        /* Back Button */
+        .back-button {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            text-decoration: none;
+            color: var(--octopus-dark);
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 1);
+            color: var(--octopus-primary);
+            transform: translateY(-2px);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+            
+            .octopus-header h1 {
+                font-size: 2rem;
+            }
+            
+            .octopus-header {
+                padding: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid py-4">
-        <div class="row justify-content-center">
-            <div class="col-12 col-lg-10 col-xl-8">
-                <div class="main-container p-4 p-md-5">
-                    <!-- Header -->
-                    <div class="text-center mb-4">
-                        <h1 class="display-4 mb-3">
-                            <i class="fas fa-brain text-primary"></i>
-                            NLP Task Creator
-                        </h1>
-                        <p class="lead text-muted">
-                            Transform natural language into executable tasks using AI-powered processing
-                        </p>
+    <!-- Back Button -->
+    <a href="/dashboard" class="back-button">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="octopus-header">
+            <h1><i class="bi bi-brain"></i> NLP Task Creator</h1>
+            <p class="octopus-subtitle">Transform natural language into executable tasks using AI-powered processing</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="octopus-card mb-4">
+            <div class="octopus-card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-keyboard"></i> 
+                    Describe Your Task
+                </h5>
+            </div>
+            <div class="octopus-card-body">
+                <div class="nlp-input-container">
+                    <textarea 
+                        id="nlp-input" 
+                        class="form-control nlp-textarea" 
+                        rows="4" 
+                        placeholder="Describe what you want to do in plain English...
+
+Examples:
+• Create an urgent incident about server downtime
+• Send an email notification to admin@company.com about backup completion
+• Generate a performance report in PDF format daily at 9 AM
+• Clean up log files older than 30 days from /var/log"
+                    ></textarea>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i>
+                        Be as specific as possible for better results
+                    </small>
+                    <button id="parse-btn" class="btn btn-octopus-primary">
+                        <i class="bi bi-magic"></i> Parse Task
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Examples -->
+        <div class="octopus-card mb-4">
+            <div class="octopus-card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-lightbulb"></i> Quick Examples
+                    <button class="btn btn-sm btn-outline-light ms-2" onclick="refreshExamples()" title="Refresh examples">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </h6>
+            </div>
+            <div class="octopus-card-body">
+                <div id="examples-container">
+                    <!-- Examples will be loaded dynamically -->
+                    <div class="text-center text-muted">
+                        <i class="bi bi-hourglass-split loading-spinner"></i> Loading examples...
                     </div>
+                </div>
+            </div>
+        </div>
 
-                    <!-- Input Section -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <div class="card result-card">
-                                <div class="card-header bg-primary text-white">
-                                    <h5 class="mb-0">
-                                        <i class="fas fa-keyboard"></i> 
-                                        Describe Your Task
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="nlp-input-area p-3">
-                                        <textarea 
-                                            id="nlp-input" 
-                                            class="form-control border-0 bg-transparent" 
-                                            rows="4" 
-                                            placeholder="Describe what you want to do in plain English...&#10;&#10;Examples:&#10;• Create an urgent incident about server downtime&#10;• Send an email notification to admin@company.com about backup completion&#10;• Generate a performance report in PDF format daily at 9 AM&#10;• Clean up log files older than 30 days from /var/log"
-                                            style="resize: none; font-size: 16px;"
-                                        ></textarea>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center mt-3">
-                                        <small class="text-muted">
-                                            <i class="fas fa-info-circle"></i>
-                                            Be as specific as possible for better results
-                                        </small>
-                                        <button id="parse-btn" class="btn btn-primary">
-                                            <i class="fas fa-magic"></i> Parse Task
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+        <!-- Loading Indicator -->
+        <div id="loading" class="text-center mb-4" style="display: none;">
+            <div class="octopus-card">
+                <div class="octopus-card-body text-center">
+                    <div class="spinner-border loading-spinner" role="status">
+                        <span class="visually-hidden">Processing...</span>
                     </div>
+                    <p class="mt-2 text-muted">Analyzing your request...</p>
+                </div>
+            </div>
+        </div>
 
-                    <!-- Quick Examples -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-muted mb-3">
-                                <i class="fas fa-lightbulb"></i> Quick Examples (click to try):
-                                <button class="btn btn-sm btn-outline-primary ms-2" onclick="refreshExamples()" title="Refresh examples">
-                                    <i class="fas fa-sync-alt"></i>
-                                </button>
-                            </h6>
-                            <div id="examples-container" class="row">
-                                <!-- Examples will be loaded dynamically -->
-                                <div class="col-12 text-center text-muted">
-                                    <i class="fas fa-spinner fa-spin"></i> Loading examples...
-                                </div>
-                            </div>
+        <!-- Results Section -->
+        <div id="results" style="display: none;">
+            <!-- Confidence Score -->
+            <div class="octopus-card mb-4">
+                <div class="octopus-card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up"></i> 
+                        Parsing Confidence
+                    </h6>
+                </div>
+                <div class="octopus-card-body">
+                    <div class="confidence-container">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Confidence Level:</span>
+                            <strong id="confidence-text">0%</strong>
                         </div>
+                        <div class="confidence-bar">
+                            <div id="confidence-indicator" class="confidence-indicator" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted mt-2 d-block">Higher confidence = better task accuracy</small>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Loading Indicator -->
-                    <div id="loading" class="text-center" style="display: none;">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Processing...</span>
-                        </div>
-                        <p class="mt-2 text-muted">Analyzing your request...</p>
+            <!-- Task Preview -->
+            <div class="octopus-card mb-4">
+                <div class="octopus-card-header" style="background: linear-gradient(135deg, var(--octopus-success), #0d9488);">
+                    <h6 class="mb-0">
+                        <i class="bi bi-list-task"></i> 
+                        Generated Task
+                    </h6>
+                </div>
+                <div class="octopus-card-body">
+                    <div id="task-preview" class="task-preview">
+                        <!-- Task details will be populated here -->
                     </div>
-
-                    <!-- Results Section -->
-                    <div id="results" style="display: none;">
-                        <!-- Confidence Score -->
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="card result-card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">
-                                            <i class="fas fa-chart-bar"></i> 
-                                            Parsing Confidence
-                                        </h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <span>Confidence Level:</span>
-                                            <strong id="confidence-text">0%</strong>
-                                        </div>
-                                        <div class="confidence-bar">
-                                            <div id="confidence-indicator" class="confidence-indicator" style="width: 0%"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Task Preview -->
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="card result-card">
-                                    <div class="card-header bg-success text-white">
-                                        <h6 class="mb-0">
-                                            <i class="fas fa-tasks"></i> 
-                                            Generated Task
-                                        </h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="task-preview" class="task-preview">
-                                            <!-- Task details will be populated here -->
-                                        </div>
-                                        <div class="mt-3">
-                                            <button id="create-task-btn" class="btn btn-success me-2">
-                                                <i class="fas fa-plus"></i> Create This Task
-                                            </button>
-                                            <button id="create-immediate-btn" class="btn btn-primary me-2">
-                                                <i class="fas fa-rocket"></i> Create Immediately
-                                            </button>
-                                            <button id="edit-task-btn" class="btn btn-outline-secondary">
-                                                <i class="fas fa-edit"></i> Edit Task
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Extracted Entities -->
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="card result-card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">
-                                            <i class="fas fa-tags"></i> 
-                                            Extracted Entities
-                                        </h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="entities-container">
-                                            <!-- Entities will be populated here -->
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card result-card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">
-                                            <i class="fas fa-lightbulb"></i> 
-                                            Suggestions
-                                        </h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="suggestions-container">
-                                            <!-- Suggestions will be populated here -->
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Raw Data (Collapsible) -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card result-card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">
-                                            <a class="text-decoration-none" data-bs-toggle="collapse" href="#raw-data" role="button" aria-expanded="false">
-                                                <i class="fas fa-code"></i> 
-                                                Raw NLP Data
-                                                <i class="fas fa-chevron-down float-end"></i>
-                                            </a>
-                                        </h6>
-                                    </div>
-                                    <div class="collapse" id="raw-data">
-                                        <div class="card-body">
-                                            <pre id="raw-json" class="bg-dark text-light p-3 rounded" style="font-size: 0.8em; max-height: 400px; overflow-y: auto;"></pre>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="mt-3 d-flex gap-2 flex-wrap">
+                        <button id="create-task-btn" class="btn btn-octopus-success">
+                            <i class="bi bi-plus-circle"></i> Create This Task
+                        </button>
+                        <button id="create-immediate-btn" class="btn btn-octopus-primary">
+                            <i class="bi bi-lightning"></i> Create & Execute Now
+                        </button>
+                        <button id="modify-task-btn" class="btn btn-outline-secondary">
+                            <i class="bi bi-pencil"></i> Modify Task
+                        </button>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Error Section -->
-                    <div id="error-section" class="alert alert-danger" style="display: none;">
-                        <h6><i class="fas fa-exclamation-triangle"></i> Error</h6>
-                        <p id="error-message"></p>
+            <!-- Extracted Entities (if any) -->
+            <div id="entities-section" class="octopus-card mb-4" style="display: none;">
+                <div class="octopus-card-header" style="background: linear-gradient(135deg, var(--octopus-info), #1d4ed8);">
+                    <h6 class="mb-0">
+                        <i class="bi bi-tags"></i> 
+                        Extracted Information
+                    </h6>
+                </div>
+                <div class="octopus-card-body">
+                    <div id="entities-content">
+                        <!-- Entities will be displayed here -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let currentTaskData = null;
+        // Global variables
+        let currentParsedResult = null;
 
-        // Set example text
-        function setExample(text) {
-            document.getElementById('nlp-input').value = text;
-            document.getElementById('nlp-input').focus();
-        }
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExamples();
+            setupEventListeners();
+        });
 
-        // Load dynamic examples from API
-        async function loadExamples() {
-            try {
-                const response = await fetch('/api/plugin-examples');
-                const data = await response.json();
-                
-                if (response.ok) {
-                    displayExamples(data.examples);
-                } else {
-                    console.error('Failed to load examples:', data.error);
-                    displayFallbackExamples();
-                }
-            } catch (error) {
-                console.error('Error loading examples:', error);
-                displayFallbackExamples();
-            }
-        }
-
-        // Display examples in rotating fashion
-        function displayExamples(examples) {
-            const container = document.getElementById('examples-container');
+        function setupEventListeners() {
+            // Parse button
+            document.getElementById('parse-btn').addEventListener('click', parseTask);
             
-            if (!examples || examples.length === 0) {
-                displayFallbackExamples();
-                return;
-            }
+            // Enter key in textarea
+            document.getElementById('nlp-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    parseTask();
+                }
+            });
 
-            // Shuffle and take 4 examples for display
+            // Task action buttons
+            document.getElementById('create-task-btn').addEventListener('click', createTask);
+            document.getElementById('create-immediate-btn').addEventListener('click', createImmediateTask);
+            document.getElementById('modify-task-btn').addEventListener('click', modifyTask);
+        }
+
+        function loadExamples() {
+            const examples = [
+                "Create an urgent incident about database server being down",
+                "Send email notification to admin@company.com about backup completion", 
+                "Backup the main database every night at 2 AM",
+                "Generate system performance report as PDF",
+                "Clean up log files older than 30 days from /var/log",
+                "Process customer data and calculate monthly statistics",
+                "Create notification about scheduled maintenance window",
+                "List all files in the /home/user/documents directory"
+            ];
+
+            const container = document.getElementById('examples-container');
+            container.innerHTML = '';
+
+            // Show random 4 examples
             const shuffled = examples.sort(() => 0.5 - Math.random());
             const selected = shuffled.slice(0, 4);
 
-            let html = '';
             selected.forEach(example => {
-                const category = example.category ? example.category.charAt(0).toUpperCase() + example.category.slice(1) : 'Task';
-                html += `
-                    <div class="col-md-6">
-                        <div class="example-card" onclick="setExample('${example.text.replace(/'/g, "\\'")}')">
-                            <strong>${category}:</strong><br>
-                            <small class="text-muted">${example.text}</small>
-                        </div>
+                const exampleDiv = document.createElement('div');
+                exampleDiv.className = 'example-card';
+                exampleDiv.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-lightbulb text-warning me-2"></i>
+                        <span>${example}</span>
                     </div>
                 `;
+                exampleDiv.addEventListener('click', () => {
+                    document.getElementById('nlp-input').value = example;
+                    document.getElementById('nlp-input').focus();
+                });
+                container.appendChild(exampleDiv);
             });
-
-            container.innerHTML = html;
         }
 
-        // Display fallback examples if API fails
-        function displayFallbackExamples() {
-            const container = document.getElementById('examples-container');
-            container.innerHTML = `
-                <div class="col-md-6">
-                    <div class="example-card" onclick="setExample('Create a high priority incident about database connection failure')">
-                        <strong>Incident Creation:</strong><br>
-                        <small class="text-muted">Create a high priority incident about database connection failure</small>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="example-card" onclick="setExample('Send email to admin@company.com with subject Dashboard Alert')">
-                        <strong>Email Notification:</strong><br>
-                        <small class="text-muted">Send email to admin@company.com with subject "Dashboard Alert"</small>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="example-card" onclick="setExample('Backup the production database to /backup/prod daily at 2 AM')">
-                        <strong>Scheduled Backup:</strong><br>
-                        <small class="text-muted">Backup the production database to /backup/prod daily at 2 AM</small>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="example-card" onclick="setExample('Clean up log files older than 7 days from /var/log/app')">
-                        <strong>File Cleanup:</strong><br>
-                        <small class="text-muted">Clean up log files older than 7 days from /var/log/app</small>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Refresh examples (called by refresh button)
         function refreshExamples() {
-            const container = document.getElementById('examples-container');
-            container.innerHTML = '<div class="col-12 text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Loading examples...</div>';
             loadExamples();
         }
 
-        // Parse button click handler
-        document.getElementById('parse-btn').addEventListener('click', function() {
-            const inputText = document.getElementById('nlp-input').value.trim();
-            if (!inputText) {
-                alert('Please enter some text to parse');
+        async function parseTask() {
+            const input = document.getElementById('nlp-input').value.trim();
+            
+            if (!input) {
+                alert('Please enter a task description');
                 return;
             }
-            
-            parseNaturalLanguage(inputText);
-        });
 
-        // Enter key handler for textarea
-        document.getElementById('nlp-input').addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'Enter') {
-                e.preventDefault();
-                document.getElementById('parse-btn').click();
-            }
-        });
-
-        // Parse natural language input
-        async function parseNaturalLanguage(text) {
-            showLoading(true);
-            hideError();
-            hideResults();
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('parse-btn').disabled = true;
 
             try {
                 const response = await fetch('/api/nlp-parse', {
@@ -453,265 +515,166 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ text: text })
+                    body: JSON.stringify({ text: input })
                 });
 
-                const data = await response.json();
+                const result = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to parse text');
+                if (response.ok && result.success) {
+                    currentParsedResult = result;
+                    displayResults(result);
+                } else {
+                    throw new Error(result.error || 'Failed to parse task');
                 }
-
-                currentTaskData = data;
-                displayResults(data);
-
             } catch (error) {
-                console.error('Error parsing text:', error);
-                showError(error.message);
+                console.error('Error parsing task:', error);
+                alert(`Error: ${error.message}`);
             } finally {
-                showLoading(false);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('parse-btn').disabled = false;
             }
         }
 
-        // Display results
-        function displayResults(data) {
-            // Show confidence
-            const confidence = Math.round((data.confidence || 0) * 100);
-            document.getElementById('confidence-text').textContent = confidence + '%';
-            document.getElementById('confidence-indicator').style.width = confidence + '%';
+        function displayResults(result) {
+            // Show results section
+            document.getElementById('results').style.display = 'block';
 
-            // Show task preview
-            displayTaskPreview(data.task);
+            // Update confidence
+            const confidence = Math.round(result.confidence * 100);
+            document.getElementById('confidence-text').textContent = `${confidence}%`;
+            document.getElementById('confidence-indicator').style.width = `${confidence}%`;
 
-            // Show entities
-            displayEntities(data.extracted_entities || []);
-
-            // Show suggestions
-            displaySuggestions(data.suggestions || []);
-
-            // Show raw data
-            document.getElementById('raw-json').textContent = JSON.stringify(data, null, 2);
-
-            // Enable/disable task creation buttons based on plugin detection
-            updateTaskButtons(data.task);
-
-            showResults(true);
-        }
-
-        // Update task creation buttons state
-        function updateTaskButtons(task) {
-            const createBtn = document.getElementById('create-task-btn');
-            const createImmediateBtn = document.getElementById('create-immediate-btn');
-            const editBtn = document.getElementById('edit-task-btn');
+            // Display task preview
+            const taskPreview = document.getElementById('task-preview');
+            const task = result.task_definition;
             
-            const hasPlugin = task && task.plugin && task.plugin !== 'Not detected';
-            
-            if (hasPlugin) {
-                createBtn.disabled = false;
-                createImmediateBtn.disabled = false;
-                editBtn.disabled = false;
-                createBtn.title = 'Create this task in the dashboard';
-                createImmediateBtn.title = 'Create this task immediately without review';
-            } else {
-                createBtn.disabled = true;
-                createImmediateBtn.disabled = true;
-                editBtn.disabled = true;
-                createBtn.title = 'No plugin detected - please refine your request';
-                createImmediateBtn.title = 'No plugin detected - please refine your request';
-            }
-        }
-
-        // Display task preview
-        function displayTaskPreview(task) {
-            const preview = document.getElementById('task-preview');
-            
-            let html = `
+            taskPreview.innerHTML = `
                 <div class="row">
                     <div class="col-md-6">
-                        <strong>Plugin:</strong> <span class="badge bg-primary">${task.plugin || 'Not detected'}</span><br>
-                        <strong>Action:</strong> <span class="badge bg-secondary">${task.action || 'main'}</span><br>
-                        <strong>Type:</strong> <span class="badge bg-info">${task.type || 'Adhoc'}</span><br>
-                        <strong>Priority:</strong> <span class="badge bg-warning">${task.priority || 'P3'}</span>
+                        <h6 class="text-primary"><i class="bi bi-puzzle"></i> Plugin</h6>
+                        <p class="mb-3"><code>${task.plugin}</code></p>
+                        
+                        <h6 class="text-primary"><i class="bi bi-gear"></i> Action</h6>
+                        <p class="mb-3"><code>${task.action}</code></p>
                     </div>
                     <div class="col-md-6">
-                        <strong>Owner:</strong> <span class="badge bg-success">${task.owner || 'Anyone'}</span><br>
-                        ${task.execution_start_time ? `<strong>Start Time:</strong> ${new Date(task.execution_start_time).toLocaleString()}<br>` : ''}
-                        ${task.interval ? `<strong>Interval:</strong> ${task.interval}s<br>` : ''}
+                        <h6 class="text-primary"><i class="bi bi-type"></i> Type</h6>
+                        <p class="mb-3"><span class="badge" style="background: var(--octopus-info)">${task.type}</span></p>
+                        
+                        <h6 class="text-primary"><i class="bi bi-person"></i> Owner</h6>
+                        <p class="mb-3"><code>${task.owner}</code></p>
                     </div>
                 </div>
+                
+                ${task.args && task.args.length > 0 ? `
+                    <h6 class="text-primary"><i class="bi bi-list"></i> Arguments</h6>
+                    <pre class="bg-light p-2 rounded">${JSON.stringify(task.args, null, 2)}</pre>
+                ` : ''}
+                
+                ${task.kwargs && Object.keys(task.kwargs).length > 0 ? `
+                    <h6 class="text-primary"><i class="bi bi-sliders"></i> Parameters</h6>
+                    <pre class="bg-light p-2 rounded">${JSON.stringify(task.kwargs, null, 2)}</pre>
+                ` : ''}
+                
+                ${task.description ? `
+                    <h6 class="text-primary"><i class="bi bi-file-text"></i> Description</h6>
+                    <p class="mb-0">${task.description}</p>
+                ` : ''}
             `;
 
-            if (task.args && task.args.length > 0) {
-                html += `
-                    <div class="mt-3">
-                        <strong>Arguments:</strong>
-                        <ul class="list-unstyled mt-2">
-                            ${task.args.map((arg, index) => `<li><code>args[${index}]</code>: ${JSON.stringify(arg)}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
+            // Display entities if any
+            if (result.entities && result.entities.length > 0) {
+                displayEntities(result.entities);
             }
 
-            if (task.kwargs && Object.keys(task.kwargs).length > 0) {
-                html += `
-                    <div class="mt-3">
-                        <strong>Parameters:</strong>
-                        <ul class="list-unstyled mt-2">
-                            ${Object.entries(task.kwargs).map(([key, value]) => 
-                                `<li><code>${key}</code>: ${JSON.stringify(value)}</li>`
-                            ).join('')}
-                        </ul>
-                    </div>
-                `;
-            }
-
-            preview.innerHTML = html;
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // Display entities
         function displayEntities(entities) {
-            const container = document.getElementById('entities-container');
+            const entitiesSection = document.getElementById('entities-section');
+            const entitiesContent = document.getElementById('entities-content');
             
-            if (entities.length === 0) {
-                container.innerHTML = '<p class="text-muted">No entities detected</p>';
-                return;
-            }
-
-            let html = '';
+            entitiesContent.innerHTML = '';
+            
             entities.forEach(entity => {
-                const className = `entity-${entity.label.toLowerCase()}`;
-                html += `
-                    <span class="entity-tag ${className}" title="${entity.description || entity.label}">
-                        ${entity.text} <small>(${entity.label})</small>
-                    </span>
-                `;
+                const entityClass = `entity-${entity.label.toLowerCase()}` || 'entity-default';
+                const tag = document.createElement('span');
+                tag.className = `entity-tag ${entityClass}`;
+                tag.textContent = `${entity.text} (${entity.label})`;
+                entitiesContent.appendChild(tag);
             });
-
-            container.innerHTML = html;
+            
+            entitiesSection.style.display = 'block';
         }
 
-        // Display suggestions
-        function displaySuggestions(suggestions) {
-            const container = document.getElementById('suggestions-container');
-            
-            if (suggestions.length === 0) {
-                container.innerHTML = '<p class="text-muted">No suggestions available</p>';
-                return;
-            }
+        async function createTask() {
+            if (!currentParsedResult) return;
 
-            let html = '';
-            suggestions.forEach(suggestion => {
-                html += `<div class="suggestion-item">${suggestion}</div>`;
-            });
-
-            container.innerHTML = html;
-        }
-
-        // Create task button handler
-        document.getElementById('create-task-btn').addEventListener('click', function() {
-            if (!currentTaskData) return;
-            
-            // Redirect to main dashboard with task data and tasks tab (NO autoSubmit - should show popup)
-            const taskData = encodeURIComponent(JSON.stringify(currentTaskData.task));
-            window.location.href = `/dashboard?createTask=${taskData}&tab=tasks`;
-        });
-
-        // Create immediate task button handler
-        document.getElementById('create-immediate-btn').addEventListener('click', function() {
-            if (!currentTaskData) return;
-            
-            createTaskImmediately(currentTaskData.task);
-        });
-
-        // Edit task button handler
-        document.getElementById('edit-task-btn').addEventListener('click', function() {
-            if (!currentTaskData) return;
-            
-            // Redirect to main dashboard with task data for editing and tasks tab
-            const taskData = encodeURIComponent(JSON.stringify(currentTaskData.task));
-            window.location.href = `/dashboard?editTask=${taskData}&tab=tasks`;
-        });
-
-        // Create task immediately without going to dashboard
-        async function createTaskImmediately(taskData) {
             try {
-                showLoading(true);
-                
-                const response = await fetch('/tasks', {
+                const response = await fetch('/api/tasks', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        owner: taskData.owner || 'Anyone',
-                        plugin: taskData.plugin || '',
-                        action: taskData.action || 'main',
-                        type: taskData.type || 'Adhoc',
-                        priority: taskData.priority || 'P3',
-                        args: taskData.args || [],
-                        kwargs: taskData.kwargs || {},
-                        execution_start_time: taskData.execution_start_time || '',
-                        execution_end_time: taskData.execution_end_time || '',
-                        interval: taskData.interval || ''
-                    })
+                    body: JSON.stringify(currentParsedResult.task_definition)
                 });
 
+                const result = await response.json();
+
                 if (response.ok) {
-                    // Show success message
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'alert alert-success alert-dismissible fade show';
-                    successDiv.innerHTML = `
-                        <i class="fas fa-check-circle"></i> <strong>Task Created Successfully!</strong>
-                        Your task has been created and will be executed by the system.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    `;
-                    
-                    const container = document.querySelector('.container-fluid');
-                    container.insertBefore(successDiv, container.firstChild);
-                    
-                    // Auto-dismiss after 5 seconds
-                    setTimeout(() => {
-                        successDiv.remove();
-                    }, 5000);
+                    alert(`Task created successfully with ID: ${result.id}`);
+                    // Optionally redirect to dashboard
+                    window.location.href = '/dashboard?tab=tasks';
                 } else {
-                    const errorText = await response.text();
-                    throw new Error(`Failed to create task: ${errorText}`);
+                    throw new Error(result.error || 'Failed to create task');
                 }
             } catch (error) {
                 console.error('Error creating task:', error);
-                showError(`Failed to create task: ${error.message}`);
-            } finally {
-                showLoading(false);
+                alert(`Error: ${error.message}`);
             }
         }
 
-        // Utility functions
-        function showLoading(show) {
-            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        async function createImmediateTask() {
+            if (!currentParsedResult) return;
+
+            try {
+                // Create task with immediate execution
+                const taskDef = { ...currentParsedResult.task_definition, type: 'Adhoc' };
+                
+                const response = await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(taskDef)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(`Task created and queued for immediate execution with ID: ${result.id}`);
+                    // Optionally redirect to dashboard
+                    window.location.href = '/dashboard?tab=executions';
+                } else {
+                    throw new Error(result.error || 'Failed to create task');
+                }
+            } catch (error) {
+                console.error('Error creating immediate task:', error);
+                alert(`Error: ${error.message}`);
+            }
         }
 
-        function showResults(show) {
-            document.getElementById('results').style.display = show ? 'block' : 'none';
+        function modifyTask() {
+            if (!currentParsedResult) return;
+            
+            // Simple modification - could be enhanced with a modal
+            const newDescription = prompt('Enter new task description:', document.getElementById('nlp-input').value);
+            if (newDescription && newDescription.trim() !== '') {
+                document.getElementById('nlp-input').value = newDescription.trim();
+                parseTask();
+            }
         }
-
-        function showError(message) {
-            document.getElementById('error-message').textContent = message;
-            document.getElementById('error-section').style.display = 'block';
-        }
-
-        function hideError() {
-            document.getElementById('error-section').style.display = 'none';
-        }
-
-        function hideResults() {
-            document.getElementById('results').style.display = 'none';
-        }
-
-        // Auto-focus input on page load and load examples
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('nlp-input').focus();
-            loadExamples();
-        });
     </script>
 </body>
 </html>
