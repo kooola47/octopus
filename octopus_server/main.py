@@ -10,20 +10,24 @@ Main server application that provides:
 - Task assignment and execution tracking
 """
 
-from flask import Flask
-from cache import Cache
-from config import *
 import os
+import sys
 import logging
 from datetime import datetime
 
+# Add the current directory to Python path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from flask import Flask
+from cache import Cache
+from config import *
+
 # Set template_folder and static_folder for best practice
-TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 PAGES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pages")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
 # Create directories if they don't exist
-for directory in [TEMPLATE_DIR, PAGES_DIR, STATIC_DIR]:
+for directory in [PAGES_DIR, STATIC_DIR]:
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -167,8 +171,7 @@ app.register_blueprint(user_profile_bp)
 logger.info(f"Octopus Server starting on {SERVER_HOST}:{SERVER_PORT}")
 logger.info(f"Database: {DB_FILE}")
 logger.info(f"Plugins folder: {PLUGINS_FOLDER}")
-logger.info(f"Template folder: {TEMPLATE_DIR}")
-logger.info(f"Modern pages folder: {PAGES_DIR}")
+logger.info(f"Pages folder: {PAGES_DIR}")
 logger.info(f"Static folder: {STATIC_DIR}")
 
 if __name__ == "__main__":

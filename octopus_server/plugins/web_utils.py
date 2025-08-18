@@ -19,7 +19,8 @@ import time
 import logging
 import sys
 import os
-from logging_framework.plugin_logger import get_plugin_logger
+
+logger = logging.getLogger(__name__)
 # ============================================================================
 # LOGGING FRAMEWORK INTEGRATION - Choose your preferred method:
 # ============================================================================
@@ -29,8 +30,7 @@ def setup_logging_method1():
     """Method 1: Direct import with path manipulation"""
     server_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, server_dir)
-    from logging_framework import get_plugin_logger
-    return get_plugin_logger("web_utils", log_level="INFO", console_output=True)
+
 
 # METHOD 2: Copy the logging framework locally (if import issues persist)
 class SimplePluginLogger:
@@ -61,17 +61,6 @@ class SimplePluginLogger:
             context = " | ".join(f"{k}={v}" for k, v in kwargs.items())
             return f"{message} | {context}"
         return message
-
-# METHOD 3: Initialize logging with fallback
-try:
-    # Try Method 1 first
-    logger = setup_logging_method1()
-    logger.info("✅ Web Utils initialized with logging framework")
-except Exception as e:
-    # Fallback to Method 2
-    logger = SimplePluginLogger("web_utils")
-    logger.warning(f"⚠️ Using fallback logger: {e}")
-    logger.info("✅ Web Utils initialized with simple logger")
 
 
 def fetch_url(url: str, method: str = "GET", timeout: int = 30, follow_redirects: bool = True):

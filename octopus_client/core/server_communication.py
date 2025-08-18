@@ -39,13 +39,33 @@ class ServerCommunicator:
     
     def _execute_command(self, cmd: Dict[str, Any]):
         """Execute a single command from the server"""
+        # Log the full command for debugging
+        self.logger.debug(f"Executing command: {cmd}")
+        
         plugin_name = cmd.get("plugin")
         action = cmd.get("action")
         args = cmd.get("args", [])
         kwargs = cmd.get("kwargs", {})
         
+        # Validate plugin name and action
+        if not plugin_name or not plugin_name.strip():
+            self.logger.error(f"Command missing or empty plugin name. Command data: {cmd}")
+            return
+            
+        if not action or not action.strip():
+            self.logger.error(f"Command missing or empty action for plugin {plugin_name}. Command data: {cmd}")
+            return
+            
+        plugin_name = plugin_name.strip()
+        action = action.strip()
+        
         try:
-            module = importlib.import_module(f"plugins.{plugin_name}")
+            from pluginhelper import import_plugin
+            module = import_plugin(plugin_name)
+            if not module:
+                self.logger.error(f"Failed to import plugin: {plugin_name}")
+                return
+                
             func = getattr(module, action, None)
             if callable(func):
                 func(*args, **kwargs)

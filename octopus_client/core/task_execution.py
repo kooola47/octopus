@@ -178,11 +178,22 @@ class TaskExecutor:
     
     def execute_task(self, task: Dict[str, Any], tid: str, username: str) -> Tuple[str, str]:
         """Execute the given task and return status and result."""
+        # Log the full task for debugging
+        self.logger.debug(f"Executing task {tid}: {task}")
+        
         plugin = task.get("plugin")
         action = task.get("action", "run")
         args = task.get("args", [])
         kwargs = task.get("kwargs", {})
         task_type = task.get("type", "Adhoc")
+        
+        # Validate plugin name
+        if not plugin or not plugin.strip():
+            error_msg = f"Task {tid} missing or empty plugin name. Task data: {task}"
+            self.logger.error(error_msg)
+            return "failure", error_msg
+        
+        plugin = plugin.strip()
         
         # Record execution time for scheduled tasks before execution
         if task_type == "Schedule":
@@ -202,7 +213,12 @@ class TaskExecutor:
                 kwargs = {}
         
         try:
-            module = importlib.import_module(f"plugins.{plugin}")
+            from pluginhelper import import_plugin
+            module = import_plugin(plugin)
+            if not module:
+                self.logger.error(f"Failed to import plugin: {plugin}")
+                return "failure", f"Failed to import plugin: {plugin}"
+            
             func = getattr(module, action, None)
             if callable(func):
                 self.logger.info(f"Executing task {tid}: {plugin}.{action} args={args} kwargs={kwargs}")

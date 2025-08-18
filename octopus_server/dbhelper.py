@@ -91,6 +91,9 @@ def init_db():
                     role TEXT DEFAULT 'user',
                     is_active INTEGER DEFAULT 1,
                     last_login REAL,
+                    full_name TEXT,
+                    user_ident TEXT,
+                    tags TEXT,
                     created_at REAL NOT NULL,
                     updated_at REAL NOT NULL
                 )
@@ -114,6 +117,7 @@ def init_db():
             
             # Migrate existing tables to add missing columns
             migrate_tasks_table(conn)
+            migrate_users_table(conn)
             
             # Create default admin user if no users exist
             create_default_admin_user(conn)
@@ -141,7 +145,7 @@ def create_default_admin_user(conn):
         # Default admin credentials: admin/admin
         username = "admin"
         password = "admin"
-        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        password_hash = hash_password(password)  # Use the same salted hash as other users
         
         cursor.execute('''
             INSERT INTO users (username, email, password_hash, role, is_active, created_at, updated_at)
@@ -173,6 +177,36 @@ def migrate_tasks_table(conn):
             
     except Exception as e:
         print(f"Migration warning: {e}")
+        # Continue execution even if migration fails
+
+def migrate_users_table(conn):
+    """Add missing columns to existing users table"""
+    import time
+    try:
+        # Check if new columns exist
+        cursor = conn.execute("PRAGMA table_info(users)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'full_name' not in columns:
+            print("Adding full_name column to users table...")
+            conn.execute('ALTER TABLE users ADD COLUMN full_name TEXT')
+            
+        if 'user_ident' not in columns:
+            print("Adding user_ident column to users table...")
+            conn.execute('ALTER TABLE users ADD COLUMN user_ident TEXT')
+            
+        if 'tags' not in columns:
+            print("Adding tags column to users table...")
+            conn.execute('ALTER TABLE users ADD COLUMN tags TEXT')
+            
+        if 'status' not in columns:
+            print("Adding status column to users table...")
+            conn.execute('ALTER TABLE users ADD COLUMN status TEXT DEFAULT "active"')
+            # Update existing users to have active status
+            conn.execute('UPDATE users SET status = "active" WHERE status IS NULL')
+            
+    except Exception as e:
+        print(f"User table migration warning: {e}")
         # Continue execution even if migration fails
 
 @contextmanager
@@ -716,7 +750,7 @@ def authenticate_user(username, password):
             }
     return None
 
-def create_user(username, password, email='', role='user', is_active=True):
+def create_user(username, password, email='', role='user', is_active=True, full_name='', user_ident='', tags=''):
     """Create a new user"""
     import time
     import logging
@@ -725,7 +759,7 @@ def create_user(username, password, email='', role='user', is_active=True):
     init_db()
     
     # Validate role
-    if role not in ['admin', 'user']:
+    if role not in ['admin', 'user', 'operator', 'viewer']:
         logger.error(f"Invalid role: {role}")
         return None
     
@@ -736,9 +770,9 @@ def create_user(username, password, email='', role='user', is_active=True):
     try:
         with sqlite3.connect(DB_FILE) as conn:
             cursor = conn.execute('''
-                INSERT INTO users (username, email, password_hash, role, is_active, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (username, email, password_hash, role, is_active, current_time, current_time))
+                INSERT INTO users (username, email, password_hash, role, is_active, full_name, user_ident, tags, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (username, email, password_hash, role, is_active, full_name, user_ident, tags, current_time, current_time))
             
             user_id = cursor.lastrowid
             conn.commit()
@@ -755,7 +789,7 @@ def get_user_by_id(user_id):
     
     with sqlite3.connect(DB_FILE) as conn:
         user_row = conn.execute('''
-            SELECT id, username, email, role, is_active, created_at, updated_at, last_login
+            SELECT id, username, email, role, is_active, created_at, updated_at, last_login, full_name, user_ident, tags, status
             FROM users WHERE id = ?
         ''', (user_id,)).fetchone()
         
@@ -768,18 +802,22 @@ def get_user_by_id(user_id):
                 'is_active': user_row[4],
                 'created_at': user_row[5],
                 'updated_at': user_row[6],
-                'last_login': user_row[7]
+                'last_login': user_row[7],
+                'full_name': user_row[8],
+                'user_ident': user_row[9],
+                'tags': user_row[10],
+                'status': user_row[11] or 'active'  # Default to 'active' if None
             }
     return None
 
 def get_all_users():
-    """Get all active users"""
+    """Get all users (both active and inactive)"""
     init_db()
     
     with sqlite3.connect(DB_FILE) as conn:
         user_rows = conn.execute('''
-            SELECT id, username, email, role, is_active, created_at, updated_at, last_login
-            FROM users WHERE is_active = 1 ORDER BY created_at DESC
+            SELECT id, username, email, role, is_active, created_at, updated_at, last_login, full_name, user_ident, tags, status
+            FROM users ORDER BY created_at DESC
         ''').fetchall()
         
         users = []
@@ -790,9 +828,13 @@ def get_all_users():
                 'email': row[2],
                 'role': row[3],
                 'is_active': row[4],
+                'status': row[11] or ('active' if row[4] else 'inactive'),  # Use status column or fall back to is_active
                 'created_at': row[5],
                 'updated_at': row[6],
-                'last_login': row[7]
+                'last_login': row[7],
+                'full_name': row[8],
+                'user_ident': row[9],
+                'tags': row[10]
             })
         return users
 
@@ -805,12 +847,17 @@ def update_user(user_id, **kwargs):
     init_db()
     
     # Build update query dynamically
-    allowed_fields = ['username', 'email', 'role', 'is_active']
+    allowed_fields = ['username', 'email', 'role', 'status', 'user_ident', 'tags', 'full_name']
     update_fields = []
     update_values = []
     
     for field, value in kwargs.items():
-        if field in allowed_fields:
+        if field == 'password':
+            # Handle password hashing - use the same salted hash as create_user
+            password_hash = hash_password(value)
+            update_fields.append("password_hash = ?")
+            update_values.append(password_hash)
+        elif field in allowed_fields:
             update_fields.append(f"{field} = ?")
             update_values.append(value)
     
@@ -857,14 +904,12 @@ def update_user_password(user_id, new_password):
         return True
 
 def delete_user(user_id):
-    """Delete user (actually sets is_active to False)"""
+    """Permanently delete user from database"""
     import time
     import logging
     logger = logging.getLogger("octopus_server")
     
     init_db()
-    
-    current_time = time.time()
     
     try:
         with sqlite3.connect(DB_FILE) as conn:
@@ -877,19 +922,57 @@ def delete_user(user_id):
                 logger.error(f"User {user_id} not found for deletion")
                 return False
             
-            # Set user as inactive instead of deleting
-            cursor.execute('''
-                UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?
-            ''', (current_time, user_id))
+            # Permanently delete the user
+            cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
             
             if cursor.rowcount > 0:
                 conn.commit()
-                logger.info(f"User {user[1]} (ID: {user_id}) deactivated successfully")
+                logger.info(f"User {user[1]} (ID: {user_id}) permanently deleted")
                 return True
             else:
-                logger.error(f"Failed to update user {user_id} - no rows affected")
+                logger.error(f"Failed to delete user {user_id} - no rows affected")
                 return False
                 
     except Exception as e:
         logger.error(f"Error deleting user {user_id}: {e}")
+        return False
+
+def toggle_user_status(user_id, new_status):
+    """Toggle user active/inactive status"""
+    import time
+    import logging
+    logger = logging.getLogger("octopus_server")
+    
+    init_db()
+    
+    current_time = time.time()
+    is_active = 1 if new_status == 'active' else 0
+    
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            # Check if user exists first
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, username FROM users WHERE id = ?', (user_id,))
+            user = cursor.fetchone()
+            
+            if not user:
+                logger.error(f"User {user_id} not found for status update")
+                return False
+            
+            # Update user status
+            cursor.execute('''
+                UPDATE users SET is_active = ?, updated_at = ? WHERE id = ?
+            ''', (is_active, current_time, user_id))
+            
+            if cursor.rowcount > 0:
+                conn.commit()
+                status_text = "activated" if is_active else "deactivated"
+                logger.info(f"User {user[1]} (ID: {user_id}) {status_text} successfully")
+                return True
+            else:
+                logger.error(f"Failed to update status for user {user_id} - no rows affected")
+                return False
+                
+    except Exception as e:
+        logger.error(f"Error updating status for user {user_id}: {e}")
         return False

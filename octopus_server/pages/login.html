@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐙 Octopus Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --octopus-primary: #6366f1;
+            --octopus-primary-dark: #4f46e5;
+            --octopus-secondary: #8b5cf6;
+            --octopus-success: #10b981;
+            --octopus-warning: #f59e0b;
+            --octopus-danger: #ef4444;
+            --octopus-info: #3b82f6;
+            --octopus-light: #f8fafc;
+            --octopus-dark: #1e293b;
+            --octopus-border: #e2e8f0;
+            --octopus-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --octopus-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 1rem;
+        }
+
+        .login-container {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 1rem;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: var(--octopus-shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--octopus-primary), var(--octopus-secondary), var(--octopus-info));
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .octopus-icon {
+            font-size: 3rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .system-title {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .system-subtitle {
+            color: #64748b;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, var(--octopus-primary), var(--octopus-primary-dark));
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-radius: 0.5rem;
+            box-shadow: var(--octopus-shadow);
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--octopus-shadow-lg);
+            background: linear-gradient(135deg, var(--octopus-primary-dark), var(--octopus-primary));
+        }
+        
+        .form-control {
+            border-radius: 0.5rem;
+            border: 1px solid var(--octopus-border);
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+        
+        .form-control:focus {
+            border-color: var(--octopus-primary);
+            box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+            transform: translateY(-1px);
+        }
+        
+        .form-label {
+            color: var(--octopus-dark);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .form-label i {
+            color: var(--octopus-primary);
+            margin-right: 0.5rem;
+        }
+        
+        .default-creds {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+        
+        .alert {
+            border-radius: 0.5rem;
+            border: none;
+            box-shadow: var(--octopus-shadow);
+        }
+        
+        .login-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--octopus-border);
+        }
+        
+        .version-info {
+            color: #64748b;
+            font-size: 0.85rem;
+            font-weight: 400;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="octopus-icon">🐙</div>
+            <h2 class="h3 mb-0 system-title">Octopus System</h2>
+            <p class="system-subtitle">Distributed Task Orchestration</p>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        <i class="bi bi-{{ 'exclamation-triangle-fill' if category == 'error' else 'info-circle-fill' }} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" id="loginForm">
+            <div class="mb-3">
+                <label for="username" class="form-label">
+                    <i class="bi bi-person-fill"></i>Username
+                </label>
+                <input type="text" class="form-control" id="username" name="username" 
+                       required autocomplete="username" placeholder="Enter your username"
+                       autofocus>
+            </div>
+            
+            <div class="mb-4">
+                <label for="password" class="form-label">
+                    <i class="bi bi-lock-fill"></i>Password
+                </label>
+                <input type="password" class="form-control" id="password" name="password" 
+                       required autocomplete="current-password" placeholder="Enter your password">
+            </div>
+            
+            <button type="submit" class="btn btn-login text-white w-100" id="loginButton">
+                <i class="bi bi-box-arrow-in-right me-2"></i>
+                <span id="loginText">Login</span>
+                <span id="loadingSpinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
+            </button>
+        </form>
+        
+        <div class="default-creds">
+            <small class="text-muted">
+                <i class="bi bi-info-circle-fill me-1"></i>
+                Default credentials: <strong>admin</strong> / <strong>admin123</strong>
+            </small>
+        </div>
+        
+        <div class="login-footer">
+            <div class="version-info">
+                <i class="bi bi-code-slash me-1"></i>
+                Octopus v1.0 - Task Orchestration Platform
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add loading state to login button
+        document.getElementById('loginForm').addEventListener('submit', function() {
+            const button = document.getElementById('loginButton');
+            const text = document.getElementById('loginText');
+            const spinner = document.getElementById('loadingSpinner');
+            
+            button.disabled = true;
+            text.textContent = 'Logging in...';
+            spinner.classList.remove('d-none');
+        });
+        
+        // Auto-dismiss alerts after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+        
+        // Add enter key support
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').submit();
+            }
+        });
+    </script>
+</body>
+</html>

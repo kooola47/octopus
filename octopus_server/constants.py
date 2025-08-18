@@ -12,11 +12,12 @@ class TaskStatus:
     ACTIVE = "Active"
     RUNNING = "Running"
     DONE = "Done"
-    SUCCESS = "Success"
-    COMPLETED = "Completed"
-    FAILED = "Failed"
-    ERROR = "Error"
-    CANCELLED = "Cancelled"
+    SUCCESS = "success"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    ERROR = "error"
+    CANCELLED = "cancelled"
+    PENDING = "pending"
     
     @classmethod
     def is_completed(cls, status):
@@ -29,13 +30,25 @@ class TaskStatus:
 class TaskOwnership:
     """Task ownership constants"""
     ALL = "ALL"
-    ANYONE = "ANYONE"
+    ANYONE = "Anyone"
+    SPECIFIC = "Specific"
 
 class TaskType:
     """Task type constants"""
-    ADHOC = "adhoc"
-    SCHEDULED = "scheduled"
-    INTERVAL = "interval"
+    ADHOC = "Adhoc"
+    SCHEDULED = "Scheduled"
+    INTERVAL = "Interval"
+    RECURRING = "Recurring"
+    ONE_TIME = "OneTime"
+
+class ExecutionStatus:
+    """Execution status constants"""
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED = "failed"
+    COMPLETED = "completed"
+    ERROR = "error"
 
 class Database:
     """Database related constants"""

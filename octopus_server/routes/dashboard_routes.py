@@ -9,7 +9,7 @@ import json
 import urllib.parse
 import sqlite3
 import time
-from flask import request, render_template, redirect, url_for, render_template_string
+from flask import request, render_template, redirect, url_for, render_template_string, flash
 from dbhelper import (
     get_tasks, add_task, update_task, delete_task,
     get_owner_options, assign_all_tasks,
@@ -54,10 +54,16 @@ def register_dashboard_routes(app, cache, logger):
         # Auto-create task if createTask parameter is provided
         if nlp_task_data and not edit_mode:
             try:
+                # Validate plugin name from NLP data
+                plugin_name = nlp_task_data.get("plugin", "").strip()
+                if not plugin_name:
+                    flash("NLP task creation failed: No plugin specified", "error")
+                    return redirect(url_for("dashboard", tab="tasks"))
+                
                 # Create task from NLP data
                 task = {
                     "owner": nlp_task_data.get("owner", "Anyone"),
-                    "plugin": nlp_task_data.get("plugin", ""),
+                    "plugin": plugin_name,
                     "action": nlp_task_data.get("action", "main"),
                     "args": json.dumps(nlp_task_data.get("args", [])),
                     "kwargs": json.dumps(nlp_task_data.get("kwargs", {})),
@@ -137,6 +143,15 @@ def register_dashboard_routes(app, cache, logger):
                     owner = form.get("owner", "")
                 if plugin == "__manual__":
                     plugin = form.get("plugin", "")
+                
+                # Validate plugin name
+                if not plugin or not plugin.strip():
+                    flash("Task creation failed: Plugin name is required", "error")
+                    active_tab = "tasks"
+                    return redirect(url_for("dashboard", tab=active_tab))
+                
+                plugin = plugin.strip()
+                
                 interval = form.get("interval")
                 if interval:
                     try:

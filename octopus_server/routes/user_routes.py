@@ -21,7 +21,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dbhelper import (
     get_all_users, get_user_by_id, create_user, update_user, 
-    update_user_password, delete_user
+    update_user_password, delete_user, toggle_user_status
 )
 from routes.auth_routes import login_required, admin_required
 
@@ -115,8 +115,9 @@ def register_user_routes(app):
                     return jsonify({'error': f'Missing required field: {field}'}), 400
             
             # Validate role
-            if data['role'] not in ['admin', 'user']:
-                return jsonify({'error': 'Invalid role. Must be admin or user'}), 400
+            valid_roles = ['admin', 'user', 'operator', 'viewer']
+            if data['role'] not in valid_roles:
+                return jsonify({'error': f'Invalid role. Must be one of: {", ".join(valid_roles)}'}), 400
             
             # Validate password length
             if len(data['password']) < 6:
@@ -128,7 +129,10 @@ def register_user_routes(app):
                 'email': data.get('email', ''),
                 'password': data['password'],
                 'role': data['role'],
-                'is_active': data.get('is_active', True)
+                'is_active': data.get('status', 'active') == 'active',
+                'full_name': data.get('fullName', ''),
+                'user_ident': data.get('userIdent', ''),
+                'tags': data.get('tags', '')
             }
             
             user_id = create_user(**user_data)
@@ -158,14 +162,22 @@ def register_user_routes(app):
                 return jsonify({'error': 'Cannot demote yourself from admin role'}), 400
             
             # Validate role if provided
-            if 'role' in data and data['role'] not in ['admin', 'user']:
-                return jsonify({'error': 'Invalid role. Must be admin or user'}), 400
+            if 'role' in data and data['role'] not in ['admin', 'operator', 'user', 'viewer']:
+                return jsonify({'error': 'Invalid role. Must be admin, operator, user, or viewer'}), 400
+            
+            # Validate status if provided
+            if 'status' in data and data['status'] not in ['active', 'inactive']:
+                return jsonify({'error': 'Invalid status. Must be active or inactive'}), 400
             
             # Update user
             update_data = {}
-            for field in ['username', 'email', 'role', 'is_active']:
+            for field in ['username', 'email', 'role', 'status', 'user_ident', 'tags', 'full_name']:
                 if field in data:
                     update_data[field] = data[field]
+            
+            # Handle password update if provided
+            if 'password' in data and data['password']:
+                update_data['password'] = data['password']
             
             success = update_user(user_id, **update_data)
             if success:
@@ -231,3 +243,41 @@ def register_user_routes(app):
         except Exception as e:
             logger.error(f"Error deleting user {user_id}: {e}")
             return jsonify({'error': 'Error deleting user'}), 500
+
+    @app.route('/api/users/<int:user_id>/toggle-status', methods=['PUT'])
+    @login_required
+    @admin_required
+    def api_toggle_user_status(user_id):
+        """Toggle user active/inactive status via API"""
+        try:
+            data = request.get_json()
+            
+            # Validate required fields
+            if 'status' not in data:
+                return jsonify({'error': 'Missing required field: status'}), 400
+            
+            # Validate status value
+            if data['status'] not in ['active', 'inactive']:
+                return jsonify({'error': 'Invalid status. Must be active or inactive'}), 400
+            
+            # Prevent deactivating yourself
+            current_user = get_current_user()
+            if current_user and current_user.get('id') == user_id and data['status'] == 'inactive':
+                return jsonify({'error': 'Cannot deactivate your own account'}), 400
+            
+            # Get user info for logging
+            user = get_user_by_id(user_id)
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+            
+            success = toggle_user_status(user_id, data['status'])
+            if success:
+                status_text = "activated" if data['status'] == 'active' else "deactivated"
+                logger.info(f"User {user.get('username')} (ID: {user_id}) {status_text} by admin")
+                return jsonify({'message': f'User {status_text} successfully'})
+            else:
+                return jsonify({'error': 'Failed to update user status'}), 400
+                
+        except Exception as e:
+            logger.error(f"Error toggling user status {user_id}: {e}")
+            return jsonify({'error': 'Error updating user status'}), 500

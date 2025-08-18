@@ -11,9 +11,14 @@ Client agent that connects to the Octopus server to:
 """
 
 import os
+import sys
 import time
 import logging
 import threading
+
+# Add the current directory to Python path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from flask import Flask
 from cache import Cache
 from config import *

@@ -7,13 +7,86 @@ Flask routes for plugin-related APIs.
 
 import inspect
 import importlib
+import os
+import sys
 from typing import List
 from flask import request, jsonify
 from dbhelper import get_plugin_names
 from performance_monitor import time_request
 
+def _setup_plugin_paths():
+    """Setup sys.path for proper plugin and dependency imports"""
+    # Get current server directory
+    server_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # octopus_server
+    client_path = os.path.join(os.path.dirname(server_path), 'octopus_client')  # octopus_client
+    root_path = os.path.dirname(server_path)  # project root
+    
+    # Plugin paths
+    server_plugins_path = os.path.join(server_path, 'plugins')
+    client_plugins_path = os.path.join(client_path, 'plugins')
+    
+    # Routes paths for imports like user_profile_routes
+    server_routes_path = os.path.join(server_path, 'routes')
+    
+    # Add all necessary paths
+    paths_to_add = [
+        server_path, client_path, root_path,
+        server_plugins_path, client_plugins_path, 
+        server_routes_path
+    ]
+    
+    for path in paths_to_add:
+        if os.path.exists(path) and path not in sys.path:
+            sys.path.insert(0, path)
+
+def _import_plugin_with_fallback(plugin_name):
+    """
+    Import plugin with fallback mechanisms for better compatibility
+    Tries multiple import strategies to handle user-created libraries
+    """
+    import importlib.util
+    
+    # Strategy 1: Try standard import with plugins prefix
+    try:
+        return importlib.import_module(f"plugins.{plugin_name}")
+    except ImportError as e1:
+        pass
+    
+    # Strategy 2: Try direct import (for plugins in sys.path)
+    try:
+        return importlib.import_module(plugin_name)
+    except ImportError as e2:
+        pass
+    
+    # Strategy 3: Try file-based loading from both client and server plugins
+    server_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    client_path = os.path.join(os.path.dirname(server_path), 'octopus_client')
+    
+    plugin_locations = [
+        os.path.join(server_path, 'plugins', f"{plugin_name}.py"),
+        os.path.join(client_path, 'plugins', f"{plugin_name}.py")
+    ]
+    
+    for plugin_path in plugin_locations:
+        if os.path.exists(plugin_path):
+            try:
+                spec = importlib.util.spec_from_file_location(plugin_name, plugin_path)
+                if spec and spec.loader:
+                    module = importlib.util.module_from_spec(spec)
+                    # Add to sys.modules for potential imports by the plugin
+                    sys.modules[plugin_name] = module
+                    spec.loader.exec_module(module)
+                    return module
+            except Exception as e3:
+                continue
+    
+    return None
+
 def register_plugin_api_routes(app, cache, logger):
     """Register plugin API routes with the Flask app"""
+    
+    # Setup paths once when routes are registered
+    _setup_plugin_paths()
 
     @app.route("/api/plugin-functions", methods=["GET"])
     def api_plugin_functions():
@@ -23,8 +96,10 @@ def register_plugin_api_routes(app, cache, logger):
             return jsonify({"error": "Plugin parameter required"}), 400
         
         try:
-            # Import the plugin module
-            module = importlib.import_module(f"plugins.{plugin_name}")
+            # Enhanced plugin import with folder-based loading
+            module = _import_plugin_with_fallback(plugin_name)
+            if not module:
+                return jsonify({"error": f"Failed to import plugin {plugin_name}"}), 404
             
             # Get all callable functions from the module
             functions = {}
