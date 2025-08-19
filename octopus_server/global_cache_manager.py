@@ -232,75 +232,182 @@ class GlobalCacheManager:
             self.logger.error(f"Error getting all plugin cache for {plugin_name}: {e}")
             return {}
     
+    def _get_user_ident_from_username(self, username: str) -> Optional[str]:
+        """
+        Get user_ident from username (supports both exact username and username-pid format)
+        
+        Args:
+            username: Username (e.g., 'aries' or 'aries-7044')
+            
+        Returns:
+            user_ident if found, None otherwise
+        """
+        try:
+            import sqlite3
+            import os
+            
+            # Get the correct database path
+            db_path = os.path.join(os.path.dirname(__file__), 'octopus.db')
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # First try exact match
+            cursor.execute('SELECT user_ident FROM users WHERE username = ?', (username,))
+            result = cursor.fetchone()
+            
+            if result and result[0]:
+                conn.close()
+                return result[0]
+            
+            # If no exact match and username contains '-', try extracting base username
+            if '-' in username:
+                base_username = username.split('-')[0]
+                cursor.execute('SELECT user_ident FROM users WHERE username = ?', (base_username,))
+                result = cursor.fetchone()
+                
+                if result and result[0]:
+                    conn.close()
+                    return result[0]
+            
+            conn.close()
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Error getting user_ident for {username}: {e}")
+            return None
+
+    def _get_username_from_user_ident(self, user_ident: str) -> Optional[str]:
+        """
+        Get username from user_ident
+        
+        Args:
+            user_ident: User identifier
+            
+        Returns:
+            username if found, None otherwise
+        """
+        try:
+            import sqlite3
+            import os
+            
+            # Get the correct database path
+            db_path = os.path.join(os.path.dirname(__file__), 'octopus.db')
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT username FROM users WHERE user_ident = ?', (user_ident,))
+            result = cursor.fetchone()
+            
+            conn.close()
+            return result[0] if result else None
+            
+        except Exception as e:
+            self.logger.error(f"Error getting username for user_ident {user_ident}: {e}")
+            return None
+
     # === User Profile Cache Methods ===
     
     def set_user_profile_data(self, username: str, data: Dict[str, Any], ttl: Optional[int] = 3600, requesting_user: Optional[str] = None):
         """
-        Set user profile data (from user profile pages)
+        Set user profile data (from user profile pages) - uses user_ident as cache key
         
         Args:
-            username: Target username
+            username: Target username (can be 'aries' or 'aries-7044' format)
             data: Profile data to store
             ttl: Time to live in seconds
             requesting_user: Username of the user making the request (for access control)
         """
-        # Verify access rights - only the user themselves or admin can set their profile data
-        if requesting_user and requesting_user != username and not self._is_admin_user(requesting_user):
-            raise PermissionError(f"User '{requesting_user}' cannot modify profile data for '{username}'")
+        # Get user_ident for both target and requesting user
+        target_user_ident = self._get_user_ident_from_username(username)
+        if not target_user_ident:
+            raise ValueError(f"No user_ident found for username: {username}")
         
-        key = f"user_profile:{username}"
+        # Verify access rights - only the user themselves or admin can set their profile data
+        if requesting_user:
+            requesting_user_ident = self._get_user_ident_from_username(requesting_user)
+            if requesting_user_ident != target_user_ident and not self._is_admin_user(requesting_user):
+                raise PermissionError(f"User '{requesting_user}' cannot modify profile data for '{username}'")
+        
+        # Use user_ident as cache key
+        key = f"user_profile:{target_user_ident}"
         return self.set(key, data, 'user_profiles', ttl)
     
     def get_user_profile_data(self, username: str, requesting_user: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
-        Get user profile data
+        Get user profile data - uses user_ident as cache key
         
         Args:
-            username: Target username
+            username: Target username (can be 'aries' or 'aries-7044' format)
             requesting_user: Username of the user making the request (for access control)
         """
-        # Verify access rights - only the user themselves or admin can access their profile data
-        if requesting_user and requesting_user != username and not self._is_admin_user(requesting_user):
-            self.logger.warning(f"Access denied: User '{requesting_user}' tried to access profile data for '{username}'")
-            raise PermissionError(f"User '{requesting_user}' cannot access profile data for '{username}'")
+        # Get user_ident for both target and requesting user
+        target_user_ident = self._get_user_ident_from_username(username)
+        if not target_user_ident:
+            self.logger.warning(f"No user_ident found for username: {username}")
+            return None
         
-        key = f"user_profile:{username}"
+        # Verify access rights - only the user themselves or admin can access their profile data
+        if requesting_user:
+            requesting_user_ident = self._get_user_ident_from_username(requesting_user)
+            if requesting_user_ident != target_user_ident and not self._is_admin_user(requesting_user):
+                self.logger.warning(f"Access denied: User '{requesting_user}' tried to access profile data for '{username}'")
+                raise PermissionError(f"User '{requesting_user}' cannot access profile data for '{username}'")
+        
+        # Use user_ident as cache key
+        key = f"user_profile:{target_user_ident}"
         return self.get(key, 'user_profiles')
     
     def set_user_setting(self, username: str, setting_name: str, value: Any, ttl: Optional[int] = 3600, requesting_user: Optional[str] = None):
         """
-        Set a specific user setting
+        Set a specific user setting - uses user_ident as cache key
         
         Args:
-            username: Target username
+            username: Target username (can be 'aries' or 'aries-7044' format)
             setting_name: Setting name
             value: Setting value
             ttl: Time to live in seconds
             requesting_user: Username of the user making the request (for access control)
         """
-        # Verify access rights
-        if requesting_user and requesting_user != username and not self._is_admin_user(requesting_user):
-            raise PermissionError(f"User '{requesting_user}' cannot modify settings for '{username}'")
+        # Get user_ident for both target and requesting user
+        target_user_ident = self._get_user_ident_from_username(username)
+        if not target_user_ident:
+            raise ValueError(f"No user_ident found for username: {username}")
         
-        key = f"user_setting:{username}:{setting_name}"
+        # Verify access rights
+        if requesting_user:
+            requesting_user_ident = self._get_user_ident_from_username(requesting_user)
+            if requesting_user_ident != target_user_ident and not self._is_admin_user(requesting_user):
+                raise PermissionError(f"User '{requesting_user}' cannot modify settings for '{username}'")
+        
+        # Use user_ident as cache key
+        key = f"user_setting:{target_user_ident}:{setting_name}"
         return self.set(key, value, 'user_profiles', ttl)
     
     def get_user_setting(self, username: str, setting_name: str, default: Any = None, requesting_user: Optional[str] = None) -> Any:
         """
-        Get a specific user setting
+        Get a specific user setting - uses user_ident as cache key
         
         Args:
-            username: Target username
+            username: Target username (can be 'aries' or 'aries-7044' format)
             setting_name: Setting name
             default: Default value if not found
             requesting_user: Username of the user making the request (for access control)
         """
-        # Verify access rights
-        if requesting_user and requesting_user != username and not self._is_admin_user(requesting_user):
-            self.logger.warning(f"Access denied: User '{requesting_user}' tried to access setting '{setting_name}' for '{username}'")
-            raise PermissionError(f"User '{requesting_user}' cannot access setting '{setting_name}' for '{username}'")
+        # Get user_ident for both target and requesting user
+        target_user_ident = self._get_user_ident_from_username(username)
+        if not target_user_ident:
+            self.logger.warning(f"No user_ident found for username: {username}")
+            return default
         
-        key = f"user_setting:{username}:{setting_name}"
+        # Verify access rights
+        if requesting_user:
+            requesting_user_ident = self._get_user_ident_from_username(requesting_user)
+            if requesting_user_ident != target_user_ident and not self._is_admin_user(requesting_user):
+                self.logger.warning(f"Access denied: User '{requesting_user}' tried to access setting '{setting_name}' for '{username}'")
+                raise PermissionError(f"User '{requesting_user}' cannot access setting '{setting_name}' for '{username}'")
+        
+        # Use user_ident as cache key
+        key = f"user_setting:{target_user_ident}:{setting_name}"
         return self.get(key, 'user_profiles', None, default)
     
     def _is_admin_user(self, username: str) -> bool:
