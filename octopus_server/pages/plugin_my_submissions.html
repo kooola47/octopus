@@ -1,0 +1,483 @@
+{% extends "modern_layout.html" %}
+
+{% block title %}My Plugin Submissions - Octopus{% endblock %}
+
+{% block extra_head %}
+<style>
+    .submission-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .submission-card:hover {
+        background: #f1f5f9;
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-size: 0.85em;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-pending { 
+        background: linear-gradient(45deg, #fbbf24, #f59e0b); 
+        color: #000; 
+    }
+    .status-tested { 
+        background: linear-gradient(45deg, #3b82f6, #2563eb); 
+        color: #fff; 
+    }
+    .status-approved { 
+        background: linear-gradient(45deg, #10b981, #059669); 
+        color: #fff; 
+    }
+    .status-rejected { 
+        background: linear-gradient(45deg, #ef4444, #dc2626); 
+        color: #fff; 
+    }
+    .status-deployed { 
+        background: linear-gradient(45deg, #06b6d4, #0891b2); 
+        color: #fff; 
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e2e8f0;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding: 10px 0;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -22px;
+        top: 15px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--primary-color);
+    }
+
+    .timeline-item.completed::before {
+        background: var(--success-color);
+    }
+
+    .timeline-item.failed::before {
+        background: var(--danger-color);
+    }
+
+    .code-preview {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        font-size: 0.9em;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+    .progress {
+        height: 10px;
+        background: #f1f5f9;
+        border-radius: 5px;
+    }
+
+    .progress-bar {
+        background: linear-gradient(45deg, var(--primary-color), #3b82f6);
+        border-radius: 5px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+    }
+
+    .empty-state i {
+        font-size: 5rem;
+        color: #cbd5e1;
+        margin-bottom: 20px;
+    }
+
+    .submission-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .submission-meta .meta-item {
+        display: flex;
+        align-items: center;
+        font-size: 0.9em;
+        color: #64748b;
+    }
+
+    .submission-meta .meta-item i {
+        margin-right: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-0 d-flex align-items-center">
+                    <i class="bi bi-file-earmark-code me-3 text-primary"></i>
+                    My Plugin Submissions
+                </h1>
+                <p class="text-muted mb-0">Track the status of your submitted plugins</p>
+            </div>
+            <a href="{{ url_for('plugin.create_plugin') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Create New Plugin
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Submissions Container -->
+<div id="submissionsContainer">
+    <!-- Content will be loaded here -->
+</div>
+
+<!-- Plugin Details Modal -->
+<div class="modal fade" id="pluginModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Plugin Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Plugin details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="downloadPlugin()">
+                    <i class="bi bi-download me-1"></i>Download Code
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+    
+    <script>
+        let pluginModal;
+        let currentPlugin = null;
+        let submissions = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            pluginModal = new bootstrap.Modal(document.getElementById('pluginModal'));
+            loadSubmissions();
+        });
+
+        function loadSubmissions() {
+            fetch('/api/plugins/my-submissions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        submissions = data.submissions;
+                        renderSubmissions();
+                    } else {
+                        console.error('Failed to load submissions:', data.error);
+                        showError('Failed to load submissions');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading submissions:', error);
+                    showError('Error loading submissions');
+                });
+        }
+
+        function renderSubmissions() {
+            const container = document.getElementById('submissionsContainer');
+            
+            if (submissions.length === 0) {
+                container.innerHTML = `
+                    <div class="glass-card">
+                        <div class="empty-state">
+                            <i class="bi bi-file-earmark-code-fill"></i>
+                            <h4>No Plugin Submissions Yet</h4>
+                            <p class="text-light mb-4">You haven't submitted any plugins for review yet.</p>
+                            <a href="/plugins/create" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i>Create Your First Plugin
+                            </a>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = submissions.map(submission => {
+                const progress = getProgressPercentage(submission.status);
+                const timelineSteps = getTimelineSteps(submission);
+                
+                return `
+                    <div class="submission-card">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h4 class="mb-1">
+                                            <i class="bi bi-gear-fill me-2"></i>${submission.plugin_name}
+                                        </h4>
+                                        <p class="text-light mb-0">${submission.description || 'No description provided'}</p>
+                                    </div>
+                                    <span class="status-badge status-${submission.status}">${submission.status}</span>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar me-1"></i>Submitted: ${formatDate(submission.created_at)}
+                                        </small>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">
+                                            <i class="bi bi-code me-1"></i>Language: ${submission.language}
+                                        </small>
+                                    </div>
+                                    ${submission.updated_at ? `
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>Last Updated: ${formatDate(submission.updated_at)}
+                                        </small>
+                                    </div>
+                                    ` : ''}
+                                    ${submission.reviewed_by ? `
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">
+                                            <i class="bi bi-person-check me-1"></i>Reviewed by: ${submission.reviewed_by}
+                                        </small>
+                                    </div>
+                                    ` : ''}
+                                </div>
+
+                                <!-- Progress Bar -->
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small class="text-muted">Progress</small>
+                                        <small class="text-muted">${progress}%</small>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" style="width: ${progress}%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Review Notes -->
+                                ${submission.review_notes ? `
+                                <div class="mb-3">
+                                    <small class="text-muted">Review Notes:</small>
+                                    <p class="small text-light mt-1">${submission.review_notes}</p>
+                                </div>
+                                ` : ''}
+
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-outline-light btn-sm" onclick="viewPlugin(${submission.id})">
+                                        <i class="bi bi-eye me-1"></i>View Details
+                                    </button>
+                                    <button class="btn btn-outline-light btn-sm" onclick="downloadPluginCode(${submission.id})">
+                                        <i class="bi bi-download me-1"></i>Download
+                                    </button>
+                                    ${submission.status === 'deployed' ? `
+                                    <span class="badge bg-success ms-2">
+                                        <i class="bi bi-check-circle me-1"></i>Live in System
+                                    </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <h6 class="mb-3">Timeline</h6>
+                                <div class="timeline">
+                                    ${timelineSteps.map(step => `
+                                        <div class="timeline-item ${step.status}">
+                                            <strong class="small">${step.title}</strong>
+                                            <div class="small text-muted">${step.date}</div>
+                                            ${step.note ? `<div class="small text-light">${step.note}</div>` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getProgressPercentage(status) {
+            const statusProgress = {
+                'pending': 20,
+                'tested': 50,
+                'approved': 80,
+                'deployed': 100,
+                'rejected': 0
+            };
+            return statusProgress[status] || 0;
+        }
+
+        function getTimelineSteps(submission) {
+            const steps = [
+                {
+                    title: 'Submitted',
+                    date: formatDate(submission.created_at),
+                    status: 'completed',
+                    note: 'Plugin submitted for review'
+                }
+            ];
+
+            if (submission.status !== 'pending') {
+                steps.push({
+                    title: 'Under Review',
+                    date: submission.updated_at ? formatDate(submission.updated_at) : 'In progress',
+                    status: submission.status === 'rejected' ? 'failed' : 'completed',
+                    note: submission.status === 'tested' ? 'Tests completed' : 'Being reviewed by admin'
+                });
+            }
+
+            if (submission.status === 'approved' || submission.status === 'deployed') {
+                steps.push({
+                    title: 'Approved',
+                    date: submission.reviewed_at ? formatDate(submission.reviewed_at) : formatDate(submission.updated_at),
+                    status: 'completed',
+                    note: 'Plugin approved for deployment'
+                });
+            }
+
+            if (submission.status === 'deployed') {
+                steps.push({
+                    title: 'Deployed',
+                    date: formatDate(submission.updated_at),
+                    status: 'completed',
+                    note: 'Plugin is now live in the system'
+                });
+            }
+
+            if (submission.status === 'rejected') {
+                steps.push({
+                    title: 'Rejected',
+                    date: submission.reviewed_at ? formatDate(submission.reviewed_at) : formatDate(submission.updated_at),
+                    status: 'failed',
+                    note: submission.review_notes || 'Plugin was rejected'
+                });
+            }
+
+            return steps;
+        }
+
+        function viewPlugin(submissionId) {
+            const submission = submissions.find(s => s.id === submissionId);
+            if (!submission) return;
+
+            currentPlugin = submission;
+            
+            document.getElementById('modalTitle').innerHTML = 
+                `<i class="bi bi-gear-fill me-2"></i>${submission.plugin_name}`;
+            
+            document.getElementById('modalBody').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Plugin Information</h6>
+                        <table class="table table-borderless text-light">
+                            <tr><td><strong>Name:</strong></td><td>${submission.plugin_name}</td></tr>
+                            <tr><td><strong>Language:</strong></td><td>${submission.language}</td></tr>
+                            <tr><td><strong>Status:</strong></td><td><span class="status-badge status-${submission.status}">${submission.status}</span></td></tr>
+                            <tr><td><strong>Created:</strong></td><td>${formatDate(submission.created_at)}</td></tr>
+                            <tr><td><strong>Updated:</strong></td><td>${formatDate(submission.updated_at)}</td></tr>
+                            ${submission.reviewed_by ? `<tr><td><strong>Reviewed by:</strong></td><td>${submission.reviewed_by}</td></tr>` : ''}
+                        </table>
+                        
+                        <h6 class="mt-4">Description</h6>
+                        <p class="text-light">${submission.description || 'No description provided'}</p>
+                        
+                        ${submission.review_notes ? `
+                        <h6 class="mt-4">Review Notes</h6>
+                        <div class="alert alert-info">${submission.review_notes}</div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6>Plugin Code Preview</h6>
+                        <div class="code-preview">
+                            <pre><code>${escapeHtml(submission.plugin_code.substring(0, 1000))}${submission.plugin_code.length > 1000 ? '\\n\\n... (truncated)' : ''}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            pluginModal.show();
+        }
+
+        function downloadPluginCode(submissionId) {
+            const submission = submissions.find(s => s.id === submissionId);
+            if (!submission) return;
+
+            const blob = new Blob([submission.plugin_code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${submission.plugin_name}.py`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadPlugin() {
+            if (currentPlugin) {
+                downloadPluginCode(currentPlugin.id);
+            }
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return 'N/A';
+            return new Date(timestamp * 1000).toLocaleString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showError(message) {
+            const container = document.getElementById('submissionsContainer');
+            container.innerHTML = `
+                <div class="glass-card p-4">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>${message}
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+{% endblock %}

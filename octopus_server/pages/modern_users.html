@@ -145,7 +145,7 @@
                 </thead>
                 <tbody>
                     {% for user in users %}
-                    <tr class="user-item">
+                    <tr class="user-item" data-user-id="{{ user.id }}">
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="bg-primary rounded-circle me-3 d-flex align-items-center justify-content-center" 
@@ -175,14 +175,14 @@
                             {% endif %}
                         </td>
                         <td>
-                            <span class="badge {% if user.role == 'admin' %}bg-danger{% elif user.role == 'operator' %}bg-warning{% elif user.role == 'viewer' %}bg-info{% else %}bg-secondary{% endif %}">
-                                <i class="bi bi-{% if user.role == 'admin' %}shield-check{% elif user.role == 'operator' %}gear{% elif user.role == 'viewer' %}eye{% else %}person{% endif %} me-1"></i>
+                            <span class="badge {{ user.role|user_role_badge }}">
+                                <i class="{{ user.role|user_role_icon }} me-1"></i>
                                 {{ user.role|title or 'User' }}
                             </span>
                         </td>
                         <td>
-                            <span class="badge {% if user.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
-                                <i class="bi bi-{% if user.status == 'active' %}check-circle{% else %}pause-circle{% endif %} me-1"></i>
+                            <span class="badge {{ user.status|user_status_badge }}">
+                                <i class="{{ user.status|user_status_icon }} me-1"></i>
                                 {{ user.status|title or 'Active' }}
                             </span>
                         </td>
@@ -231,7 +231,7 @@
         <div id="cardsView" class="p-4" style="display: none;">
             <div class="row">
                 {% for user in users %}
-                <div class="col-lg-4 col-md-6 mb-4 user-card-item">
+                <div class="col-lg-4 col-md-6 mb-4 user-card-item" data-user-id="{{ user.id }}">
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
@@ -259,12 +259,14 @@
                             
                             <div class="row mb-3">
                                 <div class="col-6">
-                                    <span class="badge {% if user.role == 'admin' %}bg-danger{% elif user.role == 'operator' %}bg-warning{% elif user.role == 'viewer' %}bg-info{% else %}bg-secondary{% endif %} w-100">
+                                    <span class="badge {{ user.role|user_role_badge }} w-100">
+                                        <i class="{{ user.role|user_role_icon }} me-1"></i>
                                         {{ user.role|title or 'User' }}
                                     </span>
                                 </div>
                                 <div class="col-6">
-                                    <span class="badge {% if user.status == 'active' %}bg-success{% else %}bg-secondary{% endif %} w-100">
+                                    <span class="badge {{ user.status|user_status_badge }} w-100">
+                                        <i class="{{ user.status|user_status_icon }} me-1"></i>
                                         {{ user.status|title or 'Active' }}
                                     </span>
                                 </div>
@@ -807,20 +809,45 @@
                 'Content-Type': 'application/json',
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Delete user response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Delete user response data:', data);
             if (data.error) {
                 showToast('Error deleting user: ' + data.error, 'error');
             } else {
                 showToast('User deleted successfully!', 'success');
                 deleteModal.hide();
-                // Refresh the page to update the user list after a short delay
-                setTimeout(() => window.location.reload(), 1000);
+                
+                // Remove the user from the page with animation instead of full page reload
+                const userRow = document.querySelector(`tr[data-user-id="${userId}"]`);
+                const userCard = document.querySelector(`.user-card-item[data-user-id="${userId}"]`);
+                
+                if (userRow) {
+                    userRow.style.transition = 'all 0.3s ease';
+                    userRow.style.opacity = '0';
+                    userRow.style.transform = 'translateX(-100%)';
+                    setTimeout(() => userRow.remove(), 300);
+                }
+                
+                if (userCard) {
+                    userCard.style.transition = 'all 0.3s ease';
+                    userCard.style.opacity = '0';
+                    userCard.style.transform = 'translateX(-100%)';
+                    setTimeout(() => userCard.remove(), 300);
+                }
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            showToast('Error deleting user. Please try again.', 'error');
+            console.error('Fetch error details:', error);
+            console.error('Error type:', error.name);
+            console.error('Error message:', error.message);
+            showToast(`Error deleting user: ${error.message}. Please try again.`, 'error');
         })
         .finally(() => {
             // Re-enable button

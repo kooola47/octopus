@@ -151,6 +151,14 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize client cache: {e}")
 
+# Initialize global cache system
+from global_cache_manager import initialize_global_cache
+try:
+    global_cache = initialize_global_cache()
+    logger.info("Global cache system initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize global cache: {e}")
+
 # Register routes from other modules
 from pluginhelper import register_plugin_routes
 from heartbeat import register_heartbeat_routes
@@ -161,11 +169,20 @@ register_plugin_routes(app, logger)
 from routes import register_all_routes
 from routes.modern_routes import register_modern_routes
 from routes.user_profile_routes import user_profile_bp
+from routes.plugin_routes import plugin_bp
+from template_helpers import register_template_helpers
+
 register_all_routes(app, cache, logger)
 register_modern_routes(app, cache, logger)
 
+# Register template helpers for status management
+register_template_helpers(app)
+
 # Register user profile routes
 app.register_blueprint(user_profile_bp)
+
+# Register plugin management routes
+app.register_blueprint(plugin_bp)
 
 # Log server startup information
 logger.info(f"Octopus Server starting on {SERVER_HOST}:{SERVER_PORT}")

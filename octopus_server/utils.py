@@ -91,3 +91,38 @@ def safe_json_loads(json_str, default=None):
         return json.loads(json_str)
     except:
         return default
+
+def require_login(f):
+    """Decorator to require user authentication"""
+    from functools import wraps
+    from flask import session, redirect, url_for, request, jsonify
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            if request.is_json:
+                return jsonify({'success': False, 'error': 'Authentication required'}), 401
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def require_admin(f):
+    """Decorator to require admin authentication"""
+    from functools import wraps
+    from flask import session, redirect, url_for, request, jsonify
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            if request.is_json:
+                return jsonify({'success': False, 'error': 'Authentication required'}), 401
+            return redirect(url_for('login'))
+        
+        # Check if user is admin
+        if session.get('role') != 'admin':
+            if request.is_json:
+                return jsonify({'success': False, 'error': 'Admin privileges required'}), 403
+            return redirect(url_for('login'))
+        
+        return f(*args, **kwargs)
+    return decorated_function

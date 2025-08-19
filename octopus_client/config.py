@@ -46,6 +46,7 @@ PLUGINS_ENDPOINT = "/plugins"
 # CLIENT IDENTIFICATION
 # =============================================================================
 CLIENT_NAME_PREFIX = "client"  # Will be suffixed with PID
+USERNAME = os.getenv("OCTOPUS_USERNAME", "default_user")  # Can be overridden via environment variable
 CLIENT_METADATA = {
     "version": "1.0.0",
     "capabilities": ["plugin_execution", "task_scheduling"]

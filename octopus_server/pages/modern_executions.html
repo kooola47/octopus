@@ -73,44 +73,33 @@
 </div>
 
 <!-- Stats Cards -->
-<div class="row mb-4">
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card stats-card success h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-check-circle mb-2" style="font-size: 2rem;"></i>
-                <h4 class="mb-1">{{ stats.completed_executions or 0 }}</h4>
-                <small class="text-white-50">Completed</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card stats-card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-play-circle mb-2" style="font-size: 2rem;"></i>
-                <h4 class="mb-1">{{ stats.running_executions or 0 }}</h4>
-                <small class="text-white-50">Running</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card stats-card bg-danger h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-exclamation-triangle mb-2" style="font-size: 2rem;"></i>
-                <h4 class="mb-1">{{ stats.failed_executions or 0 }}</h4>
-                <small class="text-white-50">Failed</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card stats-card warning h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-clock mb-2" style="font-size: 2rem;"></i>
-                <h4 class="mb-1">{{ stats.avg_duration or 0 }}s</h4>
-                <small class="text-white-50">Avg Duration</small>
-            </div>
-        </div>
-    </div>
-</div>
+{% set status_cards = [
+    {
+        'icon': 'bi bi-check-circle',
+        'value': stats.completed_executions or 0,
+        'label': 'Completed',
+        'class': 'success'
+    },
+    {
+        'icon': 'bi bi-play-circle',
+        'value': stats.running_executions or 0,
+        'label': 'Running',
+        'class': ''
+    },
+    {
+        'icon': 'bi bi-exclamation-triangle',
+        'value': stats.failed_executions or 0,
+        'label': 'Failed',
+        'class': 'bg-danger'
+    },
+    {
+        'icon': 'bi bi-clock',
+        'value': (stats.avg_duration or 0)|round(1) ~ 's',
+        'label': 'Avg Duration',
+        'class': 'warning'
+    }
+] %}
+{% include 'partials/status_cards.html' %}
 
 <!-- Executions Table -->
 <div class="card">

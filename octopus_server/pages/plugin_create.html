@@ -1,0 +1,838 @@
+{% extends "modern_layout.html" %}
+
+{% block title %}Create Plugin - Octopus{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='monaco-editor/vs/editor/editor.main.css') }}">
+
+<style>
+    .editor-container {
+        height: 600px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #1e1e1e;
+    }
+
+    .template-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .template-card:hover {
+        background: #f1f5f9;
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+
+    .plugin-templates {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+
+    .status-ready { background-color: var(--success-color); }
+    .status-error { background-color: var(--danger-color); }
+    .status-warning { background-color: var(--warning-color); }
+
+    .code-actions {
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        padding: 15px;
+        border-radius: 0 0 12px 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-0 d-flex align-items-center">
+                    <i class="bi bi-gear-wide-connected me-3 text-primary"></i>
+                    Plugin Creator
+                </h1>
+                <p class="text-muted mb-0">Create custom plugins with VS Code-like interface</p>
+            </div>
+            <a href="{{ url_for('plugin.my_submissions') }}" class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-code me-1"></i>My Submissions
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Plugin Details Panel -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-gear-fill me-2"></i>Plugin Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="pluginForm">
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-tag-fill me-1"></i>Plugin Name
+                        </label>
+                        <input type="text" class="form-control" id="pluginName" placeholder="my_awesome_plugin" required>
+                        <div class="form-text">Use only letters, numbers, and underscores</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-code-square me-1"></i>Language
+                        </label>
+                        <select class="form-select" id="pluginLanguage">
+                            <option value="python">Python</option>
+                            <!-- <option value="javascript">JavaScript</option> -->
+                            <!-- <option value="bash">Bash</option> -->
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-file-text me-1"></i>Description
+                        </label>
+                        <textarea class="form-control" id="pluginDescription" rows="3" placeholder="Describe what your plugin does..."></textarea>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="submitPlugin()">
+                            <i class="bi bi-cloud-upload me-1"></i>Submit for Review
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="saveToLocal()">
+                            <i class="bi bi-download me-1"></i>Download Code
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Plugin Templates -->
+        <div class="card">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-collection me-2"></i>Plugin Templates
+                </h5>
+            </div>
+            <div class="card-body p-3">
+                <div class="plugin-templates">
+                    <div class="template-card" onclick="loadTemplate('basic')">
+                        <h6 class="mb-1"><strong>Basic Plugin</strong></h6>
+                        <p class="mb-0 small text-muted">Simple plugin template with main function</p>
+                    </div>
+                    <div class="template-card" onclick="loadTemplate('file_operations')">
+                        <h6 class="mb-1"><strong>File Operations</strong></h6>
+                        <p class="mb-0 small text-muted">Plugin for file system operations</p>
+                    </div>
+                    <div class="template-card" onclick="loadTemplate('web_scraper')">
+                        <h6 class="mb-1"><strong>Web Scraper</strong></h6>
+                        <p class="mb-0 small text-muted">HTTP requests and web scraping</p>
+                    </div>
+                    <div class="template-card" onclick="loadTemplate('database')">
+                        <h6 class="mb-1"><strong>Database Operations</strong></h6>
+                        <p class="mb-0 small text-muted">Database connection and queries</p>
+                    </div>
+                    <div class="template-card" onclick="loadTemplate('notification')">
+                        <h6 class="mb-1"><strong>Notifications</strong></h6>
+                        <p class="mb-0 small text-muted">Send emails, SMS, or push notifications</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Editor Panel -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-transparent border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-code-slash me-2"></i>Code Editor
+                    </h5>
+                    <div class="status-bar">
+                        <span class="status-indicator status-ready"></span>
+                        <span class="small text-muted">Ready</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <!-- Editor Container -->
+                <div class="editor-container" id="editorContainer">
+                    <!-- Loading indicator -->
+                    <div class="d-flex justify-content-center align-items-center h-100" id="editorLoading">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <div class="text-muted">Loading Monaco Editor...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Editor Actions -->
+                <div class="code-actions">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="small text-muted">
+                            <span id="lineCount">Lines: 0</span> |
+                            <span id="charCount">Characters: 0</span> |
+                            <span id="cursorPosition">Ln 1, Col 1</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="initializeFallbackEditor()" title="Force fallback editor">
+                                <i class="bi bi-textarea-t me-1"></i>Fallback
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="formatCode()">
+                                <i class="bi bi-arrows-angle-expand me-1"></i>Format
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" onclick="validateCode()">
+                                <i class="bi bi-check-circle me-1"></i>Validate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Modals -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resultModalTitle">Result</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="resultModalBody">
+                <!-- Result content -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='monaco-editor/vs/loader.js') }}"></script>
+
+<script>
+    // Debug function for browser console
+    window.debugMonaco = function() {
+        console.log('=== Monaco Debug Info ===');
+        console.log('require available:', typeof require !== 'undefined');
+        console.log('monaco available:', typeof monaco !== 'undefined');
+        console.log('templates available:', typeof templates !== 'undefined');
+        console.log('Monaco path:', '{{ url_for("static", filename="monaco-editor/vs") }}');
+        
+        // Test direct file access
+        fetch('{{ url_for("static", filename="monaco-editor/vs/loader.js") }}')
+            .then(response => console.log('loader.js fetch:', response.status))
+            .catch(err => console.error('loader.js fetch error:', err));
+    };
+
+    // Simple inline test - run this immediately
+    console.log('=== Plugin Create Script Loaded ===');
+    console.log('Page URL:', window.location.href);
+    console.log('Document ready state:', document.readyState);
+
+    let editor;
+    let resultModal;
+
+    // Plugin templates
+    const templates = {
+        basic: `#!/usr/bin/env python3
+"""
+Basic Plugin Template
+"""
+
+# Plugin metadata
+plugin_name = "my_plugin"
+description = "A basic plugin template"
+version = "1.0.0"
+author = "Your Name"
+
+def main(args=None, kwargs=None):
+    """
+    Main plugin function
+    
+    Args:
+        args: List of arguments
+        kwargs: Dictionary of keyword arguments
+        
+    Returns:
+        dict: Result dictionary with success status and data
+    """
+    try:
+        # Your plugin logic here
+        result = "Hello from my plugin!"
+        
+        return {
+            "success": True,
+            "data": result,
+            "message": "Plugin executed successfully"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Plugin execution failed"
+        }
+
+if __name__ == "__main__":
+    # Test the plugin
+    result = main()
+    print(result)`,
+
+        file_operations: `#!/usr/bin/env python3
+"""
+File Operations Plugin
+"""
+import os
+import shutil
+import json
+
+plugin_name = "file_operations"
+description = "File system operations plugin"
+version = "1.0.0"
+author = "Your Name"
+
+def main(args=None, kwargs=None):
+    """
+    File operations plugin
+    
+    Supported operations:
+    - read: Read file content
+    - write: Write content to file
+    - copy: Copy file
+    - move: Move file
+    - delete: Delete file
+    - list: List directory contents
+    """
+    try:
+        operation = kwargs.get('operation', 'list')
+        file_path = kwargs.get('path', '.')
+        
+        if operation == 'read':
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return {"success": True, "data": content}
+            
+        elif operation == 'write':
+            content = kwargs.get('content', '')
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            return {"success": True, "message": f"Content written to {file_path}"}
+            
+        elif operation == 'list':
+            items = os.listdir(file_path)
+            return {"success": True, "data": items}
+            
+        else:
+            return {"success": False, "error": f"Unknown operation: {operation}"}
+            
+    except Exception as e:
+        return {"success": False, "error": str(e)}`,
+
+        web_scraper: `#!/usr/bin/env python3
+"""
+Web Scraper Plugin
+"""
+import requests
+from urllib.parse import urljoin, urlparse
+
+plugin_name = "web_scraper"
+description = "HTTP requests and web scraping plugin"
+version = "1.0.0"
+author = "Your Name"
+
+def main(args=None, kwargs=None):
+    """
+    Web scraping plugin
+    
+    Args:
+        url: Target URL
+        method: HTTP method (GET, POST, etc.)
+        headers: Request headers
+        data: Request data for POST
+    """
+    try:
+        url = kwargs.get('url')
+        method = kwargs.get('method', 'GET').upper()
+        headers = kwargs.get('headers', {})
+        data = kwargs.get('data')
+        
+        if not url:
+            return {"success": False, "error": "URL is required"}
+        
+        response = requests.request(
+            method=method,
+            url=url,
+            headers=headers,
+            data=data,
+            timeout=30
+        )
+        
+        return {
+            "success": True,
+            "data": {
+                "status_code": response.status_code,
+                "content": response.text,
+                "headers": dict(response.headers)
+            }
+        }
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}`,
+
+        database: `#!/usr/bin/env python3
+"""
+Database Operations Plugin
+"""
+import sqlite3
+import json
+
+plugin_name = "database_operations"
+description = "Database connection and queries plugin"
+version = "1.0.0"
+author = "Your Name"
+
+def main(args=None, kwargs=None):
+    """
+    Database operations plugin
+    
+    Args:
+        db_path: Database file path
+        query: SQL query to execute
+        params: Query parameters
+    """
+    try:
+        db_path = kwargs.get('db_path', 'database.db')
+        query = kwargs.get('query')
+        params = kwargs.get('params', [])
+        
+        if not query:
+            return {"success": False, "error": "Query is required"}
+        
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            
+            if query.strip().upper().startswith('SELECT'):
+                cursor.execute(query, params)
+                columns = [description[0] for description in cursor.description]
+                rows = cursor.fetchall()
+                data = [dict(zip(columns, row)) for row in rows]
+                return {"success": True, "data": data}
+            else:
+                cursor.execute(query, params)
+                conn.commit()
+                return {"success": True, "message": f"Query executed, {cursor.rowcount} rows affected"}
+                
+    except Exception as e:
+        return {"success": False, "error": str(e)}`,
+
+        notification: `#!/usr/bin/env python3
+"""
+Notification Plugin
+"""
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+plugin_name = "notifications"
+description = "Send emails, SMS, or push notifications"
+version = "1.0.0"
+author = "Your Name"
+
+def main(args=None, kwargs=None):
+    """
+    Notifications plugin
+    
+    Args:
+        type: notification type (email, sms, push)
+        to: recipient
+        subject: message subject
+        message: message content
+    """
+    try:
+        notification_type = kwargs.get('type', 'email')
+        
+        if notification_type == 'email':
+            return send_email(kwargs)
+        elif notification_type == 'sms':
+            return send_sms(kwargs)
+        else:
+            return {"success": False, "error": f"Unknown notification type: {notification_type}"}
+            
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def send_email(kwargs):
+    """Send email notification"""
+    try:
+        to_email = kwargs.get('to')
+        subject = kwargs.get('subject', 'Notification')
+        message = kwargs.get('message', '')
+        
+        # Email configuration (configure these)
+        smtp_server = kwargs.get('smtp_server', 'smtp.gmail.com')
+        smtp_port = kwargs.get('smtp_port', 587)
+        from_email = kwargs.get('from_email', 'your@email.com')
+        password = kwargs.get('password', 'your_password')
+        
+        msg = MIMEMultipart()
+        msg['From'] = from_email
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        
+        msg.attach(MIMEText(message, 'plain'))
+        
+        # Note: This is a template - configure with actual credentials
+        # server = smtplib.SMTP(smtp_server, smtp_port)
+        # server.starttls()
+        # server.login(from_email, password)
+        # server.send_message(msg)
+        # server.quit()
+        
+        return {"success": True, "message": f"Email sent to {to_email}"}
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def send_sms(kwargs):
+    """Send SMS notification (template)"""
+    return {"success": False, "error": "SMS functionality not implemented yet"}`
+    };
+
+    // Initialize Monaco Editor
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('=== DOM Content Loaded ===');
+        console.log('Editor container exists:', !!document.getElementById('editorContainer'));
+        console.log('Monaco debug function available:', typeof window.debugMonaco);
+        console.log('Total div elements:', document.querySelectorAll('div').length);
+        
+        console.log('DOM loaded, initializing Monaco Editor...');
+        console.log('Templates available:', typeof templates !== 'undefined' ? 'Yes' : 'No');
+        
+        // Check if require.js is available
+        if (typeof require === 'undefined') {
+            console.error('require.js is not available');
+            initializeFallbackEditor();
+            return;
+        }
+        
+        // Set up require.js configuration with timeout
+        const monacoPath = '{{ url_for("static", filename="monaco-editor/vs") }}';
+        console.log('Monaco path configured:', monacoPath);
+        
+        require.config({ 
+            paths: { vs: monacoPath },
+            waitSeconds: 30 // 30 second timeout
+        });
+        
+        // Add timeout fallback
+        const timeoutId = setTimeout(() => {
+            console.warn('Monaco Editor loading timeout (15s), switching to fallback');
+            initializeFallbackEditor();
+        }, 15000); // 15 second timeout
+        
+        console.log('Attempting to load Monaco Editor modules...');
+        require(['vs/editor/editor.main'], function() {
+            clearTimeout(timeoutId);
+            console.log('Monaco Editor modules loaded successfully');
+            
+            try {
+                console.log('Creating Monaco Editor instance...');
+                
+                // Remove loading indicator
+                const container = document.getElementById('editorContainer');
+                const loadingIndicator = document.getElementById('editorLoading');
+                if (loadingIndicator) {
+                    loadingIndicator.remove();
+                }
+                
+                // Check if monaco global is available
+                if (typeof monaco === 'undefined') {
+                    throw new Error('Monaco global object not available');
+                }
+                
+                editor = monaco.editor.create(container, {
+                    value: templates.basic,
+                    language: 'python',
+                    theme: 'vs-dark',
+                    automaticLayout: true,
+                    fontSize: 14,
+                    lineNumbers: 'on',
+                    roundedSelection: false,
+                    scrollBeyondLastLine: false,
+                    readOnly: false,
+                    minimap: { enabled: true },
+                    suggestOnTriggerCharacters: true,
+                    formatOnPaste: true,
+                    formatOnType: true
+                });
+
+                // Update status on content change
+                editor.onDidChangeModelContent(() => {
+                    updateStatus();
+                });
+
+                // Update cursor position
+                editor.onDidChangeCursorPosition(() => {
+                    const position = editor.getPosition();
+                    document.getElementById('cursorPosition').textContent = `Ln ${position.lineNumber}, Col ${position.column}`;
+                });
+
+                updateStatus();
+                console.log('Monaco Editor initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize Monaco Editor:', error);
+                initializeFallbackEditor();
+            }
+        }, function(error) {
+            clearTimeout(timeoutId);
+            console.error('Failed to load Monaco Editor modules:', error);
+            console.error('Error details:', {
+                message: error.message,
+                requireType: error.requireType,
+                requireModules: error.requireModules
+            });
+            initializeFallbackEditor();
+        });
+
+        // Initialize modal
+        resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+    });
+
+    function initializeFallbackEditor() {
+        console.log('Initializing fallback editor...');
+        
+        const container = document.getElementById('editorContainer');
+        container.innerHTML = `
+            <div class="p-3">
+                <div class="alert alert-warning mb-3">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Monaco Editor failed to load. Using fallback text editor.
+                    <br><small>Check browser console for details.</small>
+                </div>
+                <textarea class="form-control" id="fallbackEditor" style="height: 500px; font-family: 'Courier New', monospace; font-size: 14px;" 
+                          placeholder="Enter your plugin code here...">${typeof templates !== 'undefined' ? templates.basic : '# Plugin template not available'}</textarea>
+            </div>
+        `;
+        
+        // Set up fallback editor
+        const fallbackEditor = document.getElementById('fallbackEditor');
+        fallbackEditor.addEventListener('input', updateStatus);
+        updateStatus();
+        
+        console.log('Fallback editor initialized');
+    }
+
+    // Debug function for browser console
+    window.debugMonaco = function() {
+        console.log('=== Monaco Debug Info ===');
+        console.log('require available:', typeof require !== 'undefined');
+        console.log('monaco available:', typeof monaco !== 'undefined');
+        console.log('templates available:', typeof templates !== 'undefined');
+        console.log('Monaco path:', '{{ url_for("static", filename="monaco-editor/vs") }}');
+        
+        // Test direct file access
+        fetch('{{ url_for("static", filename="monaco-editor/vs/loader.js") }}')
+            .then(response => console.log('loader.js fetch:', response.status))
+            .catch(err => console.error('loader.js fetch error:', err));
+    };
+
+    function updateStatus() {
+        let content = '';
+        
+        if (editor) {
+            content = editor.getValue();
+        } else {
+            // Fallback editor
+            const fallbackEditor = document.getElementById('fallbackEditor');
+            if (fallbackEditor) {
+                content = fallbackEditor.value;
+            }
+        }
+        
+        const lines = content.split('\n').length;
+        const chars = content.length;
+        
+        document.getElementById('lineCount').textContent = `Lines: ${lines}`;
+        document.getElementById('charCount').textContent = `Characters: ${chars}`;
+    }
+
+    function loadTemplate(templateName) {
+        if (templates[templateName]) {
+            if (editor) {
+                editor.setValue(templates[templateName]);
+            } else {
+                // Try fallback editor
+                const fallbackEditor = document.getElementById('fallbackEditor');
+                if (fallbackEditor) {
+                    fallbackEditor.value = templates[templateName];
+                    updateStatus();
+                } else {
+                    console.warn('Neither Monaco nor fallback editor is ready yet, will retry in 500ms');
+                    setTimeout(() => loadTemplate(templateName), 500);
+                }
+            }
+            
+            // Auto-fill plugin name based on template
+            const pluginNameField = document.getElementById('pluginName');
+            if (templateName !== 'basic') {
+                pluginNameField.value = templateName;
+            }
+        }
+    }
+
+    function formatCode() {
+        if (editor) {
+            editor.getAction('editor.action.formatDocument').run();
+        }
+    }
+
+    function validateCode() {
+        if (!editor) return;
+        
+        const code = editor.getValue();
+        
+        // Basic Python syntax validation
+        if (!code.includes('def main(')) {
+            showResult('Validation Error', 'Plugin must contain a main() function', 'error');
+            return;
+        }
+        
+        if (!code.includes('plugin_name')) {
+            showResult('Validation Error', 'Plugin must define plugin_name variable', 'error');
+            return;
+        }
+        
+        if (!code.includes('description')) {
+            showResult('Validation Error', 'Plugin must define description variable', 'error');
+            return;
+        }
+        
+        showResult('Validation Success', 'Plugin structure looks good!', 'success');
+    }
+
+    function submitPlugin() {
+        const pluginName = document.getElementById('pluginName').value.trim();
+        let pluginCode = '';
+        
+        // Get code from Monaco editor or fallback
+        if (editor) {
+            pluginCode = editor.getValue();
+        } else {
+            const fallbackEditor = document.getElementById('fallbackEditor');
+            if (fallbackEditor) {
+                pluginCode = fallbackEditor.value;
+            }
+        }
+        
+        const description = document.getElementById('pluginDescription').value.trim();
+        const language = document.getElementById('pluginLanguage').value;
+        
+        if (!pluginName) {
+            showResult('Validation Error', 'Plugin name is required', 'error');
+            return;
+        }
+        
+        if (!/^[a-zA-Z0-9_]+$/.test(pluginName)) {
+            showResult('Validation Error', 'Plugin name can only contain letters, numbers, and underscores', 'error');
+            return;
+        }
+        
+        if (!pluginCode.trim()) {
+            showResult('Validation Error', 'Plugin code cannot be empty', 'error');
+            return;
+        }
+        
+        // Submit to server
+        fetch('/api/plugins/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                plugin_name: pluginName,
+                plugin_code: pluginCode,
+                description: description,
+                language: language
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showResult('Success!', 
+                    `Plugin "${pluginName}" submitted successfully!<br><br>
+                    <strong>Submission ID:</strong> ${data.submission_id}<br>
+                    <strong>Status:</strong> Pending Review<br><br>
+                    You can track the status in the "My Submissions" section.`, 
+                    'success');
+            } else {
+                showResult('Submission Failed', data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showResult('Error', 'Failed to submit plugin: ' + error.message, 'error');
+        });
+    }
+
+    function saveToLocal() {
+        const pluginName = document.getElementById('pluginName').value.trim() || 'my_plugin';
+        let code = '';
+        
+        // Get code from Monaco editor or fallback
+        if (editor) {
+            code = editor.getValue();
+        } else {
+            const fallbackEditor = document.getElementById('fallbackEditor');
+            if (fallbackEditor) {
+                code = fallbackEditor.value;
+            }
+        }
+        
+        if (!code.trim()) {
+            showResult('Error', 'No code to save', 'error');
+            return;
+        }
+        
+        const blob = new Blob([code], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${pluginName}.py`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function showResult(title, message, type) {
+        document.getElementById('resultModalTitle').innerHTML = 
+            `<i class="bi bi-${type === 'success' ? 'check-circle-fill text-success' : 'exclamation-triangle-fill text-danger'} me-2"></i>${title}`;
+        document.getElementById('resultModalBody').innerHTML = message;
+        resultModal.show();
+    }
+</script>
+{% endblock %}

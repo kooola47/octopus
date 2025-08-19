@@ -56,6 +56,31 @@ werkzeug_logger.disabled = True
 
 logger = logging.getLogger("octopus_client")
 
+# Initialize global cache system
+from global_cache_manager import initialize_client_global_cache
+try:
+    global_cache = initialize_client_global_cache(SERVER_URL, USERNAME)
+    logger.info(f"Client global cache system initialized successfully for user: {USERNAME}")
+except Exception as e:
+    logger.error(f"Failed to initialize client global cache: {e}")
+
+# Setup logs folder and logging
+os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+
+# Disable werkzeug's default HTTP access logging for consistency
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.disabled = True
+
+logger = logging.getLogger("octopus_client")
+
 # Initialize core components
 status_manager = StatusManager()
 task_executor = TaskExecutor(SERVER_URL, logger)

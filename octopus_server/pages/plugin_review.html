@@ -1,0 +1,542 @@
+{% extends "modern_layout.html" %}
+
+{% block title %}Plugin Review - Octopus Admin{% endblock %}
+
+{% block extra_head %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='monaco-editor/vs/editor/editor.main.css') }}">
+{% endblock %}
+
+<style>
+    .editor-container {
+        height: 400px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #1e1e1e;
+    }
+
+    .submission-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .submission-card:hover {
+        background: #f1f5f9;
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+
+    .submission-card.selected {
+        border-color: var(--primary-color);
+        background: rgba(37, 99, 235, 0.05);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .status-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-pending { 
+        background: linear-gradient(45deg, #fbbf24, #f59e0b); 
+        color: #000; 
+    }
+    .status-tested { 
+        background: linear-gradient(45deg, #3b82f6, #2563eb); 
+        color: #fff; 
+    }
+    .status-approved { 
+        background: linear-gradient(45deg, #10b981, #059669); 
+        color: #fff; 
+    }
+    .status-rejected { 
+        background: linear-gradient(45deg, #ef4444, #dc2626); 
+        color: #fff; 
+    }
+    .status-deployed { 
+        background: linear-gradient(45deg, #06b6d4, #0891b2); 
+        color: #fff; 
+    }
+
+    .test-result {
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        font-size: 0.9em;
+        border-left: 4px solid;
+    }
+
+    .test-passed {
+        background: rgba(16, 185, 129, 0.1);
+        border-color: var(--success-color);
+        color: var(--success-color);
+    }
+
+    .test-failed {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: var(--danger-color);
+        color: var(--danger-color);
+    }
+
+    .test-skipped {
+        background: rgba(107, 114, 128, 0.1);
+        border-color: #6b7280;
+        color: #6b7280;
+    }
+
+    .submissions-container {
+        max-height: 700px;
+        overflow-y: auto;
+    }
+
+    .no-selection-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 400px;
+        color: #6b7280;
+    }
+
+    .no-selection-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-0 d-flex align-items-center">
+                    <i class="bi bi-check-circle me-3 text-primary"></i>
+                    Plugin Review Queue
+                </h1>
+                <p class="text-muted mb-0">Review and approve submitted plugins</p>
+            </div>
+            <a href="{{ url_for('plugin.create_plugin') }}" class="btn btn-outline-primary">
+                <i class="bi bi-plus-circle me-1"></i>Create Plugin
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Submissions List -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-transparent border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-file-earmark-code me-2"></i>Submissions
+                    </h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshSubmissions()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Filter -->
+                <div class="mb-3">
+                    <select class="form-select" id="statusFilter" onchange="filterSubmissions()">
+                        <option value="">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="tested">Tested</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="deployed">Deployed</option>
+                    </select>
+                </div>
+
+                <!-- Submissions -->
+                <div id="submissionsList" class="submissions-container">
+                    <!-- Submissions will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plugin Details & Actions -->
+    <div class="col-lg-8">
+        <div id="pluginDetails" class="d-none">
+            <!-- Plugin Info -->
+            <div class="card mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="card-title mb-1" id="pluginTitle">
+                                <i class="bi bi-gear-fill me-2"></i>Plugin Details
+                            </h5>
+                            <p class="text-muted mb-0" id="pluginMeta">Author: • Language: • Created: </p>
+                        </div>
+                        <span id="pluginStatusBadge" class="status-badge">Status</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Description</h6>
+                            <p id="pluginDescription" class="text-muted">No description provided</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Review Notes</h6>
+                            <p id="reviewNotes" class="text-muted small">No review notes yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Viewer -->
+            <div class="card mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-code-slash me-2"></i>Plugin Code
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="editor-container" id="codeViewer">
+                        <!-- Monaco Editor (Read-only) -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Results -->
+            <div class="card mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-check-circle me-2"></i>Test Results
+                        </h5>
+                        <button class="btn btn-warning btn-sm" onclick="runTests()">
+                            <i class="bi bi-play-circle me-1"></i>Run Tests
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="testResults">
+                        <p class="text-muted">No tests run yet. Click "Run Tests" to validate the plugin.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-tools me-2"></i>Review Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Review Notes</label>
+                        <textarea class="form-control" id="reviewNotesInput" rows="3" placeholder="Add your review notes..."></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-success" onclick="approvePlugin()">
+                            <i class="bi bi-check-circle me-1"></i>Approve & Deploy
+                        </button>
+                        <button class="btn btn-danger" onclick="rejectPlugin()">
+                            <i class="bi bi-x-circle me-1"></i>Reject
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="downloadPlugin()">
+                            <i class="bi bi-download me-1"></i>Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- No Selection State -->
+        <div id="noSelection" class="card">
+            <div class="card-body">
+                <div class="no-selection-state">
+                    <i class="bi bi-file-earmark-code"></i>
+                    <h4>Select a Plugin to Review</h4>
+                    <p class="text-muted">Choose a plugin submission from the list to view details and perform review actions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='monaco-editor/vs/loader.js') }}"></script>
+    
+    <script>
+        let codeEditor;
+        let selectedSubmission = null;
+        let allSubmissions = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEditor();
+            loadSubmissions();
+        });
+
+        function initializeEditor() {
+            require.config({ paths: { vs: '{{ url_for("static", filename="monaco-editor/vs") }}' }});
+            require(['vs/editor/editor.main'], function() {
+                codeEditor = monaco.editor.create(document.getElementById('codeViewer'), {
+                    value: '# Select a plugin to view code',
+                    language: 'python',
+                    theme: 'vs-dark',
+                    automaticLayout: true,
+                    fontSize: 14,
+                    readOnly: true,
+                    minimap: { enabled: false }
+                });
+            });
+        }
+
+        function loadSubmissions() {
+            fetch('/api/plugins/submissions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allSubmissions = data.submissions;
+                        renderSubmissions(allSubmissions);
+                    } else {
+                        console.error('Failed to load submissions:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading submissions:', error);
+                });
+        }
+
+        function renderSubmissions(submissions) {
+            const container = document.getElementById('submissionsList');
+            
+            if (submissions.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">No plugin submissions found.</p>';
+                return;
+            }
+
+            container.innerHTML = submissions.map(submission => `
+                <div class="submission-card" onclick="selectSubmission(${submission.id})" data-id="${submission.id}">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0">${submission.plugin_name}</h6>
+                        <span class="status-badge status-${submission.status}">${submission.status}</span>
+                    </div>
+                    <p class="small text-light mb-1">${submission.description || 'No description'}</p>
+                    <div class="small text-muted">
+                        <i class="bi bi-person me-1"></i>${submission.author} •
+                        <i class="bi bi-calendar me-1"></i>${formatDate(submission.created_at)} •
+                        <i class="bi bi-code me-1"></i>${submission.language}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterSubmissions() {
+            const filter = document.getElementById('statusFilter').value;
+            const filtered = filter ? allSubmissions.filter(s => s.status === filter) : allSubmissions;
+            renderSubmissions(filtered);
+        }
+
+        function selectSubmission(id) {
+            // Remove previous selection
+            document.querySelectorAll('.submission-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selection to clicked card
+            const card = document.querySelector(`[data-id="${id}"]`);
+            if (card) {
+                card.classList.add('selected');
+            }
+            
+            // Find submission
+            selectedSubmission = allSubmissions.find(s => s.id === id);
+            if (selectedSubmission) {
+                showPluginDetails(selectedSubmission);
+            }
+        }
+
+        function showPluginDetails(submission) {
+            document.getElementById('noSelection').classList.add('d-none');
+            document.getElementById('pluginDetails').classList.remove('d-none');
+            
+            // Update plugin info
+            document.getElementById('pluginTitle').innerHTML = 
+                `<i class="bi bi-gear-fill me-2"></i>${submission.plugin_name}`;
+            document.getElementById('pluginMeta').textContent = 
+                `Author: ${submission.author} • Language: ${submission.language} • Created: ${formatDate(submission.created_at)}`;
+            document.getElementById('pluginDescription').textContent = 
+                submission.description || 'No description provided';
+            document.getElementById('reviewNotes').textContent = 
+                submission.review_notes || 'No review notes yet';
+            
+            // Update status badge
+            const statusBadge = document.getElementById('pluginStatusBadge');
+            statusBadge.textContent = submission.status;
+            statusBadge.className = `status-badge status-${submission.status}`;
+            
+            // Update code editor
+            if (codeEditor) {
+                codeEditor.setValue(submission.plugin_code);
+                monaco.editor.setModelLanguage(codeEditor.getModel(), submission.language);
+            }
+            
+            // Load test results
+            loadTestResults(submission.id);
+        }
+
+        function loadTestResults(submissionId) {
+            fetch(`/api/plugins/test-results/${submissionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderTestResults(data.tests);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading test results:', error);
+                });
+        }
+
+        function renderTestResults(tests) {
+            const container = document.getElementById('testResults');
+            
+            if (!tests || tests.length === 0) {
+                container.innerHTML = '<p class="text-muted">No tests run yet. Click "Run Tests" to validate the plugin.</p>';
+                return;
+            }
+            
+            container.innerHTML = tests.map(test => `
+                <div class="test-result test-${test.test_status}">
+                    <strong>${test.test_type.toUpperCase()} Test</strong>
+                    <div class="mt-1">
+                        ${test.test_output ? `<div>Output: ${test.test_output}</div>` : ''}
+                        ${test.test_error ? `<div>Error: ${test.test_error}</div>` : ''}
+                        <small class="text-muted">Executed: ${formatDate(test.executed_at)}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function runTests() {
+            if (!selectedSubmission) return;
+            
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Testing...';
+            button.disabled = true;
+            
+            fetch(`/api/plugins/test/${selectedSubmission.id}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderTestResults(data.tests);
+                    // Refresh submission status
+                    loadSubmissions();
+                } else {
+                    alert('Test failed: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error running tests:', error);
+                alert('Error running tests: ' + error.message);
+            })
+            .finally(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
+        }
+
+        function approvePlugin() {
+            if (!selectedSubmission) return;
+            
+            const notes = document.getElementById('reviewNotesInput').value;
+            
+            if (confirm(`Are you sure you want to approve and deploy "${selectedSubmission.plugin_name}"?`)) {
+                fetch(`/api/plugins/approve/${selectedSubmission.id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        loadSubmissions();
+                    } else {
+                        alert('Approval failed: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error approving plugin:', error);
+                    alert('Error approving plugin: ' + error.message);
+                });
+            }
+        }
+
+        function rejectPlugin() {
+            if (!selectedSubmission) return;
+            
+            const notes = document.getElementById('reviewNotesInput').value || 'Plugin rejected by admin';
+            
+            if (confirm(`Are you sure you want to reject "${selectedSubmission.plugin_name}"?`)) {
+                fetch(`/api/plugins/reject/${selectedSubmission.id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Plugin rejected successfully');
+                        loadSubmissions();
+                    } else {
+                        alert('Rejection failed: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error rejecting plugin:', error);
+                    alert('Error rejecting plugin: ' + error.message);
+                });
+            }
+        }
+
+        function downloadPlugin() {
+            if (!selectedSubmission) return;
+            
+            const blob = new Blob([selectedSubmission.plugin_code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${selectedSubmission.plugin_name}.py`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function refreshSubmissions() {
+            loadSubmissions();
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return 'N/A';
+            return new Date(timestamp * 1000).toLocaleDateString();
+        }
+    </script>
+{% endblock %}

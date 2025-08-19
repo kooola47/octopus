@@ -1,0 +1,14 @@
+<!-- Status Cards Component -->
+<div class="row mb-4">
+    {% for card in status_cards %}
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stats-card {{ card.class or '' }} h-100">
+            <div class="card-body text-center">
+                <i class="{{ card.icon }} mb-2" style="font-size: 2rem;"></i>
+                <h4 class="mb-1">{{ card.value }}</h4>
+                <small class="text-white-50">{{ card.label }}</small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>

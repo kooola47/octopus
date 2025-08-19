@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>How to Access User Profile - Octopus</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bootstrap-icons.css') }}" rel="stylesheet">
     <style>
         .highlight-box {
             border: 3px solid #28a745;
@@ -70,11 +70,11 @@
         <div class="row">
             <div class="col-lg-8 mx-auto">
                 <h1 class="text-center mb-4">
-                    <i class="fas fa-user-cog"></i> How to Access User Profile Settings
+                    <i class="bi bi-gear-fill"></i> How to Access User Profile Settings
                 </h1>
                 
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i>
+                    <i class="bi bi-info-circle-fill"></i>
                     <strong>Personal Settings Location:</strong> Your user profile contains all personalized configuration that plugins use automatically.
                 </div>
 
@@ -92,21 +92,21 @@
                             <span>Executions</span>
                             <div class="position-relative">
                                 <span style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 3px;">
-                                    <i class="fas fa-user-circle"></i> admin <i class="fas fa-chevron-down"></i>
+                                    <i class="bi bi-person-circle"></i> admin <i class="bi bi-chevron-down"></i>
                                 </span>
                                 <div class="arrow position-absolute" style="top: -35px; left: 50%; transform: translateX(-50%);">
                                     ↓
                                 </div>
                                 <div class="mockup-dropdown position-absolute" style="right: 0; top: 100%; min-width: 150px;">
                                     <div class="mockup-item profile-highlight">
-                                        <i class="fas fa-user"></i> Profile ← HERE!
+                                        <i class="bi bi-person"></i> Profile ← HERE!
                                     </div>
                                     <div class="mockup-item">
-                                        <i class="fas fa-cog"></i> Settings
+                                        <i class="bi bi-gear"></i> Settings
                                     </div>
                                     <hr class="my-1">
                                     <div class="mockup-item">
-                                        <i class="fas fa-sign-out-alt"></i> Logout
+                                        <i class="bi bi-box-arrow-right"></i> Logout
                                     </div>
                                 </div>
                             </div>
@@ -139,48 +139,48 @@
                 <!-- What You'll See -->
                 <div class="card mt-4">
                     <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0"><i class="fas fa-eye"></i> What You'll See in Your Profile</h4>
+                        <h4 class="mb-0"><i class="bi bi-eye"></i> What You'll See in Your Profile</h4>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <h5><i class="fas fa-folder"></i> Parameter Categories:</h5>
+                                <h5><i class="bi bi-folder"></i> Parameter Categories:</h5>
                                 <ul class="list-group">
                                     <li class="list-group-item">
-                                        <i class="fas fa-key text-warning"></i> <strong>API Credentials</strong>
+                                        <i class="bi bi-key text-warning"></i> <strong>API Credentials</strong>
                                         <br><small class="text-muted">ServiceNow API keys, Jira tokens, etc.</small>
                                     </li>
                                     <li class="list-group-item">
-                                        <i class="fas fa-plug text-info"></i> <strong>Integrations</strong>
+                                        <i class="bi bi-plug text-info"></i> <strong>Integrations</strong>
                                         <br><small class="text-muted">Instance URLs, default settings</small>
                                     </li>
                                     <li class="list-group-item">
-                                        <i class="fas fa-bell text-success"></i> <strong>Notifications</strong>
+                                        <i class="bi bi-bell text-success"></i> <strong>Notifications</strong>
                                         <br><small class="text-muted">Email addresses, notification preferences</small>
                                     </li>
                                     <li class="list-group-item">
-                                        <i class="fas fa-cog text-secondary"></i> <strong>Preferences</strong>
+                                        <i class="bi bi-gear text-secondary"></i> <strong>Preferences</strong>
                                         <br><small class="text-muted">Timezone, refresh intervals, UI settings</small>
                                     </li>
                                 </ul>
                             </div>
                             <div class="col-md-6">
-                                <h5><i class="fas fa-tools"></i> Available Actions:</h5>
+                                <h5><i class="bi bi-tools"></i> Available Actions:</h5>
                                 <div class="d-grid gap-2">
                                     <button class="btn btn-outline-primary">
-                                        <i class="fas fa-plus"></i> Add Parameter
+                                        <i class="bi bi-plus"></i> Add Parameter
                                     </button>
                                     <button class="btn btn-outline-success">
-                                        <i class="fas fa-edit"></i> Edit Parameter
+                                        <i class="bi bi-pencil"></i> Edit Parameter
                                     </button>
                                     <button class="btn btn-outline-info">
-                                        <i class="fas fa-folder-plus"></i> Add Category
+                                        <i class="bi bi-folder-plus"></i> Add Category
                                     </button>
                                     <button class="btn btn-outline-warning">
-                                        <i class="fas fa-sync"></i> Refresh Cache
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh Cache
                                     </button>
                                     <button class="btn btn-outline-secondary">
-                                        <i class="fas fa-download"></i> Export Settings
+                                        <i class="bi bi-download"></i> Export Settings
                                     </button>
                                 </div>
                             </div>
@@ -190,7 +190,7 @@
 
                 <!-- Quick Start -->
                 <div class="alert alert-success mt-4">
-                    <h5><i class="fas fa-rocket"></i> Quick Start:</h5>
+                    <h5><i class="bi bi-rocket"></i> Quick Start:</h5>
                     <ol>
                         <li>Access Profile using the dropdown method above</li>
                         <li>Click <strong>"Add Parameter"</strong> to create your first setting</li>
@@ -202,7 +202,7 @@
 
                 <!-- Sample Data Note -->
                 <div class="alert alert-info">
-                    <h5><i class="fas fa-database"></i> Sample Data Available:</h5>
+                    <h5><i class="bi bi-database"></i> Sample Data Available:</h5>
                     <p>If you ran the initialization script, the <strong>"admin"</strong> user already has sample parameters set up:</p>
                     <ul>
                         <li><strong>3</strong> API Credentials (ServiceNow, Jira, Slack)</li>
@@ -249,6 +249,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
 </body>
 </html>

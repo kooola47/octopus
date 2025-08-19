@@ -320,7 +320,14 @@
     }
     
     function removeClient(clientId) {
-        if (confirm('Are you sure you want to remove this client? This will delete all heartbeat records for this client.')) {
+        if (confirm('Are you sure you want to remove this client?\n\nThis will delete all heartbeat records for this client and cannot be undone.')) {
+            // Show loading state
+            const deleteButton = document.querySelector(`button[onclick="removeClient('${clientId}')"]`);
+            if (deleteButton) {
+                deleteButton.disabled = true;
+                deleteButton.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+            }
+            
             // Call the API to delete the client
             fetch(`/api/clients/${clientId}`, {
                 method: 'DELETE',
@@ -328,19 +335,46 @@
                     'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Delete client response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Delete client response data:', data);
                 if (data.error) {
                     showToast('Error removing client: ' + data.error, 'danger');
+                    // Restore button
+                    if (deleteButton) {
+                        deleteButton.disabled = false;
+                        deleteButton.innerHTML = '<i class="bi bi-trash"></i>';
+                    }
                 } else {
-                    showToast(data.message, 'success');
-                    // Refresh the clients page
-                    window.location.reload();
+                    showToast('Client and all heartbeat records removed successfully!', 'success');
+                    // Remove the client from the page with animation
+                    const clientCard = deleteButton.closest('.col-lg-6');
+                    if (clientCard) {
+                        clientCard.style.transition = 'all 0.3s ease';
+                        clientCard.style.opacity = '0';
+                        clientCard.style.transform = 'translateX(-100%)';
+                        setTimeout(() => {
+                            clientCard.remove();
+                        }, 300);
+                    }
                 }
             })
             .catch(error => {
-                console.error('Error removing client:', error);
-                showToast('Error removing client. Please try again.', 'danger');
+                console.error('Fetch error details:', error);
+                console.error('Error type:', error.name);
+                console.error('Error message:', error.message);
+                showToast(`Error removing client: ${error.message}. Please try again.`, 'danger');
+                // Restore button
+                if (deleteButton) {
+                    deleteButton.disabled = false;
+                    deleteButton.innerHTML = '<i class="bi bi-trash"></i>';
+                }
             });
         }
     }
@@ -355,24 +389,21 @@
         const modal = bootstrap.Modal.getInstance(document.getElementById('assignTaskModal'));
         modal.hide();
         
-        // Show success message
-        const toast = document.createElement('div');
-        toast.className = 'toast align-items-center text-white bg-success border-0';
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="bi bi-check-circle me-2"></i>
-                    Task assigned successfully!
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
-        document.body.appendChild(toast);
-        const bsToast = new bootstrap.Toast(toast);
-        bsToast.show();
+        // Show success message using the standardized toast function
+        showToast('Task assigned successfully!', 'success');
     }
     
     function showToast(message, type = 'success') {
+        // Create or get toast container
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toastContainer.style.zIndex = '1055';
+            document.body.appendChild(toastContainer);
+        }
+        
         const toast = document.createElement('div');
         const bgClass = type === 'success' ? 'bg-success' : type === 'danger' ? 'bg-danger' : 'bg-info';
         const icon = type === 'success' ? 'bi-check-circle' : type === 'danger' ? 'bi-exclamation-triangle' : 'bi-info-circle';
@@ -388,13 +419,17 @@
             </div>
         `;
         
-        document.body.appendChild(toast);
+        toastContainer.appendChild(toast);
         const bsToast = new bootstrap.Toast(toast);
         bsToast.show();
         
         // Remove toast element after it's hidden
         toast.addEventListener('hidden.bs.toast', () => {
             toast.remove();
+            // Remove container if no more toasts
+            if (toastContainer.children.length === 0) {
+                toastContainer.remove();
+            }
         });
     }
     

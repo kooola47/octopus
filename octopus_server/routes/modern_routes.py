@@ -11,7 +11,7 @@ import sqlite3
 import logging
 import os
 from flask import request, render_template, url_for, jsonify, Response
-from dbhelper import get_db_file, get_tasks, get_active_clients, add_task, assign_all_tasks
+from dbhelper import get_db_file, get_tasks, get_active_clients, add_task, assign_all_tasks, delete_task
 from plugin_discovery import PluginDiscovery
 from plugin_cache_manager import get_plugin_cache_manager
 from client_cache_manager import get_client_cache_manager
@@ -336,7 +336,7 @@ def register_modern_routes(app, cache, logger):
             return {"error": "Internal server error"}, 500
 
     # Task Management API Endpoints
-    @app.route("/api/tasks/<int:task_id>", methods=["GET"])
+    @app.route("/api/tasks/<task_id>", methods=["GET"])
     def api_task_details(task_id):
         """Get detailed information about a specific task"""
         try:
@@ -355,7 +355,7 @@ def register_modern_routes(app, cache, logger):
             logger.error(f"Error getting task details: {e}")
             return {"error": "Internal server error"}, 500
     
-    @app.route("/api/tasks/<int:task_id>/run", methods=["POST"])
+    @app.route("/api/tasks/<task_id>/run", methods=["POST"])
     def api_run_task(task_id):
         """Run a specific task"""
         try:
@@ -386,10 +386,11 @@ def register_modern_routes(app, cache, logger):
             logger.error(f"Error running task: {e}")
             return {"error": "Internal server error"}, 500
     
-    @app.route("/api/tasks/<int:task_id>", methods=["DELETE"])
+    @app.route("/api/tasks/<task_id>", methods=["DELETE"])
     def api_delete_task(task_id):
-        """Delete a specific task"""
+        """Delete a specific task and all its executions"""
         try:
+            # Check if task exists first
             with sqlite3.connect(get_db_file()) as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT id FROM tasks WHERE id = ?", (task_id,))
@@ -397,15 +398,18 @@ def register_modern_routes(app, cache, logger):
                 
                 if not task:
                     return {"error": "Task not found"}, 404
-                    
-                # Delete the task
-                cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
-                conn.commit()
-                
-                return {"message": f"Task {task_id} deleted successfully"}
+            
+            # Delete the task and its executions using the proper helper function
+            success = delete_task(task_id)
+            
+            if success:
+                logger.info(f"Task {task_id} and its executions deleted successfully")
+                return {"message": f"Task {task_id} and its executions deleted successfully"}
+            else:
+                return {"error": "Failed to delete task"}, 500
                 
         except Exception as e:
-            logger.error(f"Error deleting task: {e}")
+            logger.error(f"Error deleting task {task_id}: {e}")
             return {"error": "Internal server error"}, 500
 
     @app.route("/api/tasks", methods=["POST"])
@@ -640,8 +644,8 @@ def register_modern_routes(app, cache, logger):
             combined_owners = sorted(set(active_clients + legacy_owners))
             regular_owners = [owner for owner in combined_owners if owner not in ["ALL", "Anyone"]]
             
-            # Add special owner options at the beginning
-            final_owners = ["ALL", "Anyone"] + regular_owners
+            # Add only "Anyone" option (remove confusing "ALL" option)
+            final_owners = ["Anyone"] + regular_owners
             
             return jsonify({"owners": final_owners})
             
@@ -1065,24 +1069,32 @@ def get_tasks_paginated(page=1, page_size=25, search='', status_filter='', type_
 def get_task_stats():
     """Get task statistics from real database data"""
     try:
+        from ..constants import TaskStatus
+        
         tasks_dict = get_tasks()
         
         total = len(tasks_dict)
         running = 0
         completed = 0
         failed = 0
+        pending = 0
         
         for task_id, task_data in tasks_dict.items():
-            status = task_data.get('status', '').lower()
-            if status in ['running', 'executing']:
+            status = task_data.get('status', '')
+            normalized_status = TaskStatus.normalize(status)
+            
+            if normalized_status == TaskStatus.RUNNING:
                 running += 1
-            elif status in ['success', 'done', 'completed']:
+            elif normalized_status == TaskStatus.COMPLETED:
                 completed += 1
-            elif status in ['failed', 'error']:
+            elif normalized_status == TaskStatus.FAILED:
                 failed += 1
+            else:
+                pending += 1
         
         return {
             'total_tasks': total,
+            'pending_tasks': pending,
             'running_tasks': running,
             'completed_tasks': completed,
             'failed_tasks': failed
@@ -1091,6 +1103,7 @@ def get_task_stats():
         logger.error(f"Error getting task stats: {e}")
         return {
             'total_tasks': 0,
+            'pending_tasks': 0,
             'running_tasks': 0,
             'completed_tasks': 0,
             'failed_tasks': 0
@@ -1211,18 +1224,35 @@ def get_execution_stats():
             cursor.execute("SELECT COUNT(*) as count FROM executions WHERE status = 'running'")
             running = cursor.fetchone()['count']
             
+            # Calculate average duration for completed executions
+            cursor.execute("""
+                SELECT AVG(
+                    CASE 
+                        WHEN ended_at IS NOT NULL AND started_at IS NOT NULL 
+                        THEN (julianday(ended_at) - julianday(started_at)) * 86400 
+                        ELSE NULL 
+                    END
+                ) as avg_duration 
+                FROM executions 
+                WHERE status = 'success' AND ended_at IS NOT NULL AND started_at IS NOT NULL
+            """)
+            avg_duration_result = cursor.fetchone()
+            avg_duration = round(avg_duration_result['avg_duration'] or 0, 1)
+            
             return {
                 'total_executions': total,
-                'successful_executions': successful,
+                'completed_executions': successful,
                 'failed_executions': failed,
-                'running_executions': running
+                'running_executions': running,
+                'avg_duration': avg_duration
             }
     except Exception:
         return {
             'total_executions': 0,
-            'successful_executions': 0,
+            'completed_executions': 0,
             'failed_executions': 0,
-            'running_executions': 0
+            'running_executions': 0,
+            'avg_duration': 0
         }
 
 def format_uptime(seconds):
@@ -1289,3 +1319,229 @@ def get_all_clients_dict():
             return clients
     except Exception:
         return {}
+
+    # === Global Cache API Endpoints ===
+    
+    def get_requesting_user_identity():
+        """
+        Get the identity of the user making the request
+        
+        Returns:
+            Username if identified, None otherwise
+        """
+        try:
+            # Check for client_id in request headers or parameters
+            client_id = request.headers.get('X-Client-ID') or request.args.get('client_id')
+            
+            if client_id:
+                from global_cache_manager import get_global_cache_manager
+                cache_manager = get_global_cache_manager()
+                username = cache_manager.get_user_identity_from_client_id(client_id)
+                if username:
+                    return username
+            
+            # Check for username in request headers (for direct API access)
+            username = request.headers.get('X-Username')
+            if username:
+                return username
+            
+            # For now, return None if no identity found
+            # In production, you might want to require authentication
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting requesting user identity: {e}")
+            return None
+    
+    @app.route("/api/cache/broadcast", methods=["GET"])
+    def api_get_broadcast_cache():
+        """Get data that should be broadcast to all clients"""
+        try:
+            from global_cache_manager import get_global_cache_manager
+            
+            cache_manager = get_global_cache_manager()
+            broadcast_data = cache_manager.get_broadcast_data()
+            
+            return jsonify(broadcast_data)
+            
+        except Exception as e:
+            logger.error(f"Error getting broadcast cache: {e}")
+            return jsonify({"error": str(e)}), 500
+    
+    @app.route("/api/cache/stats", methods=["GET"])
+    def api_get_cache_stats():
+        """Get cache statistics"""
+        try:
+            from global_cache_manager import get_global_cache_manager
+            
+            cache_manager = get_global_cache_manager()
+            stats = cache_manager.get_stats()
+            
+            return jsonify(stats)
+            
+        except Exception as e:
+            logger.error(f"Error getting cache stats: {e}")
+            return jsonify({"error": str(e)}), 500
+    
+    @app.route("/api/cache/plugin/<plugin_name>", methods=["GET"])
+    def api_get_plugin_cache(plugin_name):
+        """Get cache data for a specific plugin"""
+        try:
+            from global_cache_manager import get_global_cache_manager
+            
+            cache_manager = get_global_cache_manager()
+            plugin_data = cache_manager.plugin_get_all(plugin_name)
+            
+            return jsonify(plugin_data)
+            
+        except Exception as e:
+            logger.error(f"Error getting plugin cache for {plugin_name}: {e}")
+            return jsonify({"error": str(e)}), 500
+    
+    @app.route("/api/cache/plugin/<plugin_name>/<key>", methods=["GET"])
+    def api_get_plugin_cache_key(plugin_name, key):
+        """Get specific cache key for a plugin"""
+        try:
+            from global_cache_manager import get_global_cache_manager
+            
+            cache_manager = get_global_cache_manager()
+            value = cache_manager.plugin_get(plugin_name, key)
+            
+            if value is None:
+                return jsonify({"error": "Key not found"}), 404
+            
+            return jsonify({"key": key, "value": value})
+            
+        except Exception as e:
+            logger.error(f"Error getting plugin cache key {plugin_name}:{key}: {e}")
+            return jsonify({"error": str(e)}), 500
+    
+    @app.route("/api/cache/plugin/<plugin_name>/<key>", methods=["POST"])
+    def api_set_plugin_cache_key(plugin_name, key):
+        """Set cache key for a plugin"""
+        try:
+            from global_cache_manager import get_global_cache_manager
+            
+            data = request.get_json()
+            if not data or 'value' not in data:
+                return jsonify({"error": "Value is required"}), 400
+            
+            cache_manager = get_global_cache_manager()
+            ttl = data.get('ttl')
+            
+            cache_manager.plugin_set(plugin_name, key, data['value'], ttl)
+            
+            return jsonify({"message": "Cache key set successfully"})
+            
+        except Exception as e:
+            logger.error(f"Error setting plugin cache key {plugin_name}:{key}: {e}")
+            return jsonify({"error": str(e)}), 500
+    
+    @app.route("/api/cache/plugin/<plugin_name>/<key>", methods=["DELETE"])
+    def api_delete_plugin_cache_key(plugin_name, key):
+        """Delete cache key for a plugin"""
+        try:
+            from global_cache_manager import get_global_cache_manager
+            
+            cache_manager = get_global_cache_manager()
+            cache_manager.plugin_delete(plugin_name, key)
+            
+            return jsonify({"message": "Cache key deleted successfully"})
+            
+        except Exception as e:
+            logger.error(f"Error deleting plugin cache key {plugin_name}:{key}: {e}")
+            return jsonify({"error": str(e)}), 500
+    
+    @app.route("/api/cache/broadcast/<key>", methods=["POST"])
+    def api_broadcast_to_clients(key):
+        """Broadcast data to all clients"""
+        try:
+            from global_cache_manager import get_global_cache_manager
+            
+            data = request.get_json()
+            if not data or 'value' not in data:
+                return jsonify({"error": "Value is required"}), 400
+            
+            cache_manager = get_global_cache_manager()
+            ttl = data.get('ttl')
+            
+            cache_manager.broadcast_to_clients(key, data['value'], ttl)
+            
+            return jsonify({"message": "Data broadcast successfully"})
+            
+        except Exception as e:
+            logger.error(f"Error broadcasting {key}: {e}")
+            return jsonify({"error": str(e)}), 500
+    
+    @app.route("/api/cache/user/<username>/profile", methods=["GET"])
+    def api_get_user_profile_cache(username):
+        """Get user profile cache data"""
+        try:
+            from global_cache_manager import get_global_cache_manager
+            
+            # Get requesting user identity
+            requesting_user = get_requesting_user_identity()
+            
+            cache_manager = get_global_cache_manager()
+            profile_data = cache_manager.get_user_profile_data(username, requesting_user)
+            
+            if profile_data is None:
+                # Check if it's an access denied case vs not found
+                if requesting_user and requesting_user != username and not cache_manager._is_admin_user(requesting_user):
+                    return jsonify({"error": "Access denied: You can only access your own profile data"}), 403
+                else:
+                    return jsonify({"error": "Profile not found"}), 404
+            
+            return jsonify(profile_data)
+            
+        except PermissionError as e:
+            return jsonify({"error": str(e)}), 403
+        except Exception as e:
+            logger.error(f"Error getting user profile cache for {username}: {e}")
+            return jsonify({"error": str(e)}), 500
+    
+    @app.route("/api/cache/user/<username>/profile", methods=["POST"])
+    def api_set_user_profile_cache(username):
+        """Set user profile cache data"""
+        try:
+            from global_cache_manager import get_global_cache_manager
+            
+            # Get requesting user identity
+            requesting_user = get_requesting_user_identity()
+            
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "Profile data is required"}), 400
+            
+            cache_manager = get_global_cache_manager()
+            ttl = data.get('_ttl', 3600)  # Default 1 hour
+            
+            # Remove _ttl from profile data
+            profile_data = {k: v for k, v in data.items() if k != '_ttl'}
+            
+            cache_manager.set_user_profile_data(username, profile_data, ttl, requesting_user)
+            
+            return jsonify({"message": "User profile cache updated successfully"})
+            
+        except PermissionError as e:
+            return jsonify({"error": str(e)}), 403
+        except Exception as e:
+            logger.error(f"Error setting user profile cache for {username}: {e}")
+            return jsonify({"error": str(e)}), 500
+    
+    @app.route("/api/cache/all", methods=["GET"])
+    def api_get_all_cache_data():
+        """Get all cache data (admin endpoint)"""
+        try:
+            from global_cache_manager import get_global_cache_manager
+            
+            cache_manager = get_global_cache_manager()
+            include_plugins = request.args.get('include_plugins', 'false').lower() == 'true'
+            
+            all_data = cache_manager.get_all_data(include_plugins)
+            
+            return jsonify(all_data)
+            
+        except Exception as e:
+            logger.error(f"Error getting all cache data: {e}")
+            return jsonify({"error": str(e)}), 500

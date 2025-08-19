@@ -256,6 +256,28 @@
                 
                 <hr class="my-3">
                 
+                <!-- Plugin Management Section -->
+                <div class="mb-3">
+                    <h6 class="text-muted mb-2">
+                        <i class="bi bi-puzzle me-1"></i> Plugin Management
+                    </h6>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('plugin.create_plugin') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-code-slash me-1"></i> Create Plugin
+                        </a>
+                        <a href="{{ url_for('plugin.my_submissions') }}" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-file-code me-1"></i> My Plugins
+                        </a>
+                        {% if session.role == 'admin' %}
+                        <a href="{{ url_for('plugin.review_plugins') }}" class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-shield-check me-1"></i> Review Queue
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <hr class="my-3">
+                
                 <div class="d-grid gap-2">
                     <button class="btn btn-outline-warning btn-sm" onclick="refreshDashboard()">
                         <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data

@@ -115,6 +115,48 @@ def init_db():
             conn.execute('CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)')
             
+            # Plugin management tables
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS plugin_submissions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    plugin_name TEXT NOT NULL,
+                    plugin_code TEXT NOT NULL,
+                    description TEXT,
+                    author TEXT NOT NULL,
+                    language TEXT DEFAULT 'python',
+                    status TEXT DEFAULT 'pending',
+                    created_at REAL,
+                    updated_at REAL,
+                    reviewed_by TEXT,
+                    reviewed_at REAL,
+                    review_notes TEXT,
+                    test_results TEXT,
+                    deployment_path TEXT,
+                    version TEXT DEFAULT '1.0.0',
+                    UNIQUE(plugin_name)
+                )
+            ''')
+            
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS plugin_tests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    submission_id INTEGER,
+                    test_type TEXT,
+                    test_status TEXT,
+                    test_output TEXT,
+                    test_error TEXT,
+                    executed_at REAL,
+                    FOREIGN KEY (submission_id) REFERENCES plugin_submissions (id)
+                )
+            ''')
+            
+            # Create indexes for plugin tables
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_plugin_submissions_status ON plugin_submissions(status)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_plugin_submissions_author ON plugin_submissions(author)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_plugin_submissions_created_at ON plugin_submissions(created_at)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_plugin_tests_submission_id ON plugin_tests(submission_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_plugin_tests_status ON plugin_tests(test_status)')
+            
             # Migrate existing tables to add missing columns
             migrate_tasks_table(conn)
             migrate_users_table(conn)
@@ -460,6 +502,8 @@ def assign_all_tasks(tasks, clients):
         assign_all_tasks._last_assignment = current_time
         
         # Only use clients that are currently online (pre-filtered by caller)
+        logger.info(f"Client data received: {list(clients.keys())} clients")
+        logger.info(f"Client data structure sample: {list(clients.values())[:2] if clients else 'No clients'}")
         available_users = [str(client['username']) for client in clients.values() if 'username' in client]
         logger.info(f"Available users for task assignment: {available_users}")
         
@@ -485,13 +529,18 @@ def assign_all_tasks(tasks, clients):
                 update_task(tid, {"executor": "ALL", "status": "Active"})
                 task["executor"] = "ALL"
                     
-            elif owner == "Anyone":
-                # Assign to a random available client
+            elif owner == "Anyone" or not owner or owner.strip() == "":
+                # Assign to a random available client (Anyone or empty owner)
                 if available_users:
                     chosen = random.choice(available_users)
                     logger.info(f"Assigning Anyone task {tid} to {chosen}")
                     update_task(tid, {"executor": chosen, "status": "Active"})
                     task["executor"] = chosen
+                else:
+                    logger.warning(f"No available users to assign Anyone task {tid}, leaving as unassigned")
+                    # Set executor to empty string instead of leaving it as "ALL"
+                    update_task(tid, {"executor": "", "status": "Created"})
+                    task["executor"] = ""
                     
             else:
                 # Specific user assignment
@@ -523,7 +572,7 @@ def compute_task_status(task, clients):
     db_status = task.get("status", "")
     
     # If task is already marked as completed in database, don't override
-    if TaskStatus.is_completed(db_status):
+    if TaskStatus.is_final_state(db_status):
         logger.debug(f"Task {task.get('id')} already completed with status: {db_status}")
         return db_status
     
@@ -538,11 +587,11 @@ def compute_task_status(task, clients):
         if executions:
             # For ALL tasks, complete when any client succeeds (first success wins)
             if owner == TaskOwnership.ALL:
-                if any(TaskStatus.is_completed(exec.get("status")) for exec in executions):
+                if any(TaskStatus.is_final_state(exec.get("status")) for exec in executions):
                     return TaskStatus.DONE  # Complete when any client completes the ALL task
             else:
                 # For specific user or Anyone tasks, check if completed
-                if any(TaskStatus.is_completed(exec.get("status")) for exec in executions):
+                if any(TaskStatus.is_final_state(exec.get("status")) for exec in executions):
                     return TaskStatus.DONE
         
         # If executor is assigned but no executions yet, it's Active
@@ -976,3 +1025,150 @@ def toggle_user_status(user_id, new_status):
     except Exception as e:
         logger.error(f"Error updating status for user {user_id}: {e}")
         return False
+
+# ========================================
+# PLUGIN MANAGEMENT FUNCTIONS
+# ========================================
+
+def submit_plugin(plugin_name, plugin_code, description, author, language='python'):
+    """Submit a new plugin for review"""
+    import time
+    
+    with _db_lock:
+        try:
+            with sqlite3.connect(DB_FILE) as conn:
+                cursor = conn.cursor()
+                current_time = time.time()
+                
+                cursor.execute('''
+                    INSERT OR REPLACE INTO plugin_submissions 
+                    (plugin_name, plugin_code, description, author, language, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)
+                ''', (plugin_name, plugin_code, description, author, language, current_time, current_time))
+                
+                submission_id = cursor.lastrowid
+                conn.commit()
+                logger.info(f"Plugin '{plugin_name}' submitted for review by {author}")
+                return submission_id
+                
+        except Exception as e:
+            logger.error(f"Error submitting plugin: {e}")
+            return None
+
+def get_plugin_submissions(status=None, author=None):
+    """Get plugin submissions, optionally filtered by status or author"""
+    with _db_lock:
+        try:
+            with sqlite3.connect(DB_FILE) as conn:
+                cursor = conn.cursor()
+                
+                query = 'SELECT * FROM plugin_submissions'
+                params = []
+                conditions = []
+                
+                if status:
+                    conditions.append('status = ?')
+                    params.append(status)
+                    
+                if author:
+                    conditions.append('author = ?')
+                    params.append(author)
+                    
+                if conditions:
+                    query += ' WHERE ' + ' AND '.join(conditions)
+                    
+                query += ' ORDER BY created_at DESC'
+                
+                cursor.execute(query, params)
+                columns = [description[0] for description in cursor.description]
+                return [dict(zip(columns, row)) for row in cursor.fetchall()]
+                
+        except Exception as e:
+            logger.error(f"Error getting plugin submissions: {e}")
+            return []
+
+def update_plugin_submission_status(submission_id, status, reviewer=None, notes=None):
+    """Update plugin submission status"""
+    import time
+    
+    with _db_lock:
+        try:
+            with sqlite3.connect(DB_FILE) as conn:
+                cursor = conn.cursor()
+                current_time = time.time()
+                
+                cursor.execute('''
+                    UPDATE plugin_submissions 
+                    SET status = ?, updated_at = ?, reviewed_by = ?, reviewed_at = ?, review_notes = ?
+                    WHERE id = ?
+                ''', (status, current_time, reviewer, current_time, notes, submission_id))
+                
+                conn.commit()
+                logger.info(f"Plugin submission {submission_id} status updated to {status}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error updating plugin submission status: {e}")
+            return False
+
+def record_plugin_test(submission_id, test_type, test_status, test_output=None, test_error=None):
+    """Record plugin test results"""
+    import time
+    
+    with _db_lock:
+        try:
+            with sqlite3.connect(DB_FILE) as conn:
+                cursor = conn.cursor()
+                current_time = time.time()
+                
+                cursor.execute('''
+                    INSERT INTO plugin_tests 
+                    (submission_id, test_type, test_status, test_output, test_error, executed_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (submission_id, test_type, test_status, test_output, test_error, current_time))
+                
+                conn.commit()
+                logger.info(f"Plugin test recorded for submission {submission_id}: {test_type} - {test_status}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error recording plugin test: {e}")
+            return False
+
+def get_plugin_tests(submission_id):
+    """Get test results for a plugin submission"""
+    with _db_lock:
+        try:
+            with sqlite3.connect(DB_FILE) as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT * FROM plugin_tests WHERE submission_id = ? ORDER BY executed_at DESC', (submission_id,))
+                columns = [description[0] for description in cursor.description]
+                return [dict(zip(columns, row)) for row in cursor.fetchall()]
+                
+        except Exception as e:
+            logger.error(f"Error getting plugin tests: {e}")
+            return []
+
+def deploy_plugin(submission_id, deployment_path):
+    """Mark plugin as deployed"""
+    import time
+    
+    with _db_lock:
+        try:
+            with sqlite3.connect(DB_FILE) as conn:
+                cursor = conn.cursor()
+                current_time = time.time()
+                
+                cursor.execute('''
+                    UPDATE plugin_submissions 
+                    SET status = 'deployed', deployment_path = ?, updated_at = ?
+                    WHERE id = ?
+                ''', (deployment_path, current_time, submission_id))
+                
+                conn.commit()
+                logger.info(f"Plugin submission {submission_id} marked as deployed to {deployment_path}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error deploying plugin: {e}")
+            return False
