@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "c:\Users\aries\PycharmProjects\octopus\test_cache_security.py", line 198, in <module>
-    main()
-  File "c:\Users\aries\PycharmProjects\octopus\test_cache_security.py", line 185, in main
-    print("\U0001f512 OCTOPUS GLOBAL CACHE SECURITY TEST SUITE")
-UnicodeEncodeError: 'gbk' codec can't encode character '\U0001f512' in position 0: illegal multibyte sequence

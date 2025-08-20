@@ -27,6 +27,13 @@ class StatusManager:
             "last_run": time.strftime("%Y-%m-%d %H:%M:%S")
         })
     
+    def update_task(self, task_name: str, status: str, description: str = ""):
+        """Update task with description support (alias for update_task_status)"""
+        self.update_task_status(task_name, status)
+        if description:
+            # Add description to status if provided
+            self.latest_task_info["status"] = f"{status}: {description}"
+    
     def get_latest_task_info(self) -> Dict[str, str]:
         """Get the latest task information"""
         return self.latest_task_info.copy()
