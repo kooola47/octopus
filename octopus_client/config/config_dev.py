@@ -7,7 +7,7 @@ Development configuration with local server settings and verbose logging.
 
 import os
 from .config_base import BaseConfig
-
+from utils import get_hostname, get_local_ip
 
 class DevelopmentConfig(BaseConfig):
     """Development configuration with local settings and enhanced debugging."""
@@ -16,8 +16,11 @@ class DevelopmentConfig(BaseConfig):
     # ENVIRONMENT IDENTIFICATION
     # =============================================================================
     ENVIRONMENT = "development"
-    DEBUG = True
+    DEBUG = False
     
+    CLIENT_HOSTNAME = get_hostname()
+    CLIENT_IP = get_local_ip()
+    CLIENT_PORT = 8081
     # =============================================================================
     # SERVER CONNECTION
     # =============================================================================

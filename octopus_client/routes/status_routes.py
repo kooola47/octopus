@@ -9,6 +9,26 @@ import time
 from flask import jsonify
 
 def register_status_routes(app, cache, logger):
+    @app.route("/config", methods=["GET"])
+    def get_config():
+        """Return current configuration values as JSON"""
+        try:
+            from config import get_current_config
+            config_obj = get_current_config()
+            config_dict = {k: getattr(config_obj, k) for k in dir(config_obj) if k.isupper() and not k.startswith('_')}
+            return jsonify({"status": "ok", "config": config_dict, "timestamp": time.time()})
+        except Exception as e:
+            logger.error(f"Error getting config: {e}")
+            return jsonify({"status": "error", "error": str(e), "timestamp": time.time()}), 500
+    @app.route("/cache/all", methods=["GET"])
+    def get_all_cache():
+        """Return all cache data from the client-side cache"""
+        try:
+            all_cache = cache.all()
+            return jsonify({"status": "ok", "cache": all_cache, "timestamp": time.time()})
+        except Exception as e:
+            logger.error(f"Error getting all cache data: {e}")
+            return jsonify({"status": "error", "error": str(e), "timestamp": time.time()}), 500
     """Register status monitoring routes with the Flask client app"""
 
     @app.route("/status", methods=["GET"])

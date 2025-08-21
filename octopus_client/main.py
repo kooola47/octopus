@@ -18,36 +18,32 @@ Usage:
 import os
 import sys
 import time
-import logging
-import threading
-
-# Add the current directory to Python path for imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-# Load configuration first (this will parse command line arguments)
+from global_cache_manager import initialize_client_global_cache
 from config import load_config, get_current_config
-config = load_config()  # This will load based on command line args
-
-from flask import Flask
-from cache import Cache
-from scheduler import Scheduler
 from heartbeat import send_heartbeat
 from pluginhelper import check_plugin_updates
 from utils import get_hostname, get_local_ip, get_client_id
+
+# Load config once
+config = load_config()  # This will load based on command line args
+
+# Initialize global cache once
+global_cache = initialize_client_global_cache(config.SERVER_URL, config.USERNAME)
+
+from scheduler import Scheduler
+from flask import Flask
+app = Flask(__name__)
 
 # Import organized modules
 from core.task_execution import TaskExecutor
 from core.server_communication import ServerCommunicator
 from core.status_manager import StatusManager
 from core.task_loop import TaskExecutionLoop
-from core.http_status_server import HTTPStatusServer
 
-# Initialize components
-cache = Cache()
 scheduler = Scheduler()
-app = Flask(__name__)
 
 # Setup logs folder and logging using config
+import logging
 os.makedirs(os.path.dirname(config.LOG_FILE), exist_ok=True)
 logging.basicConfig(
     level=getattr(logging, config.LOG_LEVEL),
@@ -64,13 +60,7 @@ werkzeug_logger.disabled = True
 
 logger = logging.getLogger("octopus_client")
 
-# Initialize global cache system
-from global_cache_manager import initialize_client_global_cache
-try:
-    global_cache = initialize_client_global_cache(config.SERVER_URL, config.USERNAME)
-    logger.info(f"Client global cache system initialized successfully for user: {config.USERNAME}")
-except Exception as e:
-    logger.error(f"Failed to initialize client global cache: {e}")
+## global_cache already initialized above, no need to re-initialize here
 
 # Initialize core components with config values
 status_manager = StatusManager()
@@ -82,14 +72,12 @@ if not config.SERVER_URL:
 task_executor = TaskExecutor(config.SERVER_URL, logger)
 server_comm = ServerCommunicator(config.SERVER_URL, config.TASK_CHECK_INTERVAL, config.RETRY_DELAY, logger)
 task_loop = TaskExecutionLoop(task_executor, server_comm, config.SERVER_URL, config.TASK_CHECK_INTERVAL, config.RETRY_DELAY, logger)
-http_status_server = HTTPStatusServer("localhost", 8080, status_manager, logger)
 
 # Make status manager available globally for routes
 latest_task_info = status_manager.latest_task_info
 
-# Register organized routes
 from routes import register_all_routes
-register_all_routes(app, cache, logger)
+register_all_routes(app, global_cache, logger)
 
 # Log client startup information
 logger.info("🐙 Octopus Client starting...")
@@ -103,11 +91,8 @@ logger.info(f"Username: {config.USERNAME}")
 
 def run():
     """Main client execution function"""
-    cache.set("login_time", time.time())
-    
-    # Start HTTP status server
-    http_status_server.start()
-    
+    global_cache.set('login_time', str(time.time()), cache_type='startup')
+
     # Wrap tasks to track their status
     def track_heartbeat():
         while True:
@@ -133,6 +118,7 @@ def run():
                 logger.error(f"Plugin update error: {e}")
                 time.sleep(30)
 
+    import threading
     # Start background threads
     heartbeat_thread = threading.Thread(target=track_heartbeat)
     heartbeat_thread.daemon = True
@@ -149,7 +135,7 @@ def run():
 
     # Start Flask app (this will block)
     try:
-        app.run(host="0.0.0.0", port=8081, debug=config.DEBUG)
+        app.run(host=config.CLIENT_HOSTNAME, port=config.CLIENT_PORT, debug=config.DEBUG)
     except KeyboardInterrupt:
         logger.info("Client shutting down...")
         status_manager.update_task("Client", "Stopped", "Client shutdown by user")

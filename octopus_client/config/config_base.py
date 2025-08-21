@@ -6,7 +6,7 @@ Base configuration class with common settings for all environments.
 """
 
 import os
-
+from utils import get_hostname, get_local_ip
 
 class BaseConfig:
     """Base configuration class with default settings."""
@@ -16,6 +16,9 @@ class BaseConfig:
     # =============================================================================
     SERVER_URL = None  # Must be overridden in subclasses
     
+    CLIENT_HOSTNAME = get_hostname()
+    CLIENT_IP = get_local_ip()
+    CLIENT_PORT = 8081
     # =============================================================================
     # CLIENT BEHAVIOR
     # =============================================================================

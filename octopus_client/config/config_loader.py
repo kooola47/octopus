@@ -99,14 +99,6 @@ def load_config(environment: Optional[str] = None) -> Type[BaseConfig]:
             print(f"  - {error}")
         sys.exit(1)
     
-    # Print configuration summary
-    print(f"🐙 Octopus Client - {config_name} Configuration Loaded")
-    print(f"   Environment: {_current_config.ENVIRONMENT}")
-    print(f"   Server URL: {_current_config.SERVER_URL}")
-    print(f"   Debug Mode: {_current_config.DEBUG}")
-    print(f"   Log Level: {_current_config.LOG_LEVEL}")
-    print(f"   Username: {_current_config.USERNAME}")
-    print(f"   Heartbeat Interval: {_current_config.HEARTBEAT_INTERVAL}s")
     
     return _current_config
 

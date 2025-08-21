@@ -7,6 +7,7 @@ Production configuration with optimized settings for performance and stability.
 
 import os
 from .config_base import BaseConfig
+from utils import get_hostname, get_local_ip
 
 
 class ProductionConfig(BaseConfig):
@@ -17,7 +18,10 @@ class ProductionConfig(BaseConfig):
     # =============================================================================
     ENVIRONMENT = "production"
     DEBUG = False
-    
+
+    CLIENT_HOSTNAME = get_hostname()
+    CLIENT_IP = get_local_ip()
+    CLIENT_PORT = 8081
     # =============================================================================
     # SERVER CONNECTION
     # =============================================================================
@@ -49,7 +53,7 @@ class ProductionConfig(BaseConfig):
     # =============================================================================
     ENABLE_PERFORMANCE_MONITORING = False
     DETAILED_ERROR_LOGGING = False
-    AUTO_RELOAD_PLUGINS = False
+    AUTO_RELOAD_PLUGINS = True
     MOCK_EXTERNAL_SERVICES = False
     
     # =============================================================================
