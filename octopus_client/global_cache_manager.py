@@ -28,8 +28,8 @@ class ClientGlobalCacheManager:
         self.server_url = server_url or "http://localhost:5000"
         
         # User identity
-        self._username = None
-        self._client_id = None
+        self._user_name = None
+        self._user_identity = None
         
         # Multiple cache layers
         self._caches = {
@@ -238,7 +238,7 @@ class ClientGlobalCacheManager:
     
     # === User Identity Methods ===
     
-    def set_user_identity(self, username: str, client_id: Optional[str] = None):
+    def set_user_identity(self, user_name: str, user_identity: Optional[str] = None):
         """
         Set the user identity for this client
         
@@ -247,40 +247,40 @@ class ClientGlobalCacheManager:
             client_id: Optional client identifier
         """
         with self._lock:
-            self._username = username
-            self._client_id = client_id
+            self._user_name = user_name
+            self._user_identity = user_identity
             
             # Store in startup cache for persistence
-            self.set('current_username', username, 'startup')
-            if client_id:
-                self.set('current_client_id', client_id, 'startup')
-            
-            self.logger.info(f"User identity set: {username} (client: {client_id})")
+            self.set('current_user_name', user_name, 'startup')
+            if user_identity:
+                self.set('current_user_identity', user_identity, 'startup')
+
+            self.logger.info(f"User identity set: {user_name} (client: {user_identity})")
     
-    def get_current_username(self) -> Optional[str]:
+    def get_current_user_name(self) -> Optional[str]:
         """Get the current user's username"""
-        if self._username:
-            return self._username
+        if self._user_name:
+            return self._user_name
         
         # Try to get from startup cache
-        return self.get('current_username', 'startup')
-    
-    def get_current_client_id(self) -> Optional[str]:
-        """Get the current client ID"""
-        if self._client_id:
-            return self._client_id
+        return self.get('current_user_name', 'startup')
+
+    def get_current_user_identity(self) -> Optional[str]:
+        """Get the current user identity"""
+        if self._user_identity:
+            return self._user_identity
         
         # Try to get from startup cache
-        return self.get('current_client_id', 'startup')
-    
+        return self.get('current_user_identity', 'startup')
+
     def clear_user_identity(self):
         """Clear the user identity"""
         with self._lock:
-            self._username = None
-            self._client_id = None
-            self.delete('current_username', 'startup')
-            self.delete('current_client_id', 'startup')
-            
+            self._user_name = None
+            self._user_identity = None
+            self.delete('current_user_name', 'startup')
+            self.delete('current_user_identity', 'startup')
+
             self.logger.info("User identity cleared")
     
     # === User Preferences Methods ===
@@ -323,9 +323,9 @@ class ClientGlobalCacheManager:
             
             if success:
                 # Sync user profile data if we have a username
-                username = self.get_current_username()
-                if username:
-                    self._sync_user_profile_data(username)
+                user_name = self.get_current_user_name()
+                if user_name:
+                    self._sync_user_profile_data(user_name)
                 
                 # Sync available plugins
                 self._sync_available_plugins()
@@ -374,11 +374,11 @@ class ClientGlobalCacheManager:
         try:
             # Prepare headers with user identity
             headers = {}
-            client_id = self.get_current_client_id()
-            current_user = self.get_current_username()
-            
-            if client_id:
-                headers['X-Client-ID'] = client_id
+            user_identity = self.get_current_user_identity()
+            current_user = self.get_current_user_name()
+
+            if user_identity:
+                headers['X-User-Identity'] = user_identity
             if current_user:
                 headers['X-Username'] = current_user
             
@@ -532,7 +532,7 @@ def get_client_global_cache_manager() -> ClientGlobalCacheManager:
     return _client_global_cache_manager
 
 
-def initialize_client_global_cache(server_url: Optional[str] = None, username: Optional[str] = None) -> ClientGlobalCacheManager:
+def initialize_client_global_cache(server_url: Optional[str] = None, user_name: Optional[str] = None,user_identity: Optional[str] = None) -> ClientGlobalCacheManager:
     """Initialize the client global cache manager"""
     global _client_global_cache_manager
     
@@ -540,8 +540,8 @@ def initialize_client_global_cache(server_url: Optional[str] = None, username: O
         _client_global_cache_manager = ClientGlobalCacheManager(server_url)
     
     # Set user identity if provided
-    if username:
-        _client_global_cache_manager.set_user_identity(username)
+    if user_name:
+        _client_global_cache_manager.set_user_identity(user_name,user_identity)
     
     # Perform initial sync
     _client_global_cache_manager.sync_from_server(force=True)

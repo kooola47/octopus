@@ -18,17 +18,20 @@ Usage:
 import os
 import sys
 import time
+
+# Load config once
+from config import load_config
+config = load_config()  # This will load based on command line args
+
+
+# Initialize global cache once
 from global_cache_manager import initialize_client_global_cache
-from config import load_config, get_current_config
+global_cache = initialize_client_global_cache(config.SERVER_URL, config.USER_NAME,config.USER_IDENTITY)
+
+
 from heartbeat import send_heartbeat
 from pluginhelper import check_plugin_updates
 from utils import get_hostname, get_local_ip, get_client_id
-
-# Load config once
-config = load_config()  # This will load based on command line args
-
-# Initialize global cache once
-global_cache = initialize_client_global_cache(config.SERVER_URL, config.USERNAME)
 
 from scheduler import Scheduler
 from flask import Flask
@@ -87,7 +90,7 @@ logger.info(f"Server URL: {config.SERVER_URL}")
 logger.info(f"Heartbeat interval: {config.HEARTBEAT_INTERVAL}s")
 logger.info(f"Task check interval: {config.TASK_CHECK_INTERVAL}s")
 logger.info(f"Plugins folder: {config.PLUGINS_FOLDER}")
-logger.info(f"Username: {config.USERNAME}")
+logger.info(f"Username: {config.USER_NAME}")
 
 def run():
     """Main client execution function"""
@@ -129,7 +132,7 @@ def run():
     plugin_thread.start()
 
     # Start task execution loop
-    task_loop_thread = threading.Thread(target=task_loop.run, args=(config.USERNAME,))
+    task_loop_thread = threading.Thread(target=task_loop.run, args=(config.USER_NAME,))
     task_loop_thread.daemon = True
     task_loop_thread.start()
 

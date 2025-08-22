@@ -13,9 +13,10 @@ config = get_current_config()
 cache = Cache()
 logger = logging.getLogger("octopus_client")
 
-USERNAME = config.USERNAME
+USER_NAME = config.USER_NAME
 HOSTNAME = config.CLIENT_HOSTNAME
 IP_ADDRESS = config.CLIENT_IP
+CLIENT_VERSION = config.CLIENT_VERSION
 
 def get_cpu_usage():
     """Get current CPU usage percentage"""
@@ -36,13 +37,14 @@ def get_memory_usage():
 
 def send_heartbeat():
     data = {
-        "username": config.USERNAME,
+        "username": USER_NAME,
         "hostname": HOSTNAME,
         "ip": IP_ADDRESS,
         "login_time": cache.get("login_time") or time.time(),
         "since_last_heartbeat": time.time() - (cache.get("last_heartbeat") or time.time()),
         "cpu_usage": get_cpu_usage(),
-        "memory_usage": get_memory_usage()
+        "memory_usage": get_memory_usage(),
+        "client_version": CLIENT_VERSION
     }
     try:
         requests.post(f"{config.SERVER_URL}/heartbeat", json=data, timeout=5)

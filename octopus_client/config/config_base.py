@@ -12,13 +12,36 @@ class BaseConfig:
     """Base configuration class with default settings."""
     
     # =============================================================================
-    # SERVER CONNECTION (must be defined in subclasses)
+    # ENVIRONMENT IDENTIFICATION
     # =============================================================================
-    SERVER_URL = None  # Must be overridden in subclasses
-    
+    ENVIRONMENT = "base"
+    DEBUG = False
+    ENVIRONMENT = "base"
+    DEBUG = False
+    SERVER_URL = os.getenv("OCTOPUS_SERVER_URL", "http://base-server:18900")
+    # =============================================================================
+    # Client Configuration
+    # =============================================================================
+    CLIENT_NAME_PREFIX = ""
     CLIENT_HOSTNAME = get_hostname()
     CLIENT_IP = get_local_ip()
-    CLIENT_PORT = 8081
+    CLIENT_PORT = 8900
+    CLIENT_DOMAIN = os.environ.get("USERDOMAIN", "")
+    CLIENT_VERSION = "2025.08.15.140922"
+    CLIENT_METADATA = {
+        "version": "1.0.0",
+        "capabilities": ["plugin_execution", "task_scheduling"],
+        "environment": "base"
+    }
+    # =============================================================================
+    # Client Configuration
+    # =============================================================================
+    USER_NAME = os.environ.get("OCTOPUS_SamAccountName", "Tuser")
+    USER_DISPLAY_NAME = os.environ.get("OCTOPUS_DisplayName", "Display,Name")
+    USER_IDENTITY = os.environ.get("OCTOPUS_EmployeeNumber", "Gnumber")
+    USER_EMAIL = os.environ.get("OCTOPUS_EmailAddress", "myemail@outlook.com")
+    USER_CHROMEUSERDATA = os.environ.get("OCTOPUS_ChromeUserData", "C:\\Users\\aries\\AppData\\Local\\Google\\Chrome\\User Data\\Default")
+
     # =============================================================================
     # CLIENT BEHAVIOR
     # =============================================================================
@@ -52,21 +75,7 @@ class BaseConfig:
     TASKS_ENDPOINT = "/tasks"
     PLUGINS_ENDPOINT = "/plugins"
     
-    # =============================================================================
-    # CLIENT IDENTIFICATION
-    # =============================================================================
-    CLIENT_NAME_PREFIX = "client"  # Will be suffixed with PID
-    USERNAME = os.getenv("OCTOPUS_USERNAME", "default_user")  # Can be overridden via environment variable
-    CLIENT_METADATA = {
-        "version": "1.0.0",
-        "capabilities": ["plugin_execution", "task_scheduling"]
-    }
-    
-    # =============================================================================
-    # ENVIRONMENT IDENTIFICATION
-    # =============================================================================
-    ENVIRONMENT = "base"
-    DEBUG = False
+
     
     @classmethod
     def get_config_summary(cls):

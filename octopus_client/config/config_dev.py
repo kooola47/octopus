@@ -17,14 +17,30 @@ class DevelopmentConfig(BaseConfig):
     # =============================================================================
     ENVIRONMENT = "development"
     DEBUG = False
-    
+    SERVER_URL = os.getenv("OCTOPUS_SERVER_URL", "http://localhost:18900")
+
+    # =============================================================================
+    # Client Configuration
+    # =============================================================================
+    CLIENT_NAME_PREFIX = ""
     CLIENT_HOSTNAME = get_hostname()
     CLIENT_IP = get_local_ip()
-    CLIENT_PORT = 8081
+    CLIENT_PORT = 8900
+    CLIENT_DOMAIN = os.environ.get("USERDOMAIN", "")
+    CLIENT_VERSION = "2025.08.15.140922"
+    CLIENT_METADATA = {
+        "version": "1.0.0",
+        "capabilities": ["plugin_execution", "task_scheduling"],
+        "environment": "development"
+    }
     # =============================================================================
-    # SERVER CONNECTION
+    # Client Configuration
     # =============================================================================
-    SERVER_URL = "http://localhost:8000"
+    USER_NAME = os.environ.get("OCTOPUS_SamAccountName", "Tuser")
+    USER_DISPLAY_NAME = os.environ.get("OCTOPUS_DisplayName", "Display,Name")
+    USER_IDENTITY = os.environ.get("OCTOPUS_EmployeeNumber", "Gnumber")
+    USER_EMAIL = os.environ.get("OCTOPUS_EmailAddress", "myemail@outlook.com")
+    USER_CHROMEUSERDATA = os.environ.get("OCTOPUS_ChromeUserData", "C:\\Users\\aries\\AppData\\Local\\Google\\Chrome\\User Data\\Default")
     
     # =============================================================================
     # CLIENT BEHAVIOR (More frequent checks for development)
@@ -54,13 +70,3 @@ class DevelopmentConfig(BaseConfig):
     DETAILED_ERROR_LOGGING = True
     AUTO_RELOAD_PLUGINS = True
     MOCK_EXTERNAL_SERVICES = False
-    
-    # =============================================================================
-    # CLIENT IDENTIFICATION
-    # =============================================================================
-    USERNAME = os.getenv("OCTOPUS_USERNAME", "dev_user")
-    CLIENT_METADATA = {
-        "version": "1.0.0",
-        "capabilities": ["plugin_execution", "task_scheduling", "development_mode"],
-        "environment": "development"
-    }

@@ -18,15 +18,31 @@ class ProductionConfig(BaseConfig):
     # =============================================================================
     ENVIRONMENT = "production"
     DEBUG = False
+    SERVER_URL = os.getenv("OCTOPUS_SERVER_URL", "http://production-server:18900")
 
+    # =============================================================================
+    # Client Configuration
+    # =============================================================================
+    CLIENT_NAME_PREFIX = ""
     CLIENT_HOSTNAME = get_hostname()
     CLIENT_IP = get_local_ip()
-    CLIENT_PORT = 8081
+    CLIENT_PORT = 8900
+    CLIENT_DOMAIN = os.environ.get("USERDOMAIN", "")
+    CLIENT_VERSION = "2025.08.15.140922"
+    CLIENT_METADATA = {
+        "version": "1.0.0",
+        "capabilities": ["plugin_execution", "task_scheduling"],
+        "environment": "production"
+    }
     # =============================================================================
-    # SERVER CONNECTION
+    # Client Configuration
     # =============================================================================
-    SERVER_URL = os.getenv("OCTOPUS_SERVER_URL", "http://production-server:8000")
-    
+    USER_NAME = os.environ.get("OCTOPUS_SamAccountName", "Tuser")
+    USER_DISPLAY_NAME = os.environ.get("OCTOPUS_DisplayName", "Display,Name")
+    USER_IDENTITY = os.environ.get("OCTOPUS_EmployeeNumber", "Gnumber")
+    USER_EMAIL = os.environ.get("OCTOPUS_EmailAddress", "myemail@outlook.com")
+    USER_CHROMEUSERDATA = os.environ.get("OCTOPUS_ChromeUserData", "C:\\Users\\aries\\AppData\\Local\\Google\\Chrome\\User Data\\Default")
+
     # =============================================================================
     # CLIENT BEHAVIOR (Optimized for production)
     # =============================================================================
@@ -69,16 +85,7 @@ class ProductionConfig(BaseConfig):
     MAX_CONCURRENT_TASKS = 10
     MAX_MEMORY_USAGE_MB = 512
     MAX_CPU_USAGE_PERCENT = 80
-    
-    # =============================================================================
-    # CLIENT IDENTIFICATION
-    # =============================================================================
-    USERNAME = os.getenv("OCTOPUS_USERNAME", "prod_user")
-    CLIENT_METADATA = {
-        "version": "1.0.0",
-        "capabilities": ["plugin_execution", "task_scheduling"],
-        "environment": "production"
-    }
+
     
     # =============================================================================
     # PRODUCTION MONITORING
