@@ -255,7 +255,7 @@ class ClientGlobalCacheManager:
             if user_identity:
                 self.set('current_user_identity', user_identity, 'startup')
 
-            self.logger.info(f"User identity set: {user_name} (client: {user_identity})")
+            self.logger.info(f"User identity set: user_name: {user_name}, user_identity: {user_identity}")
     
     def get_current_user_name(self) -> Optional[str]:
         """Get the current user's username"""
@@ -536,6 +536,7 @@ def initialize_client_global_cache(server_url: Optional[str] = None, user_name: 
     """Initialize the client global cache manager"""
     global _client_global_cache_manager
     
+
     if _client_global_cache_manager is None:
         _client_global_cache_manager = ClientGlobalCacheManager(server_url)
     

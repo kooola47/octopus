@@ -24,27 +24,6 @@ from config import load_config
 config = load_config()  # This will load based on command line args
 
 
-# Initialize global cache once
-from global_cache_manager import initialize_client_global_cache
-global_cache = initialize_client_global_cache(config.SERVER_URL, config.USER_NAME,config.USER_IDENTITY)
-
-
-from heartbeat import send_heartbeat
-from pluginhelper import check_plugin_updates
-from utils import get_hostname, get_local_ip, get_client_id
-
-from scheduler import Scheduler
-from flask import Flask
-app = Flask(__name__)
-
-# Import organized modules
-from core.task_execution import TaskExecutor
-from core.server_communication import ServerCommunicator
-from core.status_manager import StatusManager
-from core.task_loop import TaskExecutionLoop
-
-scheduler = Scheduler()
-
 # Setup logs folder and logging using config
 import logging
 os.makedirs(os.path.dirname(config.LOG_FILE), exist_ok=True)
@@ -56,14 +35,30 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-
 # Disable werkzeug's default HTTP access logging for consistency
 werkzeug_logger = logging.getLogger('werkzeug')
 werkzeug_logger.disabled = True
-
 logger = logging.getLogger("octopus_client")
 
-## global_cache already initialized above, no need to re-initialize here
+
+# Initialize global cache once
+from global_cache_manager import initialize_client_global_cache
+logging.info(f"Initializing global cache: server_url:{config.SERVER_URL}, user_name:{config.USER_NAME}, user_identity:{config.USER_IDENTITY}")
+global_cache = initialize_client_global_cache(config.SERVER_URL, config.USER_NAME,config.USER_IDENTITY)
+
+
+from heartbeat import send_heartbeat
+from pluginhelper import check_plugin_updates
+from scheduler import Scheduler
+scheduler = Scheduler()
+from flask import Flask
+app = Flask(__name__)
+# Import organized modules
+from core.task_execution import TaskExecutor
+from core.server_communication import ServerCommunicator
+from core.status_manager import StatusManager
+from core.task_loop import TaskExecutionLoop
+
 
 # Initialize core components with config values
 status_manager = StatusManager()
@@ -90,7 +85,9 @@ logger.info(f"Server URL: {config.SERVER_URL}")
 logger.info(f"Heartbeat interval: {config.HEARTBEAT_INTERVAL}s")
 logger.info(f"Task check interval: {config.TASK_CHECK_INTERVAL}s")
 logger.info(f"Plugins folder: {config.PLUGINS_FOLDER}")
+logger.info(f"Plugins update interval: {config.PLUGINS_UPDATE_INTERVAL}s")
 logger.info(f"Username: {config.USER_NAME}")
+logger.info(f"User identity: {config.USER_IDENTITY}")
 
 def run():
     """Main client execution function"""
@@ -115,11 +112,11 @@ def run():
                 status_manager.update_task("Plugin Updates", "Running", "Checking for plugin updates")
                 check_plugin_updates()
                 status_manager.update_task("Plugin Updates", "Success", f"Last check: {time.strftime('%H:%M:%S')}")
-                time.sleep(30)  # Check every 30 seconds
+                time.sleep(config.PLUGINS_UPDATE_INTERVAL)  # Check every 30 seconds
             except Exception as e:
                 status_manager.update_task("Plugin Updates", "Error", f"Plugin check failed: {str(e)}")
                 logger.error(f"Plugin update error: {e}")
-                time.sleep(30)
+                time.sleep(config.PLUGINS_UPDATE_INTERVAL)
 
     import threading
     # Start background threads

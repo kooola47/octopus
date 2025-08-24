@@ -13,6 +13,7 @@ from .nlp_api_routes import register_nlp_api_routes
 from .performance_api_routes import register_performance_api_routes
 from .auth_routes import register_auth_routes
 from .user_routes import register_user_routes
+from .cache_api_routes import register_cache_api_routes
 
 def register_all_routes(app, cache, logger):
     """Register all route modules with the Flask app"""
@@ -24,3 +25,4 @@ def register_all_routes(app, cache, logger):
     register_plugin_api_routes(app, cache, logger)
     register_nlp_api_routes(app, cache, logger)
     register_performance_api_routes(app, cache, logger)
+    register_cache_api_routes(app, cache, logger)

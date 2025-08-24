@@ -50,7 +50,7 @@ class ProductionConfig(BaseConfig):
     TASK_CHECK_INTERVAL = 30  # Less frequent task checks for production
     MAX_RETRY_ATTEMPTS = 3    # Standard retry attempts
     RETRY_DELAY = 5          # Longer delay for production stability
-    
+    PLUGINS_UPDATE_INTERVAL = 30    # Check for plugin updates every 30 seconds
     # =============================================================================
     # LOGGING SETTINGS (Minimal for production)
     # =============================================================================

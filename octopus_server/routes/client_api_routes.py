@@ -3,6 +3,14 @@
 ===================
 
 Flask routes for client API communication.
+
+---
+Terminology:
+    - Client: The octopus_client service running on a user's PC. Each client is a unique agent instance that communicates with the Octopus server and executes commands/tasks on behalf of the user.
+    - User: The human user of the PC and octopus_client. User-specific data (profile, preferences, etc.) is associated with this identity.
+
+This distinction is important: 'client' refers to the agent/service and its machine, while 'user' refers to the person and their personalized data.
+---
 """
 
 import time
@@ -13,6 +21,7 @@ from dbhelper import (
 )
 from performance_monitor import time_request
 import sqlite3
+from global_cache_manager import get_global_cache_manager
 
 def register_client_api_routes(app, cache, logger):
     """Register client API routes with the Flask app"""
@@ -20,8 +29,8 @@ def register_client_api_routes(app, cache, logger):
     @app.route("/latest-task")
     def latest_task():
         """Get the latest scheduled task"""
-        # Example: Replace with your actual cache/task retrieval logic
-        latest_task = cache.get("latest_task")  # Should return a dict or None
+        cache_manager = get_global_cache_manager()
+        latest_task = cache_manager.get("latest_task")  # Should return a dict or None
         if not latest_task:
             return render_template_string("""
                 <h2>No scheduled tasks found.</h2>

@@ -54,7 +54,7 @@ class BaseConfig:
     # PLUGIN SETTINGS
     # =============================================================================
     PLUGINS_FOLDER = "./plugins"
-    
+    PLUGINS_UPDATE_INTERVAL = 30  # Check for plugin updates every 30 seconds
     # =============================================================================
     # CACHE SETTINGS
     # =============================================================================

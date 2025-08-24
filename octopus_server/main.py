@@ -22,77 +22,6 @@ from flask import Flask
 from cache import Cache
 from config import *
 
-# Set template_folder and static_folder for best practice
-PAGES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pages")
-STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
-
-# Create directories if they don't exist
-for directory in [PAGES_DIR, STATIC_DIR]:
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-app = Flask(
-    __name__,
-    template_folder=PAGES_DIR,  # Use pages directory for modern templates
-    static_folder=STATIC_DIR
-)
-
-# Configure Flask secret key for sessions (required for authentication)
-app.secret_key = 'octopus-secret-key-change-in-production'
-
-# Configure session settings for proper persistence
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
-
-cache = Cache()
-
-# Custom template filter for datetime formatting
-@app.template_filter('datetimeformat')
-def datetimeformat(value):
-    if value is None:
-        return 'Unknown'
-    try:
-        # If it's a timestamp (float), convert to datetime
-        if isinstance(value, (int, float)):
-            dt = datetime.fromtimestamp(value)
-            return dt.strftime('%m/%d/%Y %H:%M:%S')
-        else:
-            return str(value)
-    except:
-        return str(value)
-
-@app.template_filter('seconds_to_human')
-def seconds_to_human_filter(seconds):
-    try:
-        seconds = int(seconds)
-        if seconds < 60:
-            return f"{seconds}s"
-        elif seconds < 3600:
-            return f"{seconds//60}m {seconds%60}s"
-        elif seconds < 86400:
-            return f"{seconds//3600}h {(seconds%3600)//60}m"
-        else:
-            days = seconds // 86400
-            hours = (seconds % 86400) // 3600
-            return f"{days}d {hours}h"
-    except Exception:
-        return str(seconds)
-
-@app.template_filter('dateformat')
-def dateformat(value):
-    if value is None:
-        return 'Unknown'
-    try:
-        # If it's a timestamp (float), convert to datetime
-        if isinstance(value, (int, float)):
-            dt = datetime.fromtimestamp(value)
-            return dt.strftime('%m/%d/%Y')
-        else:
-            return str(value)
-    except:
-        return str(value)
 
 # Setup logs folder and logging
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
@@ -104,30 +33,19 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-
 # Disable werkzeug's default HTTP access logging and create custom one
 werkzeug_logger = logging.getLogger('werkzeug')
 werkzeug_logger.disabled = True
-
-# Create custom HTTP request logger
-http_logger = logging.getLogger("octopus_server.http")
-
-# Custom middleware to log HTTP requests in standardized format
-def log_request_info():
-    """Log HTTP request in standardized format"""
-    from flask import request
-    http_logger.info(f"{request.remote_addr} {request.method} {request.path} {request.environ.get('SERVER_PROTOCOL', 'HTTP/1.1')}")
-
-# Register the after_request handler
-@app.after_request
-def after_request(response):
-    # Log the request with response status in standardized format
-    from flask import request
-    http_logger.info(f"{request.remote_addr} {request.method} {request.path} -> {response.status_code} {response.status}")
-    return response
-
 logger = logging.getLogger("octopus_server")
 
+
+
+from models.flask_app_model import FlaskAppModel
+flask_app_model = FlaskAppModel()
+app = flask_app_model.config_flask_app(logger)
+
+
+cache = Cache()
 # Initialize database
 from dbhelper import init_db
 init_db()

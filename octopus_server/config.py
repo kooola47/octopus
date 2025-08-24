@@ -54,3 +54,12 @@ HEARTBEAT_ENDPOINT = "/heartbeat"
 TASKS_ENDPOINT = "/tasks"
 PLUGINS_ENDPOINT = "/plugins"
 DASHBOARD_ENDPOINT = "/"
+
+# =============================================================================
+# HTML AND STATIC FILES
+# =============================================================================
+# Set template_folder and static_folder for best practice
+PAGES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pages")
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+#PAGES_DIR = "./pages"
+#STATIC_DIR = "./static"

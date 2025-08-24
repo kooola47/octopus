@@ -49,7 +49,7 @@ class DevelopmentConfig(BaseConfig):
     TASK_CHECK_INTERVAL = 5   # More frequent task checks for development
     MAX_RETRY_ATTEMPTS = 5    # More retries for development debugging
     RETRY_DELAY = 1          # Shorter delay for faster development iteration
-    
+    PLUGINS_UPDATE_INTERVAL = 30  # Check for plugin updates every 30 seconds
     # =============================================================================
     # LOGGING SETTINGS (Verbose for development)
     # =============================================================================
