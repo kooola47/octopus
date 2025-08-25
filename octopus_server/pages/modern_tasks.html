@@ -708,11 +708,17 @@
                 .then(response => response.json())
                 .then(data => {
                     functionSelect.innerHTML = '<option value="">Select Function</option>';
-                    
-                    if (data.functions) {
+                    // Ensure data.functions is an array
+                    let functions = [];
+                    if (Array.isArray(data.functions)) {
+                        functions = data.functions;
+                    } else if (typeof data.functions === 'object' && data.functions !== null) {
+                        // If functions is an object (dict), convert to array
+                        functions = Object.values(data.functions);
+                    }
+                    if (functions.length > 0) {
                         // Filter out functions starting with "_" (private functions)
-                        const publicFunctions = data.functions.filter(func => !func.name.startsWith('_'));
-                        
+                        const publicFunctions = functions.filter(func => func.name && !func.name.startsWith('_'));
                         publicFunctions.forEach(func => {
                             // Add to function dropdown
                             const functionOption = document.createElement('option');

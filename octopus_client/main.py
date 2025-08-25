@@ -135,7 +135,7 @@ def run():
 
     # Start Flask app (this will block)
     try:
-        app.run(host=config.CLIENT_HOSTNAME, port=config.CLIENT_PORT, debug=config.DEBUG)
+        app.run(host='localhost', port=config.CLIENT_PORT, debug=config.DEBUG)
     except KeyboardInterrupt:
         logger.info("Client shutting down...")
         status_manager.update_task("Client", "Stopped", "Client shutdown by user")

@@ -79,7 +79,8 @@ def init_db():
                     login_time REAL,
                     since_last_heartbeat REAL,
                     timestamp REAL NOT NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(username, hostname, ip_address)
                 )
             ''')
             conn.execute('''

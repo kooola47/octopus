@@ -13,13 +13,13 @@ from dbhelper import (
     compute_task_status, get_db_file, DB_FILE
 )
 
-def register_dashboard_api_routes(app, cache, logger):
+def register_dashboard_api_routes(app, global_cache, logger):
     """Register dashboard API routes with the Flask app"""
 
     @app.route("/api/clients", methods=["GET"])
     def api_clients():
         """API endpoint to get client data for statistics dashboard"""
-        clients = cache.all()
+        clients = global_cache.all()
         now = time.time()
         active_clients = get_active_clients(clients, now=now, timeout=60)  # Align with "online" status
         
@@ -40,7 +40,7 @@ def register_dashboard_api_routes(app, cache, logger):
         status_filter = request.args.get('status', '').strip()
         
         tasks = get_tasks()
-        clients = cache.all()
+        clients = global_cache.all()
         now = time.time()
         active_clients = get_active_clients(clients, now=now, timeout=60)  # Align with "online" status
         
@@ -248,7 +248,7 @@ def register_dashboard_api_routes(app, cache, logger):
     def api_dashboard_data():
         """API endpoint to get fresh dashboard data for AJAX updates"""
         tasks = get_tasks()
-        clients = cache.all()
+        clients = global_cache.all()
         now = time.time()
         active_clients = get_active_clients(clients, now=now, timeout=60)  # Align with "online" status
         

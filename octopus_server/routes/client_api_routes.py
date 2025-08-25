@@ -21,16 +21,15 @@ from dbhelper import (
 )
 from performance_monitor import time_request
 import sqlite3
-from global_cache_manager import get_global_cache_manager
 
-def register_client_api_routes(app, cache, logger):
+def register_client_api_routes(app, global_cache, logger):
     """Register client API routes with the Flask app"""
 
     @app.route("/latest-task")
     def latest_task():
         """Get the latest scheduled task"""
-        cache_manager = get_global_cache_manager()
-        latest_task = cache_manager.get("latest_task")  # Should return a dict or None
+        
+        latest_task = global_cache.get("latest_task")  # Should return a dict or None
         if not latest_task:
             return render_template_string("""
                 <h2>No scheduled tasks found.</h2>

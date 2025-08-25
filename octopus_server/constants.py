@@ -246,36 +246,15 @@ class ClientStatus:
         """Normalize status to standard format"""
         if not status:
             return cls.OFFLINE
-        
         status_lower = status.lower()
-        
+        # Map to primary states
         if status_lower in ['online', 'connected', 'idle', 'busy']:
             return cls.ONLINE
         elif status_lower in ['offline', 'disconnected', 'error']:
             return cls.OFFLINE
         else:
             return cls.OFFLINE
-    
-    @classmethod
-    def get_badge_class(cls, status):
-        """Get Bootstrap badge class for status"""
-        if not status:
-            return "bg-secondary"
-            
-        status_lower = status.lower()
-        
-        if status_lower in ['online', 'connected']:
-            return "bg-success"
-        elif status_lower == 'idle':
-            return "bg-info"
-        elif status_lower == 'busy':
-            return "bg-warning"
-        elif status_lower in ['offline', 'disconnected']:
-            return "bg-secondary"
-        elif status_lower == 'error':
-            return "bg-danger"
-        else:
-            return "bg-secondary"
+
     
     @classmethod
     def get_icon(cls, status):

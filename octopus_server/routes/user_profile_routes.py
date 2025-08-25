@@ -30,25 +30,12 @@ def get_user_params_manager():
     
     return UserParametersManager(DBHelper())
 
-def get_cache_manager():
-    """Get cache manager instance"""
-    try:
-        from cache import CacheManager
-        return CacheManager()
-    except ImportError:
-        # Create a simple in-memory cache if cache module not available
-        class SimpleCacheManager:
-            def __init__(self):
-                self.cache = {}
-            
-            def get(self, key):
-                return self.cache.get(key)
-            
-            def set(self, key, value, ttl=None):
-                self.cache[key] = value
-                return True
-        
-        return SimpleCacheManager()
+## Use global_cache instead of legacy get_cache_manager
+global_cache = None  # Will be set by main.py after initialization
+# Add a setter for global_cache so main.py can inject it
+def set_global_cache(cache):
+    global global_cache
+    global_cache = cache
 
 @user_profile_bp.route('/profile')
 def profile():
@@ -107,8 +94,18 @@ def get_parameters():
     try:
         params_manager = get_user_params_manager()
         category = request.args.get('category')
-        
-        parameters = params_manager.get_user_parameters(username, category)
+        # Try to get user profile from cache first
+        user_profile = None
+        if global_cache:
+            user_profile = global_cache.get(f"{username}", 'user_profiles', None, None)
+        if not user_profile:
+            user_parameters = params_manager.get_user_parameters(username)
+            if global_cache:
+                global_cache.set(f"{username}", {"parameters": user_parameters}, 'user_profiles')
+        # Extract parameters for the category
+        parameters = user_profile.get('parameters', {}) if user_profile else {}
+        if category:
+            parameters = parameters.get(category, {})
         return jsonify({"success": True, "parameters": parameters})
     
     except Exception as e:
@@ -142,10 +139,12 @@ def set_parameter():
         )
         
         if success:
-            # Cache the updated parameters
-            cache_manager = get_cache_manager()
-            params_manager.cache_user_parameters(username, cache_manager)
-            
+            # Cache the updated parameters using global_cache
+            params_manager.cache_user_parameters(username, global_cache)
+            # Also update user profile in cache (user_profiles namespace)
+            user_profile = params_manager.get_user_profile(username)
+            if global_cache:
+                global_cache.set(f"{username}", user_profile, 'user_profiles')
             return jsonify({"success": True, "message": "Parameter saved successfully"})
         else:
             return jsonify({"error": "Failed to save parameter"}), 500
@@ -166,10 +165,12 @@ def delete_parameter(category, param_name):
         success = params_manager.delete_parameter(username, category, param_name)
         
         if success:
-            # Update cache
-            cache_manager = get_cache_manager()
-            params_manager.cache_user_parameters(username, cache_manager)
-            
+            # Update cache using global_cache
+            params_manager.cache_user_parameters(username, global_cache)
+            # Also update user profile in cache (user_profiles namespace)
+            user_profile = params_manager.get_user_profile(username)
+            if global_cache:
+                global_cache.set(f"{username}", user_profile, 'user_profiles')
             return jsonify({"success": True, "message": "Parameter deleted successfully"})
         else:
             return jsonify({"error": "Parameter not found"}), 404
@@ -219,6 +220,10 @@ def create_category():
         )
         
         if success:
+            # Also update user profile in cache (user_profiles namespace)
+            user_profile = params_manager.get_user_profile(username)
+            if global_cache:
+                global_cache.set(f"{username}", user_profile, 'user_profiles')
             return jsonify({"success": True, "message": "Category created successfully"})
         else:
             return jsonify({"error": "Failed to create category"}), 500
@@ -237,10 +242,8 @@ def refresh_cache():
     try:
         params_manager = get_user_params_manager()
         
-        # Cache all parameters
-        cache_manager = get_cache_manager()
-        success = params_manager.cache_user_parameters(username, cache_manager)
-        
+        # Cache all parameters using global_cache
+        success = params_manager.cache_user_parameters(username, global_cache)
         if success:
             return jsonify({"success": True, "message": "Cache refreshed successfully"})
         else:
@@ -279,19 +282,14 @@ def export_parameters():
 def get_user_parameter(username: str, category: str, param_name: str, default_value=None):
     """Helper function for plugins to get user parameters from cache"""
     try:
-        cache_manager = get_cache_manager()
-        
-        # Try to get from cache first
+        # Try to get from global_cache first
         cache_key = f"user_params_{username}_{category}"
-        cached_params = cache_manager.get(cache_key)
-        
+        cached_params = global_cache.get(cache_key, 'startup', None, None)
         if cached_params and param_name in cached_params:
             return cached_params[param_name]['value']
-        
         # Fall back to database
         params_manager = get_user_params_manager()
         return params_manager.get_parameter(username, category, param_name, default_value)
-    
     except Exception as e:
         logger.error(f"Error getting user parameter {category}.{param_name} for {username}: {e}")
         return default_value
@@ -299,24 +297,17 @@ def get_user_parameter(username: str, category: str, param_name: str, default_va
 def get_user_category_parameters(username: str, category: str):
     """Helper function for plugins to get all parameters in a category"""
     try:
-        cache_manager = get_cache_manager()
-        
-        # Try to get from cache first
+        # Try to get from global_cache first
         cache_key = f"user_params_{username}_{category}"
-        cached_params = cache_manager.get(cache_key)
-        
+        cached_params = global_cache.get(cache_key, 'startup', None, None)
         if cached_params:
             return {name: info['value'] for name, info in cached_params.items()}
-        
         # Fall back to database
         params_manager = get_user_params_manager()
         all_params = params_manager.get_user_parameters(username, category)
-        
         if category in all_params:
             return {name: info['value'] for name, info in all_params[category].items()}
-        
         return {}
-    
     except Exception as e:
         logger.error(f"Error getting user category {category} for {username}: {e}")
         return {}

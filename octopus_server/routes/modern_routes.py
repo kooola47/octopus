@@ -10,17 +10,18 @@ import math
 import sqlite3
 import logging
 import os
+from anyio import current_time
 from flask import request, render_template, url_for, jsonify, Response
 from dbhelper import get_db_file, get_tasks, get_active_clients, add_task, assign_all_tasks, delete_task
 from plugin_discovery import PluginDiscovery
-from plugin_cache_manager import get_plugin_cache_manager
-from client_cache_manager import get_client_cache_manager
+from global_cache_manager import GlobalCacheManager
 
 # Get logger
 logger = logging.getLogger(__name__)
 
-def register_modern_routes(app, cache, logger):
-    """Register modern UI routes with the Flask app"""
+
+def register_modern_routes(app, global_cache: GlobalCacheManager, logger):
+    """Register modern UI routes with the Flask app using the unified global cache manager"""
 
     @app.route("/modern")
     @app.route("/modern/dashboard")
@@ -28,7 +29,7 @@ def register_modern_routes(app, cache, logger):
         """Modern dashboard page"""
         try:
             # Get dashboard statistics
-            stats = get_dashboard_stats(cache)
+            stats = get_dashboard_stats(global_cache)
             
             # Get recent activity
             recent_activity = get_recent_activity(limit=10)
@@ -64,40 +65,67 @@ def register_modern_routes(app, cache, logger):
             page_size = int(request.args.get('page_size', 25))
             search = request.args.get('search', '').strip()
             status_filter = request.args.get('status', '').strip()
-            
-            # Get clients from cache
-            client_cache = get_client_cache_manager()
-            clients, total_clients = client_cache.get_clients_paginated(
-                page=page,
-                page_size=page_size,
-                search=search,
-                status_filter=status_filter
-            )
-            
-            # Calculate pagination
-            total_pages = math.ceil(total_clients / page_size) if total_clients > 0 else 1
-            
-            # Get client statistics from cache
-            stats = client_cache.get_client_stats()
-            
+
+            # Get all clients from cache (or fallback)
+            all_clients = global_cache.get_by_cache_type('clients')
+            if isinstance(all_clients, dict):
+                all_clients = list(all_clients.values())
+            logger.info(f"Loaded clients from cache: {len(all_clients)} found")
+            if not all_clients:
+                # fallback to DB if cache is empty
+                all_clients, _ = get_clients_paginated(page=1, page_size=10000)
+
+            # Apply search and status filter
+            filtered_clients = all_clients
+            if search:
+                filtered_clients = [c for c in filtered_clients if search.lower() in c.get('name', '').lower()]
+            if status_filter:
+                filtered_clients = [c for c in filtered_clients if c.get('status') == status_filter]
+
+            # Pagination
+            total_clients = len(filtered_clients)
+            total_pages = max(1, math.ceil(total_clients / page_size))
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_clients = filtered_clients[start_idx:end_idx]
+
+            stats = {}
+            online_clients, idle_clients, offline_clients = 0, 0, 0
+            for row in all_clients:
+                time_diff = time.time() - row['last_heartbeat']
+                if time_diff < 150:
+                    online_clients += 1
+                    row['status'] = 'online'
+                elif time_diff < 300:
+                    idle_clients += 1
+                    row['status'] = 'idle'
+                else:
+                    offline_clients += 1
+                    row['status'] = 'offline'
+
+            stats['online_clients'] = online_clients
+            stats['idle_clients'] = idle_clients
+            stats['offline_clients'] = offline_clients
+            stats['total_clients'] = len(all_clients)
+
             return render_template('modern_clients.html',
-                                 clients=clients,
-                                 stats=stats,
-                                 current_page=page,
-                                 page_size=page_size,
-                                 total_pages=total_pages,
-                                 total_clients=total_clients,
-                                 current_timestamp=time.time())
+                                clients=paginated_clients,
+                                stats=stats,
+                                current_page=page,
+                                page_size=page_size,
+                                total_pages=total_pages,
+                                total_clients=total_clients,
+                                current_timestamp=time.time())
         except Exception as e:
             logger.error(f"Error loading modern clients page: {e}")
             return render_template('modern_clients.html',
-                                 clients=[],
-                                 stats={},
-                                 current_page=1,
-                                 page_size=25,
-                                 total_pages=1,
-                                 total_clients=0,
-                                 current_timestamp=time.time())
+                                clients=[],
+                                stats={},
+                                current_page=1,
+                                page_size=25,
+                                total_pages=1,
+                                total_clients=0,
+                                current_timestamp=time.time())
 
     @app.route("/modern/tasks")
     def modern_tasks():
@@ -126,24 +154,33 @@ def register_modern_routes(app, cache, logger):
             
             # Get task statistics
             stats = get_task_stats()
-            
+            logger.info(f"Task statistics: {stats}")
             # Get available owners for filter dropdown
-            client_cache = get_client_cache_manager()
-            active_clients = client_cache.get_active_clients()
+
+            active_clients = global_cache.get_by_cache_type('clients')
+            if isinstance(active_clients, dict):
+                active_clients_list = list(active_clients.keys())
+            else:
+                active_clients_list = active_clients if isinstance(active_clients, list) else []
             legacy_owners = get_available_owners()
-            combined_owners = sorted(set(active_clients + legacy_owners))
+            combined_owners = sorted(set(active_clients_list + legacy_owners))
             regular_owners = [owner for owner in combined_owners if owner not in ["ALL", "Anyone"]]
             # Add special owner options without duplicates
             available_owners = ["ALL", "Anyone"] + regular_owners
             
-            # Get plugin names for create task modal
-            plugin_names = get_available_plugins()
-            
+            # Get plugin metadata for create task modal (dict: plugin_name -> meta)
+            plugins_dict = global_cache.get('plugins', 'startup', None, None)
+            if not isinstance(plugins_dict, dict):
+                plugins_dict = {}
+            # plugin_names for dropdown, plugin_functions for JS/UI
+            plugin_names = [p.get('file').replace('.py', '') for p in plugins_dict.values() if 'file' in p]
+            plugin_functions = {k.replace('.py',''): v.get('functions', []) for k, v in plugins_dict.items() if 'file' in v}
             return render_template('modern_tasks.html',
                                  tasks=tasks,
                                  stats=stats,
                                  available_owners=available_owners,
                                  plugin_names=plugin_names,
+                                 plugin_functions=plugin_functions,
                                  owner_options=available_owners,
                                  current_page=page,
                                  page_size=page_size,
@@ -156,7 +193,8 @@ def register_modern_routes(app, cache, logger):
                                  tasks=[],
                                  stats={},
                                  available_owners=[],
-                                 plugin_names=['web_utils', 'file_utils', 'system_utils'],
+                                 plugin_names=[],
+                                 plugin_functions={},
                                  owner_options=[],
                                  current_page=1,
                                  page_size=25,
@@ -226,8 +264,8 @@ def register_modern_routes(app, cache, logger):
     def api_client_details(client_id):
         """Get detailed information about a specific client from cache"""
         try:
-            client_cache = get_client_cache_manager()
-            client = client_cache.get_client_by_id(client_id)
+            
+            client = global_cache.get(client_id,'clients')
             
             if not client:
                 return {"error": "Client not found"}, 404
@@ -322,8 +360,7 @@ def register_modern_routes(app, cache, logger):
     def api_delete_client(client_id):
         """Delete a client using cache manager for dual cache/DB cleanup"""
         try:
-            client_cache = get_client_cache_manager()
-            success = client_cache.delete_client(client_id)
+            success = global_cache.delete(client_id,'clients')
             
             if not success:
                 return {"error": "Client not found"}, 404
@@ -426,23 +463,16 @@ def register_modern_routes(app, cache, logger):
             
             # Auto-assign the task if owner is set
             try:
-                client_cache = get_client_cache_manager()
-                
-                # Get active clients for assignment
-                active_clients = client_cache.get_active_clients()
+                # Get active clients from global cache
+                clients_dict = global_cache.get_by_cache_type('clients')
+                if isinstance(clients_dict, dict):
+                    active_clients = list(clients_dict.keys())
+                else:
+                    active_clients = []
                 logger.info(f"Active clients available for assignment: {active_clients}")
-                
                 if active_clients:
-                    # Create client dict format expected by assign_all_tasks
-                    client_dict = {}
-                    for client_id in active_clients:
-                        client_info = client_cache.get_client_by_id(client_id)
-                        if client_info:
-                            client_dict[client_id] = client_info
-                    
+                    client_dict = {cid: clients_dict[cid] for cid in active_clients if cid in clients_dict}
                     logger.info(f"Client dict created for assignment: {list(client_dict.keys())}")
-                    
-                    # Get the created task and assign it
                     tasks = get_tasks()
                     if str(task_id) in tasks:
                         task_dict = {str(task_id): tasks[str(task_id)]}
@@ -451,10 +481,8 @@ def register_modern_routes(app, cache, logger):
                         logger.info(f"Task {task_id} assignment completed")
                     else:
                         logger.warning(f"Task {task_id} not found in tasks dict after creation")
-                        
                 else:
                     logger.warning("No active clients available for task assignment")
-                        
             except Exception as assign_error:
                 logger.error(f"Task created but assignment failed: {assign_error}", exc_info=True)
             
@@ -546,85 +574,107 @@ def register_modern_routes(app, cache, logger):
     # Plugin Discovery API Endpoints
     @app.route("/api/plugins", methods=["GET"])
     def api_get_plugins():
-        """Get all available plugins with their metadata from cache"""
+        """Get all available plugins with their metadata from global cache"""
         try:
-            cache_manager = get_plugin_cache_manager()
-            formatted_plugins = cache_manager.get_formatted_plugins_for_ui()
-            
+            # Retrieve plugin list from global cache (startup layer, key 'plugins')
+            plugins_dict = global_cache.get('plugins', 'startup', None, None)
+            if not isinstance(plugins_dict, dict):
+                plugins_dict = {}
             return jsonify({
-                "plugins": formatted_plugins,
-                "cache_stats": cache_manager.get_cache_stats()
+                "plugins": list(plugins_dict.values()),
+                "cache_stats": {}  # Optionally add cache stats if needed
             })
-            
         except Exception as e:
             logger.error(f"Error getting plugins: {e}")
             return {"error": "Internal server error"}, 500
 
     @app.route("/api/plugins/<plugin_name>/functions", methods=["GET"])
     def api_get_plugin_functions(plugin_name):
-        """Get functions for a specific plugin from cache"""
+        """Get functions for a specific plugin from global cache (stub: returns empty list)"""
         try:
-            cache_manager = get_plugin_cache_manager()
-            functions = cache_manager.get_plugin_function_details(plugin_name)
-            
-            if not functions:
+            # Retrieve plugin metadata from global cache
+            plugins_dict = global_cache.get('plugins', 'startup', None, None)
+            if not isinstance(plugins_dict, dict):
+                plugins_dict = {}
+            plugin_meta = plugins_dict.get(plugin_name)
+            logger.info(f"Retrieved metadata for plugin '{plugin_name}': {plugin_meta}")
+            functions = plugin_meta.get('functions', []) if plugin_meta else []
+            # Convert functions to array of objects with 'name' property if needed
+            if isinstance(functions, dict):
+                # Old format: dict of function_name -> meta
+                functions_list = [{"name": fname, **(fmeta if isinstance(fmeta, dict) else {})} for fname, fmeta in functions.items()]
+            elif isinstance(functions, list):
+                # Already a list of function objects
+                functions_list = functions
+            else:
+                functions_list = []
+            if not functions_list:
                 return {"error": "Plugin not found or has no functions"}, 404
-            
+            # Ensure every function has a 'name' property (for frontend compatibility)
+            for i, f in enumerate(functions_list):
+                if 'name' not in f and isinstance(f, dict):
+                    # Try to infer name from dict key if possible
+                    f['name'] = f.get('function_name', f"function_{i}")
             return jsonify({
                 "plugin_name": plugin_name,
-                "functions": functions
+                "functions": functions_list
             })
-            
         except Exception as e:
             logger.error(f"Error getting plugin functions: {e}")
             return {"error": "Internal server error"}, 500
 
     @app.route("/api/plugins/<plugin_name>/functions/<function_name>/parameters", methods=["GET"])
     def api_get_function_parameters(plugin_name, function_name):
-        """Get parameters for a specific plugin function from cache"""
+        """Get parameters for a specific plugin function from global cache (stub: returns empty list)"""
         try:
-            cache_manager = get_plugin_cache_manager()
-            parameters = cache_manager.get_function_parameters(plugin_name, function_name)
-            
+            plugins_dict = global_cache.get('plugins', 'startup', None, None)
+            if not isinstance(plugins_dict, dict):
+                plugins_dict = {}
+            plugin_meta = plugins_dict.get(plugin_name)
+            parameters = []
+            if plugin_meta and 'functions' in plugin_meta:
+                functions = plugin_meta['functions']
+                func_meta = None
+                if isinstance(functions, dict):
+                    # Old format: dict of function_name -> meta
+                    f = functions.get(function_name)
+                    if isinstance(f, dict):
+                        func_meta = {"name": function_name, **f}
+                elif isinstance(functions, list):
+                    func_meta = next((f for f in functions if isinstance(f, dict) and f.get('name') == function_name), None)
+                if func_meta:
+                    parameters = func_meta.get('parameters', [])
             if not parameters:
                 return {"error": "Function not found or has no parameters"}, 404
-                
             return jsonify({
                 "plugin_name": plugin_name,
                 "function_name": function_name,
                 "parameters": parameters
             })
-            
         except Exception as e:
             logger.error(f"Error getting function parameters: {e}")
             return {"error": "Internal server error"}, 500
 
     @app.route("/api/plugins/cache/refresh", methods=["POST"])
     def api_refresh_plugin_cache():
-        """Manually refresh the plugin cache"""
+        """Manually refresh the plugin cache (stub: not implemented)"""
         try:
-            cache_manager = get_plugin_cache_manager()
-            success = cache_manager.refresh_cache()
-            
-            if success:
-                return jsonify({
-                    "message": "Plugin cache refreshed successfully",
-                    "cache_stats": cache_manager.get_cache_stats()
-                })
-            else:
-                return {"error": "Failed to refresh plugin cache"}, 500
-                
+            # In a real system, you would rescan the plugins folder and update the cache
+            # For now, just return success
+            return jsonify({
+                "message": "Plugin cache refresh not implemented in global cache version",
+                "cache_stats": {}
+            })
         except Exception as e:
             logger.error(f"Error refreshing plugin cache: {e}")
             return {"error": "Internal server error"}, 500
 
     @app.route("/api/plugins/cache/stats", methods=["GET"])
     def api_get_plugin_cache_stats():
-        """Get plugin cache statistics"""
+        """Get plugin cache statistics (stub: not implemented)"""
         try:
-            cache_manager = get_plugin_cache_manager()
-            return jsonify(cache_manager.get_cache_stats())
-            
+            # Optionally, you could return stats about the global cache here
+            return jsonify({})
         except Exception as e:
             logger.error(f"Error getting cache stats: {e}")
             return {"error": "Internal server error"}, 500
@@ -633,22 +683,20 @@ def register_modern_routes(app, cache, logger):
     def api_get_available_owners():
         """Get available owners for task assignment from active clients"""
         try:
-            client_cache = get_client_cache_manager()
-            # Get active client usernames as potential owners
-            active_clients = client_cache.get_active_clients()
-            
+            # Get active client usernames from global cache
+            clients_dict = global_cache.get_by_cache_type('clients')
+            if isinstance(clients_dict, dict):
+                active_clients = list(clients_dict.keys())
+            else:
+                active_clients = []
             # Also include owners from existing tasks for backward compatibility
             legacy_owners = get_available_owners()
-            
             # Combine and deduplicate, excluding special owners from the combined list
             combined_owners = sorted(set(active_clients + legacy_owners))
             regular_owners = [owner for owner in combined_owners if owner not in ["ALL", "Anyone"]]
-            
             # Add only "Anyone" option (remove confusing "ALL" option)
             final_owners = ["Anyone"] + regular_owners
-            
             return jsonify({"owners": final_owners})
-            
         except Exception as e:
             logger.error(f"Error getting owners: {e}")
             return {"error": "Internal server error"}, 500
@@ -1050,7 +1098,9 @@ def get_tasks_paginated(page=1, page_size=25, search='', status_filter='', type_
                             search.lower() in t.get('plugin', '').lower() or
                             search.lower() in t.get('description', '').lower()]
         if status_filter:
-            filtered_tasks = [t for t in filtered_tasks if t.get('status') == status_filter]
+            from constants import TaskStatus
+            normalized_filter = TaskStatus.normalize(status_filter)
+            filtered_tasks = [t for t in filtered_tasks if TaskStatus.normalize(t.get('status')) == normalized_filter]
         if type_filter:
             filtered_tasks = [t for t in filtered_tasks if t.get('type') == type_filter]
         if owner_filter:
@@ -1069,10 +1119,10 @@ def get_tasks_paginated(page=1, page_size=25, search='', status_filter='', type_
 def get_task_stats():
     """Get task statistics from real database data"""
     try:
-        from ..constants import TaskStatus
+        from constants import TaskStatus
         
         tasks_dict = get_tasks()
-        
+        logger.info(f"Tasks retrieved: {tasks_dict}")
         total = len(tasks_dict)
         running = 0
         completed = 0
@@ -1085,7 +1135,7 @@ def get_task_stats():
             
             if normalized_status == TaskStatus.RUNNING:
                 running += 1
-            elif normalized_status == TaskStatus.COMPLETED:
+            elif normalized_status == TaskStatus.DONE:
                 completed += 1
             elif normalized_status == TaskStatus.FAILED:
                 failed += 1
@@ -1281,16 +1331,15 @@ def get_available_clients():
     except Exception:
         return []
 
-def get_available_plugins():
+def get_available_plugins(global_cache):
     """Get list of available plugins for task creation from cache"""
     try:
-        # Get plugins from cache first
-        cache_manager = get_plugin_cache_manager()
-        plugin_names = cache_manager.get_plugin_names()
-        
-        if plugin_names:
-            return plugin_names
-        
+        # Get plugins from global cache (startup layer, key 'plugins')
+        plugins_list = global_cache.get('plugins', 'startup', None, None)
+        if isinstance(plugins_list, dict) and plugins_list:
+            plugin_names = [p.get('file').replace('.py', '') for p in plugins_list.values() if 'file' in p]
+            if plugin_names:
+                return plugin_names
         # Fallback to database if cache is empty
         with sqlite3.connect(get_db_file()) as conn:
             cursor = conn.cursor()
@@ -1298,13 +1347,11 @@ def get_available_plugins():
             plugins = [row[0] for row in cursor.fetchall()]
             if plugins:
                 return plugins
-                
         # Final fallback to hardcoded list
-        return ['web_utils', 'file_operations', 'system_info', 'notifications']
-        
+        return []
     except Exception as e:
         logger.error(f"Error getting available plugins: {e}")
-        return ['web_utils', 'file_operations', 'system_info', 'notifications']
+        return []
 
 def get_all_clients_dict():
     """Get all clients as a dictionary for template use"""

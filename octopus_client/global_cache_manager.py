@@ -516,6 +516,30 @@ class ClientGlobalCacheManager:
                     result[cache_type] = cache.all()
         
         return result
+    
+    def all(self) -> Dict[str, Any]:
+        """
+        Retrieve all cache data from all layers.
+
+        Returns:
+            A dictionary containing all cache data categorized by cache type.
+        """
+        try:
+            with self._lock:
+                all_cache = {}
+                for cache_type, cache in self._caches.items():
+                    if cache_type == 'plugins':
+                        # Aggregate plugin-specific caches
+                        all_cache['plugins'] = {
+                            plugin_name: plugin_cache.all()
+                            for plugin_name, plugin_cache in cache.items()
+                        }
+                    else:
+                        all_cache[cache_type] = cache.all()
+                return all_cache
+        except Exception as e:
+            self.logger.error(f"Error retrieving all cache data: {e}")
+            return {}
 
 
 # Global instance

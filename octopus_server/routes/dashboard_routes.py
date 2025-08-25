@@ -19,7 +19,7 @@ from dbhelper import (
 from performance_monitor import get_performance_report
 from .auth_routes import login_required
 
-def register_dashboard_routes(app, cache, logger):
+def register_dashboard_routes(app, global_cache, logger):
     """Register dashboard routes with the Flask app"""
 
     @app.route("/dashboard", methods=["GET", "POST"])
@@ -86,15 +86,13 @@ def register_dashboard_routes(app, cache, logger):
         # For edit mode, keep the nlp_task_data to pass to template for modal opening
         logger.info("Template variables - nlp_task_data: %s, edit_mode: %s", nlp_task_data, edit_mode)
         tasks = get_tasks()
-        clients = cache.all()
+        clients = global_cache.get('clients', 'startup', None, {})
         now = time.time()
         active_clients = get_active_clients(clients, now=now, timeout=60)  # Align with "online" status
         plugin_names = get_plugin_names()
         owner_options = get_owner_options(active_clients)
-        
         # Use the comprehensive task assignment function
         assign_all_tasks(tasks, active_clients)
-        
         # Update task statuses after assignment, but don't override completed tasks
         for tid, task in tasks.items():
             db_status = task.get("status", "")

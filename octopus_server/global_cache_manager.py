@@ -16,10 +16,9 @@ import threading
 import logging
 from typing import Dict, Any, Optional, List, Union
 from cache import Cache
-from client_cache_manager import get_client_cache_manager
-from plugin_cache_manager import get_plugin_cache_manager
 
 class GlobalCacheManager:
+
     """
     Comprehensive global cache manager for server-side operations
     """
@@ -29,12 +28,13 @@ class GlobalCacheManager:
         
         # Multiple cache layers
         self._caches = {
-            'startup': Cache(),           # Data initialized at startup
-            'user_profiles': Cache(),     # Data from user profile pages
-            'global_broadcast': Cache(),  # Data to broadcast to all clients
-            'plugins': {},               # Plugin-specific caches {plugin_name: Cache()}
-            'temporary': Cache(),         # Short-lived temporary data
-            'persistent': Cache()         # Long-lived persistent data
+            'startup': Cache(),            # Data initialized at startup
+            'user_profiles': Cache(),      # Data from user profile pages
+            'global_broadcast': Cache(),   # Data to broadcast to all clients
+            'plugins': {},                 # Plugin-specific caches {plugin_name: Cache()}
+            'temporary': Cache(),          # Short-lived temporary data
+            'persistent': Cache(),         # Long-lived persistent data
+            'clients': Cache()             # Client-specific data
         }
         
         # Thread safety
@@ -163,6 +163,7 @@ class GlobalCacheManager:
     
     def delete(self, key: str, cache_type: str = 'temporary', plugin_name: Optional[str] = None):
         """Delete a key from the specified cache layer"""
+        logging.info(f"Deleting cache {key} from {cache_type} (plugin: {plugin_name})")
         try:
             with self._lock:
                 if cache_type == 'plugins':
@@ -178,6 +179,7 @@ class GlobalCacheManager:
                     self._caches[cache_type].delete(key)
                 
                 self._stats['deletes'] += 1
+                return True
                 
         except Exception as e:
             self.logger.error(f"Error deleting cache {key}: {e}")
@@ -435,16 +437,8 @@ class GlobalCacheManager:
             Username if found, None otherwise
         """
         try:
-            from client_cache_manager import get_client_cache_manager
-            client_cache = get_client_cache_manager()
-            
-            # Get client info from cache
-            client_info = client_cache.get_client_by_id(client_id)
-            if client_info and 'username' in client_info:
-                return client_info['username']
-            
+            # All client cache is now managed by GlobalCacheManager. Implement lookup here if needed.
             return None
-            
         except Exception as e:
             self.logger.error(f"Error getting user identity for client {client_id}: {e}")
             return None
@@ -517,31 +511,33 @@ class GlobalCacheManager:
     
     # === Integration with Existing Cache Managers ===
     
+
+    # The following sync methods are now no-ops or should be implemented using only internal cache logic.
     def sync_with_client_cache(self):
-        """Sync relevant data with client cache manager"""
-        try:
-            client_cache = get_client_cache_manager()
-            
-            # Get online clients for broadcasting
-            active_clients = client_cache.get_active_clients()
-            self.set('active_clients', active_clients, 'startup', 60)  # Cache for 1 minute
-            
-        except Exception as e:
-            self.logger.error(f"Error syncing with client cache: {e}")
-    
+        """No-op: All client cache is now managed by GlobalCacheManager."""
+        pass
+
     def sync_with_plugin_cache(self):
-        """Sync relevant data with plugin cache manager"""
+        """No-op: All plugin cache is now managed by GlobalCacheManager."""
+        pass
+
+    def get_by_cache_type(self, cache_type: str) -> dict:
+        """
+        Get all data from a specified cache layer (e.g., all clients).
+        Args:
+            cache_type: The cache layer to retrieve ('clients', 'startup', etc.)
+        Returns:
+            dict of all items in the cache layer, or empty dict if not found.
+        """
         try:
-            plugin_cache = get_plugin_cache_manager()
-            
-            # Get plugin metadata for broadcasting
-            plugins_data = plugin_cache.get_formatted_plugins_for_ui()
-            self.set('available_plugins', plugins_data, 'global_broadcast', 300)  # Cache for 5 minutes
-            
+            with self._lock:
+                if cache_type not in self._caches:
+                    raise ValueError(f"Invalid cache type: {cache_type}")
+                return self._caches[cache_type].all()
         except Exception as e:
-            self.logger.error(f"Error syncing with plugin cache: {e}")
-
-
+            self.logger.error(f"Error getting all data for cache type {cache_type}: {e}")
+            return {}
+        
 # Global instance
 _global_cache_manager = None
 
