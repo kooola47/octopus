@@ -19,8 +19,21 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask
-from global_cache_manager import initialize_global_cache
-from config import *
+from services.global_cache_manager import initialize_global_cache
+# Load config once
+from config import load_config
+config = load_config()  # This will load based on command line args
+
+# Extract configuration variables from the config class
+SERVER_HOST = config.SERVER_HOST
+SERVER_PORT = config.SERVER_PORT
+DB_FILE = config.DB_FILE
+PLUGINS_FOLDER = config.PLUGINS_FOLDER
+LOG_LEVEL = config.LOG_LEVEL
+LOG_FILE = config.LOG_FILE
+PAGES_DIR = config.PAGES_DIR
+STATIC_DIR = config.STATIC_DIR
+CACHE_TTL = config.CACHE_TTL
 
 
 # Setup logs folder and logging
@@ -70,7 +83,7 @@ from routes.user_profile_routes import user_profile_bp, set_global_cache
 # Set global_cache for user_profile_routes
 set_global_cache(global_cache)
 from routes.plugin_routes import plugin_bp
-from template_helpers import register_template_helpers
+from helpers.template_helpers import register_template_helpers
 
 register_all_routes(app, global_cache, logger)
 register_modern_routes(app, global_cache, logger)

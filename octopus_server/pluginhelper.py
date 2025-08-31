@@ -1,10 +1,14 @@
 import os
 import hashlib
 from flask import jsonify, send_from_directory
-from config import PLUGINS_FOLDER
-from global_cache_manager import GlobalCacheManager
+from config.config_loader import get_current_config
+config = get_current_config()
+from services.global_cache_manager import GlobalCacheManager
 
 def register_plugin_routes(app, global_cache: GlobalCacheManager, logger):
+    # Use absolute path for plugins folder
+    PLUGINS_FOLDER = os.path.abspath(config.PLUGINS_FOLDER)
+    
     @app.route("/plugins")
     def plugins():
         from plugin_discovery import PluginDiscovery
@@ -20,20 +24,35 @@ def register_plugin_routes(app, global_cache: GlobalCacheManager, logger):
             plugins_meta = discovery.get_plugins_with_metadata()
             global_cache.set('plugins', plugins_meta, 'startup')
         logger.info(f"Plugins metadata requested: {list(plugins_meta.keys())}")
-        # Return a summary list for UI (filename, description, function count)
-        summary = []
+        # Return a list with the expected format for the client
+        plugin_list = []
         for name, meta in plugins_meta.items():
-            summary.append({
+            filename = meta.get('file', f"{name}.py")
+            # Calculate MD5 hash of the plugin file
+            file_path = os.path.join(PLUGINS_FOLDER, filename)
+            md5_hash = ""
+            if os.path.exists(file_path):
+                try:
+                    hash_md5 = hashlib.md5()
+                    with open(file_path, "rb") as f:
+                        for chunk in iter(lambda: f.read(4096), b""):
+                            hash_md5.update(chunk)
+                    md5_hash = hash_md5.hexdigest()
+                except Exception as e:
+                    logger.error(f"Error calculating MD5 for {file_path}: {e}")
+            
+            plugin_list.append({
+                'filename': filename,
+                'md5': md5_hash,
                 'plugin_name': name,
-                'file': meta.get('file'),
                 'description': meta.get('description', ''),
-                'function_count': len(meta.get('functions', {})),
-                'functions': list(meta.get('functions', {}).keys())
+                'function_count': len(meta.get('functions', {}))
             })
-        return jsonify(summary)
+        return jsonify(plugin_list)
 
     @app.route("/plugins/<path:filename>")
     def get_plugin_file(filename):
+        # Make sure we're using the absolute path
         return send_from_directory(PLUGINS_FOLDER, filename)
 
     @app.route("/plugins/md5/<path:filename>")

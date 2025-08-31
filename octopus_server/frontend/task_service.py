@@ -14,7 +14,7 @@ from models.task_model import task_model
 from models.execution_model import execution_model
 from models.plugin_model import plugin_model
 from models.client_model import client_model
-from utils import format_timestamp, format_duration, safe_json_loads, sanitize_string
+from helpers.utils import format_timestamp, format_duration, safe_json_loads, sanitize_string
 from constants import TaskStatus, TaskType, TaskOwnership
 
 logger = logging.getLogger(__name__)

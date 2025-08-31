@@ -18,9 +18,12 @@ from contextlib import contextmanager
 # Add parent directory to path for shared modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import DB_FILE, CLIENT_TIMEOUT
+from config.config_loader import get_current_config
+config = get_current_config()
+DB_FILE = config.DB_FILE
+PLUGINS_FOLDER = config.PLUGINS_FOLDER
 from constants import TaskStatus, TaskOwnership, TaskType, Database
-from utils import get_current_timestamp, is_task_completed, sanitize_string, safe_json_loads
+from helpers.utils import get_current_timestamp, is_task_completed, sanitize_string, safe_json_loads
 
 logger = logging.getLogger(__name__)
 
@@ -434,7 +437,6 @@ def get_db_file():
 
 def get_plugin_names():
     """Get list of available plugin names from the plugins directory"""
-    from config import PLUGINS_FOLDER
     import os
     
     plugin_names = []

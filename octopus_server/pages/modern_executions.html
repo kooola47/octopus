@@ -147,7 +147,7 @@
                                 </div>
                                 <div>
                                     <div class="fw-medium">Execution #{{ execution.id }}</div>
-                                    <small class="text-muted">{{ execution.execution_id[:8] if execution.execution_id else 'N/A' }}...</small>
+                                    <small class="text-muted">{{ execution.execution_id if execution.execution_id else 'N/A' }}</small>
                                 </div>
                             </div>
                         </td>
@@ -155,7 +155,7 @@
                             <div>
                                 <div class="fw-medium">{{ execution.task_name or execution.task_id or 'Unknown Task' }}</div>
                                 {% if execution.task_id %}
-                                <small class="text-muted">{{ execution.task_id[:8] }}...</small>
+                                <small class="text-muted">{{ execution.task_id }}</small>
                                 {% endif %}
                             </div>
                         </td>
@@ -483,38 +483,57 @@
         
         modal.show();
         
-        // Simulate loading execution details
-        setTimeout(() => {
-            detailsContainer.innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Execution Information</h6>
-                        <table class="table table-sm">
-                            <tr><th>ID:</th><td>${executionId}</td></tr>
-                            <tr><th>Status:</th><td><span class="badge bg-success">Completed</span></td></tr>
-                            <tr><th>Duration:</th><td>2.34s</td></tr>
-                            <tr><th>Started:</th><td>2025-08-12 07:15:23</td></tr>
-                        </table>
+        // Fetch execution details from API
+        fetch(`/api/executions/${executionId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    detailsContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Error loading execution details: ${data.error}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const execution = data.execution;
+                detailsContainer.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Execution Information</h6>
+                            <table class="table table-sm">
+                                <tr><th>ID:</th><td>${execution.id || 'N/A'}</td></tr>
+                                <tr><th>Status:</th><td><span class="badge bg-${execution.status === 'success' || execution.status === 'completed' ? 'success' : execution.status === 'failed' ? 'danger' : 'warning'}">${execution.status || 'Unknown'}</span></td></tr>
+                                <tr><th>Duration:</th><td>${execution.duration ? execution.duration + 's' : 'N/A'}</td></tr>
+                                <tr><th>Started:</th><td>${execution.created_at ? new Date(execution.created_at * 1000).toLocaleString() : 'N/A'}</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Task Information</h6>
+                            <table class="table table-sm">
+                                <tr><th>Task ID:</th><td>${execution.task_id || 'N/A'}</td></tr>
+                                <tr><th>Plugin:</th><td>${execution.plugin || 'N/A'}</td></tr>
+                                <tr><th>Action:</th><td>${execution.action || 'N/A'}</td></tr>
+                                <tr><th>Client:</th><td>${execution.client || 'N/A'}</td></tr>
+                            </table>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <h6>Task Information</h6>
-                        <table class="table table-sm">
-                            <tr><th>Task ID:</th><td>abc123...</td></tr>
-                            <tr><th>Plugin:</th><td>web_utils</td></tr>
-                            <tr><th>Action:</th><td>main</td></tr>
-                            <tr><th>Client:</th><td>aries-38880</td></tr>
-                        </table>
+                    <div class="mt-3">
+                        <h6>Result</h6>
+                        <pre class="bg-light p-3 rounded"><code>${execution.result || execution.output || 'No result data'}</code></pre>
                     </div>
-                </div>
-                <div class="mt-3">
-                    <h6>Result</h6>
-                    <pre class="bg-light p-3 rounded"><code>Task completed successfully
-Output: Data processed and saved
-Files created: 3
-Errors: 0</code></pre>
-                </div>
-            `;
-        }, 1000);
+                `;
+            })
+            .catch(error => {
+                console.error('Error fetching execution details:', error);
+                detailsContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error loading execution details: ${error.message}
+                    </div>
+                `;
+            });
     }
     
     function viewResult(executionId) {

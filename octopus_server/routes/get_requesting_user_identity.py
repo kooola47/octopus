@@ -15,7 +15,7 @@ def get_requesting_user_identity(logger=None):
     try:
         client_id = request.headers.get('X-Client-ID') or request.args.get('client_id')
         if client_id:
-            from global_cache_manager import get_global_cache_manager
+            from services.global_cache_manager import get_global_cache_manager
             cache_manager = get_global_cache_manager()
             username = cache_manager.get_user_identity_from_client_id(client_id)
             if username:

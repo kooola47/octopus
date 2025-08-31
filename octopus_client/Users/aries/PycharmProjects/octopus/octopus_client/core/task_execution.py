@@ -1,18 +1,4 @@
-"""
-🎯 TASK EXECUTION ENGINE
-========================
-
-Handles task execution logic, plugin loading, and result reporting.
-"""
-
-import importlib
-import ast
-import asyncio
-import inspect
-import time
-import requests
-import json
-from typing import Dict, Any, Tuple, Optional
+from time import time
 
 class TaskExecutor:
     """Manages task execution and result reporting"""
@@ -212,6 +198,14 @@ class TaskExecutor:
             except Exception:
                 kwargs = {}
         
+        # Add atomic task claiming mechanism to prevent race conditions
+        if self.is_executing(tid):
+            self.logger.warning(f"Task {tid} is already being executed by another instance")
+            return "success", "Task already executing"
+            
+        # Mark task as executing before starting execution
+        self.start_execution(tid)
+        
         try:
             from pluginhelper import import_plugin
             module = import_plugin(plugin)
@@ -249,6 +243,9 @@ class TaskExecutor:
             self.logger.error(f"Plugin execution failed for {plugin}.{action}: {e}")
             result_str = str(e)
             exec_status = "failed"
+        finally:
+            # Always mark task as finished, even if execution fails
+            self.finish_execution(tid)
         
         return exec_status, result_str
     

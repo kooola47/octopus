@@ -22,7 +22,7 @@ from dbhelper import (
     submit_plugin, get_plugin_submissions, update_plugin_submission_status,
     record_plugin_test, get_plugin_tests, deploy_plugin
 )
-from utils import get_current_timestamp, require_admin, require_login
+from helpers.utils import get_current_timestamp, require_admin, require_login
 
 plugin_bp = Blueprint('plugin', __name__)
 

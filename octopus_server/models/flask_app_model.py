@@ -1,15 +1,16 @@
 from flask import Flask
 import logging
 from datetime import datetime
-from config import *
+from config.config_loader import get_current_config
+config = get_current_config()
 
 class FlaskAppModel():
 
     def config_flask_app(self, logger: logging.Logger) -> Flask:
         app = Flask(
             __name__,
-            template_folder=PAGES_DIR,  # Use pages directory for modern templates
-            static_folder=STATIC_DIR
+            template_folder=config.PAGES_DIR,  # Use pages directory for modern templates
+            static_folder=config.STATIC_DIR
         )
 
         """Configure the Flask app with necessary settings"""

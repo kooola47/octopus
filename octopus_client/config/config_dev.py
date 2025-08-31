@@ -16,7 +16,7 @@ class DevelopmentConfig(BaseConfig):
     # ENVIRONMENT IDENTIFICATION
     # =============================================================================
     ENVIRONMENT = "development"
-    DEBUG = False
+    DEBUG = True
     SERVER_URL = os.getenv("OCTOPUS_SERVER_URL", "http://localhost:18900")
 
     # =============================================================================
@@ -25,7 +25,7 @@ class DevelopmentConfig(BaseConfig):
     CLIENT_NAME_PREFIX = ""
     CLIENT_HOSTNAME = get_hostname()
     CLIENT_IP = get_local_ip()
-    CLIENT_PORT = 8900
+    CLIENT_PORT = 8908
     CLIENT_DOMAIN = os.environ.get("USERDOMAIN", "")
     CLIENT_VERSION = "2025.08.15.140922"
     CLIENT_METADATA = {
@@ -36,9 +36,9 @@ class DevelopmentConfig(BaseConfig):
     # =============================================================================
     # Client Configuration
     # =============================================================================
-    USER_NAME = os.environ.get("OCTOPUS_SamAccountName", "Tuser")
+    USER_NAME = os.environ.get("OCTOPUS_SamAccountName", "Tnumber_dev")
     USER_DISPLAY_NAME = os.environ.get("OCTOPUS_DisplayName", "Display,Name")
-    USER_IDENTITY = os.environ.get("OCTOPUS_EmployeeNumber", "Gnumber")
+    USER_IDENTITY = os.environ.get("OCTOPUS_EmployeeNumber", "Gpn_dev")
     USER_EMAIL = os.environ.get("OCTOPUS_EmailAddress", "myemail@outlook.com")
     USER_CHROMEUSERDATA = os.environ.get("OCTOPUS_ChromeUserData", "C:\\Users\\aries\\AppData\\Local\\Google\\Chrome\\User Data\\Default")
     

@@ -40,7 +40,7 @@ def demo_plugin_cache(action="set", key="demo_key", value="demo_value", ttl=None
         # Import global cache functions (works on both server and client)
         try:
             # Try server-side import first
-            from global_cache_manager import plugin_cache_set, plugin_cache_get, plugin_cache_delete, plugin_cache_clear, get_global_cache_manager
+            from services.global_cache_manager import plugin_cache_set, plugin_cache_get, plugin_cache_delete, plugin_cache_clear, get_global_cache_manager
             cache_manager = get_global_cache_manager()
             location = "server"
         except ImportError:
@@ -110,7 +110,7 @@ def demo_user_cache(username="demo_user", action="set", setting="theme", value="
     """
     try:
         # This only works on server side
-        from global_cache_manager import get_global_cache_manager
+        from services.global_cache_manager import get_global_cache_manager
         cache_manager = get_global_cache_manager()
         
         result = {
@@ -163,7 +163,7 @@ def demo_broadcast_cache(key="demo_broadcast", value="Hello all clients!", ttl=3
     """
     try:
         # This only works on server side
-        from global_cache_manager import broadcast_to_clients
+        from services.global_cache_manager import broadcast_to_clients
         
         broadcast_to_clients(key, value, ttl)
         

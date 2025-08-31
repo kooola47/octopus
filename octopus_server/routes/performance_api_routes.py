@@ -6,7 +6,7 @@ Flask routes for performance monitoring APIs.
 """
 
 from flask import jsonify
-from performance_monitor import monitor
+from services.performance_monitor import monitor
 
 def register_performance_api_routes(app, cache, logger):
     """Register performance API routes with the Flask app"""

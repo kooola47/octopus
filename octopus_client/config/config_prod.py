@@ -36,9 +36,9 @@ class ProductionConfig(BaseConfig):
     # =============================================================================
     # Client Configuration
     # =============================================================================
-    USER_NAME = os.environ.get("OCTOPUS_SamAccountName", "admin")
+    USER_NAME = os.environ.get("OCTOPUS_SamAccountName", "Tnumber_prod")
     USER_DISPLAY_NAME = os.environ.get("OCTOPUS_DisplayName", "Display,Name")
-    USER_IDENTITY = os.environ.get("OCTOPUS_EmployeeNumber", "admin")
+    USER_IDENTITY = os.environ.get("OCTOPUS_EmployeeNumber", "Gpn_prod")
     USER_EMAIL = os.environ.get("OCTOPUS_EmailAddress", "admin@outlook.com")
     USER_CHROMEUSERDATA = os.environ.get("OCTOPUS_ChromeUserData", "C:\\Users\\aries\\AppData\\Local\\Google\\Chrome\\User Data\\Default")
 
@@ -53,7 +53,7 @@ class ProductionConfig(BaseConfig):
     # =============================================================================
     # LOGGING SETTINGS (Minimal for production)
     # =============================================================================
-    LOG_LEVEL = "DEBUG"
+    LOG_LEVEL = "INFO"
     LOG_FILE = os.path.join("logs", "client_prod.log")
     LOG_MAX_SIZE = 50 * 1024 * 1024  # 50MB for production
     LOG_BACKUP_COUNT = 10

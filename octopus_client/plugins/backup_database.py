@@ -58,3 +58,12 @@ def run(database="default", backup_path="/tmp/backup", compression=True, *args, 
         return result
     
     return asyncio.run(_run())
+
+
+
+def test_backup(name: str=""):
+    print(run(database=name, backup_path="/tmp", compression=False))
+
+
+def test_backup1(name: str=""):
+    print(run(database=name, backup_path="/tmp", compression=False))    

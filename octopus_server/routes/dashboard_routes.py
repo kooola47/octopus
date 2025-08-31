@@ -16,7 +16,7 @@ from dbhelper import (
     compute_task_status, get_active_clients, get_db_file,
     get_plugin_names, add_execution_result
 )
-from performance_monitor import get_performance_report
+from services.performance_monitor import get_performance_report
 from .auth_routes import login_required
 
 def register_dashboard_routes(app, global_cache, logger):

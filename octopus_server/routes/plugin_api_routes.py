@@ -12,7 +12,7 @@ import sys
 from typing import List
 from flask import request, jsonify
 from dbhelper import get_plugin_names
-from performance_monitor import time_request
+from services.performance_monitor import time_request
 
 def _setup_plugin_paths():
     """Setup sys.path for proper plugin and dependency imports"""

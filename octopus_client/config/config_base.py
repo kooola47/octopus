@@ -16,8 +16,6 @@ class BaseConfig:
     # =============================================================================
     ENVIRONMENT = "base"
     DEBUG = False
-    ENVIRONMENT = "base"
-    DEBUG = False
     SERVER_URL = os.getenv("OCTOPUS_SERVER_URL", "http://base-server:18900")
     # =============================================================================
     # Client Configuration
@@ -87,7 +85,7 @@ class BaseConfig:
             "log_level": cls.LOG_LEVEL,
             "heartbeat_interval": cls.HEARTBEAT_INTERVAL,
             "task_check_interval": cls.TASK_CHECK_INTERVAL,
-            "username": cls.USERNAME
+            "username": cls.USER_NAME
         }
     
     @classmethod

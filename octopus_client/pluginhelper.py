@@ -86,16 +86,23 @@ def check_plugin_updates():
         os.makedirs(PLUGINS_FOLDER, exist_ok=True)
         updated = []
         for plugin in plugins:
+            # Check if the plugin object has the required fields
+            if "filename" not in plugin:
+                logger.error(f"Plugin missing 'filename' field: {plugin}")
+                continue
+                
             plugin_name = plugin["filename"]
-            plugin_md5 = plugin["md5"]
+            plugin_md5 = plugin.get("md5", "")  # Make md5 optional
             local_plugin_path = os.path.join(PLUGINS_FOLDER, plugin_name)
             need_download = False
+            
             if not os.path.exists(local_plugin_path):
                 need_download = True
-            else:
+            elif plugin_md5:  # Only check MD5 if provided
                 local_md5 = md5sum(local_plugin_path)
                 if local_md5 != plugin_md5:
                     need_download = True
+                    
             if need_download:
                 try:
                     server_plugin_path = f"{SERVER_URL}/plugins/{plugin_name}"
@@ -109,7 +116,8 @@ def check_plugin_updates():
                         logger.error(f"Failed to download plugin {plugin_name}: HTTP {file_resp.status_code}")
                 except Exception as e:
                     logger.error(f"Failed to download plugin {plugin_name}: {e}")
-        logger.info(f"Checked plugin updates: {[p['filename'] for p in plugins]}, updated: {updated}")
+                    
+        logger.info(f"Checked plugin updates: {[p.get('filename', 'unknown') for p in plugins]}, updated: {updated}")
         reload_plugins()
     except Exception as e:
         logger.error(f"Plugin update failed: {e}")

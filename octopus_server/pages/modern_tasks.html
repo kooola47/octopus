@@ -134,7 +134,7 @@
                                 </div>
                                 <div>
                                     <div class="fw-medium">{{ task.name or task.action or 'Unnamed Task' }}</div>
-                                    <small class="text-muted">ID: {{ task.id[:8] if task.id else 'N/A' }}...</small>
+                                    <small class="text-muted">ID: {{ task.id if task.id else 'N/A' }}</small>
                                     {% if task.description %}
                                     <div class="text-muted small mt-1">{{ task.description[:50] }}{% if task.description|length > 50 %}...{% endif %}</div>
                                     {% endif %}

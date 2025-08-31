@@ -7,6 +7,7 @@ Dynamically discovers plugins and extracts their function signatures and paramet
 
 import os
 import ast
+import hashlib
 import inspect
 import importlib.util
 import sys
@@ -28,6 +29,8 @@ class PluginDiscovery:
             Dict: {
                 'plugin_name': {
                     'file': 'plugin_file.py',
+                    'filename': 'plugin_file.py',
+                    'md5': 'md5_hash',
                     'description': 'Plugin description',
                     'functions': {
                         'function_name': {
@@ -62,6 +65,9 @@ class PluginDiscovery:
                 try:
                     plugin_info = self._analyze_plugin_file(plugin_path, plugin_name)
                     if plugin_info:
+                        # Add filename and md5 to plugin info
+                        plugin_info['filename'] = filename
+                        plugin_info['md5'] = self._calculate_md5(plugin_path)
                         plugins[plugin_name] = plugin_info
                 except Exception as e:
                     self.logger.error(f"Error analyzing plugin {filename}: {e}")
@@ -85,9 +91,12 @@ class PluginDiscovery:
             
             # Extract function information
             for node in ast.walk(tree):
-                if isinstance(node, ast.FunctionDef):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     func_info = self._analyze_function(node, content)
                     if func_info:
+                        # Add async indicator for async functions
+                        if isinstance(node, ast.AsyncFunctionDef):
+                            func_info['async'] = True
                         plugin_info['functions'][node.name] = func_info
                         
             return plugin_info if plugin_info['functions'] else None
@@ -95,6 +104,18 @@ class PluginDiscovery:
         except Exception as e:
             self.logger.error(f"Error parsing {plugin_path}: {e}")
             return None
+    
+    def _calculate_md5(self, file_path: str) -> str:
+        """Calculate MD5 hash of a file"""
+        try:
+            hash_md5 = hashlib.md5()
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_md5.update(chunk)
+            return hash_md5.hexdigest()
+        except Exception as e:
+            self.logger.error(f"Error calculating MD5 for {file_path}: {e}")
+            return ""
     
     def _extract_module_docstring(self, tree: ast.AST) -> str:
         """Extract module-level docstring"""
@@ -104,8 +125,8 @@ class PluginDiscovery:
             isinstance(tree.body[0].value, ast.Constant)):
             return tree.body[0].value.value
         return ""
-    
-    def _analyze_function(self, func_node: ast.FunctionDef, content: str) -> Optional[Dict[str, Any]]:
+
+    def _analyze_function(self, func_node: [ast.FunctionDef, ast.AsyncFunctionDef], content: str) -> Optional[Dict[str, Any]]:
         """Analyze a function to extract its metadata"""
         # Skip private functions (starting with _)
         if func_node.name.startswith('_'):
@@ -128,6 +149,10 @@ class PluginDiscovery:
         nlp_data = self._extract_nlp_metadata(func_node, content)
         func_info.update(nlp_data)
         
+        # Add async indicator for async functions
+        if isinstance(func_node, ast.AsyncFunctionDef):
+            func_info['async'] = True
+            
         return func_info
     
     def _extract_function_docstring(self, func_node: ast.FunctionDef) -> str:

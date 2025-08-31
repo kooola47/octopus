@@ -14,7 +14,7 @@ from anyio import current_time
 from flask import request, render_template, url_for, jsonify, Response
 from dbhelper import get_db_file, get_tasks, get_active_clients, add_task, assign_all_tasks, delete_task
 from plugin_discovery import PluginDiscovery
-from global_cache_manager import GlobalCacheManager
+from services.global_cache_manager import GlobalCacheManager
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -505,8 +505,32 @@ def register_modern_routes(app, global_cache: GlobalCacheManager, logger):
                 
                 if not execution:
                     return {"error": "Execution not found"}, 404
-                    
-                return {"execution": dict(execution)}
+                
+                # Convert to dict and add computed fields
+                execution_dict = dict(execution)
+                
+                # Add duration if we have both created_at and updated_at
+                if execution_dict.get('created_at') and execution_dict.get('updated_at'):
+                    execution_dict['duration'] = execution_dict['updated_at'] - execution_dict['created_at']
+                
+                # Format the response to match what the frontend expects
+                response_data = {
+                    "id": execution_dict.get('id'),
+                    "execution_id": execution_dict.get('execution_id'),
+                    "task_id": execution_dict.get('task_id'),
+                    "client": execution_dict.get('client'),
+                    "status": execution_dict.get('status'),
+                    "result": execution_dict.get('result'),
+                    "output": execution_dict.get('result'),  # Alias for compatibility
+                    "created_at": execution_dict.get('created_at'),
+                    "updated_at": execution_dict.get('updated_at'),
+                    "duration": execution_dict.get('duration'),
+                    # Add default values for fields that might be in the database schema
+                    "plugin": execution_dict.get('plugin', 'N/A'),
+                    "action": execution_dict.get('action', 'N/A')
+                }
+                
+                return {"execution": response_data}
                 
         except Exception as e:
             logger.error(f"Error getting execution details: {e}")

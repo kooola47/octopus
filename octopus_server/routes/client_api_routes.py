@@ -19,7 +19,7 @@ from dbhelper import (
     get_tasks, add_task, update_task, delete_task,
     add_execution_result, get_db_file
 )
-from performance_monitor import time_request
+from services.performance_monitor import time_request
 import sqlite3
 
 def register_client_api_routes(app, global_cache, logger):
