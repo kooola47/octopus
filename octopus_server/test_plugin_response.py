@@ -7,7 +7,7 @@ def test_plugin_response():
     """Test the plugin response format"""
     try:
         # Make a request to the plugins endpoint
-        response = requests.get('http://localhost:8000/plugins')
+        response = requests.get('http://localhost:18900/plugins')
         
         print(f"Status Code: {response.status_code}")
         print(f"Response Headers: {dict(response.headers)}")
