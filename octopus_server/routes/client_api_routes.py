@@ -107,7 +107,6 @@ def register_client_api_routes(app, global_cache, logger):
                 return jsonify({"success": False, "error": "executor required"}), 400
             
             # Try to atomically claim the task
-            from ..dbhelper import claim_task_for_execution
             success, message = claim_task_for_execution(task_id, executor)
             
             return jsonify({"success": success, "message": message})
