@@ -17,6 +17,16 @@ logger = logging.getLogger(__name__)
 # Create blueprint
 user_profile_bp = Blueprint('user_profile', __name__)
 
+def register_user_profile_routes(app, global_cache, logger):
+    """Register user profile routes with the Flask app"""
+    # Set the global cache for the blueprint
+    set_global_cache(global_cache)
+    
+    # Register the blueprint
+    app.register_blueprint(user_profile_bp)
+    
+    logger.info("User profile routes registered successfully")
+
 def get_current_user():
     """Get current logged-in user from session"""
     return session.get('username')
@@ -142,7 +152,7 @@ def set_parameter():
             # Cache the updated parameters using global_cache
             params_manager.cache_user_parameters(username, global_cache)
             # Also update user profile in cache (user_profiles namespace)
-            user_profile = params_manager.get_user_profile(username)
+            user_profile = {"username": username, "last_updated": time.time()}
             if global_cache:
                 global_cache.set(f"{username}", user_profile, 'user_profiles')
             return jsonify({"success": True, "message": "Parameter saved successfully"})
@@ -168,7 +178,7 @@ def delete_parameter(category, param_name):
             # Update cache using global_cache
             params_manager.cache_user_parameters(username, global_cache)
             # Also update user profile in cache (user_profiles namespace)
-            user_profile = params_manager.get_user_profile(username)
+            user_profile = {"username": username, "last_updated": time.time()}
             if global_cache:
                 global_cache.set(f"{username}", user_profile, 'user_profiles')
             return jsonify({"success": True, "message": "Parameter deleted successfully"})
@@ -221,7 +231,7 @@ def create_category():
         
         if success:
             # Also update user profile in cache (user_profiles namespace)
-            user_profile = params_manager.get_user_profile(username)
+            user_profile = {"username": username, "last_updated": time.time()}
             if global_cache:
                 global_cache.set(f"{username}", user_profile, 'user_profiles')
             return jsonify({"success": True, "message": "Category created successfully"})
@@ -283,10 +293,11 @@ def get_user_parameter(username: str, category: str, param_name: str, default_va
     """Helper function for plugins to get user parameters from cache"""
     try:
         # Try to get from global_cache first
-        cache_key = f"user_params_{username}_{category}"
-        cached_params = global_cache.get(cache_key, 'startup', None, None)
-        if cached_params and param_name in cached_params:
-            return cached_params[param_name]['value']
+        if global_cache:
+            cache_key = f"user_params_{username}_{category}"
+            cached_params = global_cache.get(cache_key, 'startup', None, None)
+            if cached_params and param_name in cached_params:
+                return cached_params[param_name]['value']
         # Fall back to database
         params_manager = get_user_params_manager()
         return params_manager.get_parameter(username, category, param_name, default_value)
@@ -298,10 +309,11 @@ def get_user_category_parameters(username: str, category: str):
     """Helper function for plugins to get all parameters in a category"""
     try:
         # Try to get from global_cache first
-        cache_key = f"user_params_{username}_{category}"
-        cached_params = global_cache.get(cache_key, 'startup', None, None)
-        if cached_params:
-            return {name: info['value'] for name, info in cached_params.items()}
+        if global_cache:
+            cache_key = f"user_params_{username}_{category}"
+            cached_params = global_cache.get(cache_key, 'startup', None, None)
+            if cached_params:
+                return {name: info['value'] for name, info in cached_params.items()}
         # Fall back to database
         params_manager = get_user_params_manager()
         all_params = params_manager.get_user_parameters(username, category)

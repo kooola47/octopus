@@ -91,9 +91,22 @@ def register_dashboard_routes(app, global_cache, logger):
         active_clients = get_active_clients(clients, now=now, timeout=60)  # Align with "online" status
         plugin_names = get_plugin_names()
         owner_options = get_owner_options(active_clients)
-        # Use the comprehensive task assignment function
-        assign_all_tasks(tasks, active_clients)
-        # Update task statuses after assignment, but don't override completed tasks
+        
+        # Use centralized assignment service instead of direct call
+        try:
+            from services.task_assignment_service import get_assignment_service
+            assignment_service = get_assignment_service(global_cache)
+            assignment_result = assignment_service.assign_pending_tasks()
+            logger.info(f"Task assignment result: {assignment_result}")
+        except Exception as e:
+            logger.error(f"Assignment service failed, falling back to direct assignment: {e}")
+            # Fallback to direct assignment
+            from dbhelper import assign_all_tasks
+            assign_all_tasks(tasks, active_clients)
+            logger.info("Used fallback direct assignment")
+        
+        # Refresh tasks after assignment
+        tasks = get_tasks()
         for tid, task in tasks.items():
             db_status = task.get("status", "")
             # Only compute status if the task isn't already Done/completed

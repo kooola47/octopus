@@ -16,7 +16,7 @@ class DevelopmentConfig(BaseConfig):
     # ENVIRONMENT IDENTIFICATION
     # =============================================================================
     ENVIRONMENT = "development"
-    DEBUG = True
+    DEBUG = False
     SERVER_URL = os.getenv("OCTOPUS_SERVER_URL", "http://localhost:18900")
 
     # =============================================================================

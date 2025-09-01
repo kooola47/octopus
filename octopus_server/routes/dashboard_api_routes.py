@@ -7,6 +7,7 @@ Flask routes for dashboard data APIs.
 
 import time
 import sqlite3
+import logging
 from flask import jsonify, request
 from dbhelper import (
     get_tasks, get_active_clients, assign_all_tasks,
@@ -44,8 +45,18 @@ def register_dashboard_api_routes(app, global_cache, logger):
         now = time.time()
         active_clients = get_active_clients(clients, now=now, timeout=60)  # Align with "online" status
         
-        # Use the comprehensive task assignment function
-        assign_all_tasks(tasks, active_clients)
+        # Use centralized assignment service with fallback
+        try:
+            from services.task_assignment_service import get_assignment_service
+            assignment_service = get_assignment_service(global_cache)
+            assignment_result = assignment_service.assign_pending_tasks()
+            logger.info(f"Task assignment result: {assignment_result}")
+        except Exception as e:
+            logger.error(f"Assignment service failed, using direct assignment: {e}")
+            assign_all_tasks(tasks, active_clients)
+        
+        # Refresh tasks after assignment
+        tasks = get_tasks()
         
         # Update task statuses after assignment, but don't override completed tasks
         for tid, task in tasks.items():
@@ -252,8 +263,18 @@ def register_dashboard_api_routes(app, global_cache, logger):
         now = time.time()
         active_clients = get_active_clients(clients, now=now, timeout=60)  # Align with "online" status
         
-        # Use the comprehensive task assignment function
-        assign_all_tasks(tasks, active_clients)
+        # Use centralized assignment service with fallback
+        try:
+            from services.task_assignment_service import get_assignment_service
+            assignment_service = get_assignment_service(global_cache)
+            assignment_result = assignment_service.assign_pending_tasks()
+            logger.info(f"Dashboard refresh - Task assignment result: {assignment_result}")
+        except Exception as e:
+            logger.error(f"Assignment service failed in dashboard refresh, using direct assignment: {e}")
+            assign_all_tasks(tasks, active_clients)
+        
+        # Refresh tasks after assignment
+        tasks = get_tasks()
         
         # Update task statuses after assignment, but don't override completed tasks
         for tid, task in tasks.items():

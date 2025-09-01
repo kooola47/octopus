@@ -8,7 +8,7 @@ Flask routes for natural language processing APIs.
 from flask import request, jsonify
 from services.performance_monitor import time_request
 
-def register_nlp_api_routes(app, cache, logger):
+def register_nlp_api_routes(app, global_cache, logger):
     """Register NLP API routes with the Flask app"""
 
     @app.route("/api/nlp-parse", methods=["POST"])

@@ -8,7 +8,7 @@ Flask routes for performance monitoring APIs.
 from flask import jsonify
 from services.performance_monitor import monitor
 
-def register_performance_api_routes(app, cache, logger):
+def register_performance_api_routes(app, global_cache, logger):
     """Register performance API routes with the Flask app"""
 
     @app.route("/api/performance", methods=["GET"])

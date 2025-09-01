@@ -73,29 +73,16 @@ except Exception as e:
 from pluginhelper import register_plugin_routes
 from heartbeat import register_heartbeat_routes
 register_heartbeat_routes(app, global_cache, logger)
-register_plugin_routes(app, global_cache,logger)
+register_plugin_routes(app, global_cache, logger)  # Plugin routes from pluginhelper.py
 
 # Register all organized routes
-
 from routes import register_all_routes
-from routes.modern_routes import register_modern_routes
-from routes.user_profile_routes import user_profile_bp, set_global_cache
-# Set global_cache for user_profile_routes
-set_global_cache(global_cache)
-from routes.plugin_routes import plugin_bp
 from helpers.template_helpers import register_template_helpers
 
-register_all_routes(app, global_cache, logger)
-register_modern_routes(app, global_cache, logger)
+register_all_routes(app, global_cache, logger)  # This now includes ALL route modules
 
 # Register template helpers for status management
 register_template_helpers(app)
-
-# Register user profile routes
-app.register_blueprint(user_profile_bp)
-
-# Register plugin management routes
-app.register_blueprint(plugin_bp)
 
 
 # --- Plugin Hot Reload Scheduler ---

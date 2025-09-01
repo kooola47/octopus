@@ -26,6 +26,13 @@ from helpers.utils import get_current_timestamp, require_admin, require_login
 
 plugin_bp = Blueprint('plugin', __name__)
 
+def register_plugin_routes(app, global_cache, logger):
+    """Register plugin management routes with the Flask app"""
+    # Register the blueprint
+    app.register_blueprint(plugin_bp)
+    
+    logger.info("Plugin management routes registered successfully")
+
 @plugin_bp.route('/plugins/create')
 @require_login
 def create_plugin():

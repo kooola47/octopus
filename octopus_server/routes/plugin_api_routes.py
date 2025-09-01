@@ -82,7 +82,7 @@ def _import_plugin_with_fallback(plugin_name):
     
     return None
 
-def register_plugin_api_routes(app, cache, logger):
+def register_plugin_api_routes(app, global_cache, logger):
     """Register plugin API routes with the Flask app"""
     
     # Setup paths once when routes are registered

@@ -45,7 +45,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def register_auth_routes(app, cache, logger):
+def register_auth_routes(app, global_cache, logger):
     """Register authentication routes with the Flask app"""
     
     # Set secret key for sessions

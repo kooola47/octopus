@@ -67,20 +67,22 @@ class TaskExecutionLoop:
                 
         # Should this client execute?
         if self.task_executor.should_client_execute(task, username):
-            # Check if task is already being executed to prevent duplicates
-            if self.task_executor.is_executing(tid):
-                self.logger.debug(f"Task {tid} is already being executed, skipping duplicate")
-                return
-                
-            self.logger.info(f"Executing task {tid} assigned to {username}")
-            self._execute_task_safely(tid, task, username)
+            # Atomically claim the task for execution to prevent race conditions
+            if not self.task_executor.is_executing(tid):
+                # Try to claim the task atomically using server-side coordination
+                if self.task_executor.start_execution(tid):
+                    self.logger.info(f"Successfully claimed and executing task {tid} assigned to {username}")
+                    self._execute_task_safely(tid, task, username)
+                else:
+                    self.logger.info(f"Task {tid} already being executed by another process, skipping")
+            else:
+                self.logger.debug(f"Task {tid} is already being executed locally, skipping duplicate")
         else:
             self.logger.debug(f"Task {tid} not assigned to this client ({username})")
     
     def _execute_task_safely(self, tid: str, task: Dict[str, Any], username: str):
         """Execute a task with proper error handling and cleanup"""
-        # Mark task as executing before starting
-        self.task_executor.start_execution(tid)
+        # Task is already marked as executing by the caller
         
         try:
             exec_status, result = self.task_executor.execute_task(task, tid, username)
@@ -89,7 +91,7 @@ class TaskExecutionLoop:
                 self.task_executor.post_execution_result(tid, username, exec_status, result)
             else:
                 # For scheduled tasks, don't mark as Done - they should keep running
-                task_type = task.get("type", "").lower()
+                task_type = (task.get("type") or "").lower()
                 if task_type in ["scheduled", "schedule"]:
                     # Post execution result but don't update task status to Done
                     self.task_executor.post_execution_result(tid, username, exec_status, result)

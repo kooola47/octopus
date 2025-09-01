@@ -212,6 +212,14 @@ class TaskExecutor:
             except Exception:
                 kwargs = {}
         
+        # Add atomic task claiming mechanism to prevent race conditions
+        if self.is_executing(tid):
+            self.logger.warning(f"Task {tid} is already being executed by another instance")
+            return "success", "Task already executing"
+            
+        # Mark task as executing before starting execution
+        self.start_execution(tid)
+        
         try:
             from pluginhelper import import_plugin
             module = import_plugin(plugin)
@@ -249,6 +257,9 @@ class TaskExecutor:
             self.logger.error(f"Plugin execution failed for {plugin}.{action}: {e}")
             result_str = str(e)
             exec_status = "failed"
+        finally:
+            # Always clean up execution state
+            self.finish_execution(tid)
         
         return exec_status, result_str
     
@@ -351,9 +362,46 @@ class TaskExecutor:
         """Check if task is currently being executed"""
         return task_id in self.executing_tasks
     
-    def start_execution(self, task_id: str):
-        """Mark task as executing"""
-        self.executing_tasks.add(task_id)
+    def start_execution(self, task_id: str) -> bool:
+        """
+        Atomically claim task for execution using server-side coordination.
+        Returns True if successfully claimed, False if already being executed.
+        """
+        import requests
+        import os
+        
+        try:
+            # Get executor name (client username)
+            executor = os.getenv("OCTOPUS_USERNAME", "unknown")
+            
+            # Try to claim the task on the server
+            response = requests.post(
+                f"{self.server_url}/tasks/{task_id}/claim",
+                json={"executor": executor},
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success"):
+                    # Successfully claimed, mark locally too
+                    self.executing_tasks.add(task_id)
+                    self.logger.info(f"Successfully claimed task {task_id}: {result.get('message')}")
+                    return True
+                else:
+                    # Failed to claim (likely already being executed)
+                    self.logger.info(f"Failed to claim task {task_id}: {result.get('message')}")
+                    return False
+            else:
+                self.logger.error(f"Server error claiming task {task_id}: {response.status_code}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Network error claiming task {task_id}: {str(e)}")
+            return False
+        except Exception as e:
+            self.logger.error(f"Unexpected error claiming task {task_id}: {str(e)}")
+            return False
     
     def finish_execution(self, task_id: str):
         """Mark task execution as finished"""

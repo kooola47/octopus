@@ -17,7 +17,7 @@ import time
 from flask import request, jsonify, render_template_string
 from dbhelper import (
     get_tasks, add_task, update_task, delete_task,
-    add_execution_result, get_db_file
+    add_execution_result, get_db_file, claim_task_for_execution
 )
 from services.performance_monitor import time_request
 import sqlite3
@@ -95,6 +95,26 @@ def register_client_api_routes(app, global_cache, logger):
             return jsonify({"success": ok})
         # Ensure a response is always returned
         return jsonify({"error": "Method not allowed"}), 405
+
+    @app.route("/tasks/<task_id>/claim", methods=["POST"])
+    def claim_task(task_id):
+        """Atomically claim a task for execution"""
+        try:
+            data = request.json or {}
+            executor = data.get("executor")
+            
+            if not executor:
+                return jsonify({"success": False, "error": "executor required"}), 400
+            
+            # Try to atomically claim the task
+            from ..dbhelper import claim_task_for_execution
+            success, message = claim_task_for_execution(task_id, executor)
+            
+            return jsonify({"success": success, "message": message})
+            
+        except Exception as e:
+            logger.error(f"Error claiming task {task_id}: {str(e)}")
+            return jsonify({"success": False, "error": str(e)}), 500
 
     @app.route("/client-tasks", methods=["GET"])
     def client_tasks():

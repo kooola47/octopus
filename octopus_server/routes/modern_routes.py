@@ -12,7 +12,7 @@ import logging
 import os
 from anyio import current_time
 from flask import request, render_template, url_for, jsonify, Response
-from dbhelper import get_db_file, get_tasks, get_active_clients, add_task, assign_all_tasks, delete_task
+from dbhelper import get_db_file, get_tasks, get_active_clients, add_task, delete_task
 from plugin_discovery import PluginDiscovery
 from services.global_cache_manager import GlobalCacheManager
 
@@ -477,8 +477,12 @@ def register_modern_routes(app, global_cache: GlobalCacheManager, logger):
                     if str(task_id) in tasks:
                         task_dict = {str(task_id): tasks[str(task_id)]}
                         logger.info(f"Assigning task {task_id} with data: {task_dict[str(task_id)]}")
-                        assign_all_tasks(task_dict, client_dict)
-                        logger.info(f"Task {task_id} assignment completed")
+                        
+                        # Use centralized assignment service for single task
+                        from services.task_assignment_service import get_assignment_service
+                        assignment_service = get_assignment_service(global_cache)
+                        assignment_result = assignment_service.assign_pending_tasks(force=True)
+                        logger.info(f"Task {task_id} assignment completed: {assignment_result}")
                     else:
                         logger.warning(f"Task {task_id} not found in tasks dict after creation")
                 else:

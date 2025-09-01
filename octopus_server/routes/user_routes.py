@@ -37,7 +37,7 @@ def get_current_user():
 
 logger = logging.getLogger(__name__)
 
-def register_user_routes(app):
+def register_user_routes(app, global_cache, logger):
     """Register user management routes with Flask app"""
     
     @app.route('/modern/users')

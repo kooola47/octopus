@@ -327,7 +327,7 @@ def add_task(task):
             task.get("action", "run"),
             str(task.get("args", [])),
             str(task.get("kwargs", {})),
-            task.get("type"),
+            task.get("type", "adhoc"),
             start_time,
             end_time,
             task.get("interval"),
@@ -355,8 +355,8 @@ def update_task(task_id, updates):
         logger.info(f"UPDATE_TASK: Current task type: {task.get('type')}, status: {task.get('status')}")
         
         # Before applying updates, check if this is a scheduled task being marked as Done
-        original_type = task.get("type", "").lower()
-        new_status = updates.get("status", "").lower()
+        original_type = (task.get("type") or "").lower()
+        new_status = (updates.get("status") or "").lower()
         
         # Prevent scheduled tasks from being marked as Done unless execution window has ended
         if (original_type in ["scheduled", "schedule"] and 
@@ -431,6 +431,54 @@ def delete_task(task_id):
         conn.commit()
     return True
 
+def claim_task_for_execution(task_id, executor):
+    """
+    Atomically claim a task for execution by setting it to 'In Progress' status.
+    Returns (success, message) tuple.
+    """
+    logger = logging.getLogger("octopus_server")
+    try:
+        with get_db_connection() as conn:
+            # First, get the current task status
+            cursor = conn.execute("SELECT status, executor FROM tasks WHERE id=?", (task_id,))
+            row = cursor.fetchone()
+            
+            if not row:
+                return False, f"Task {task_id} not found"
+            
+            current_status, current_executor = row
+            
+            # Check if task is already being executed
+            if current_status == "In Progress":
+                if current_executor == executor:
+                    return True, f"Task {task_id} already claimed by {executor}"
+                else:
+                    return False, f"Task {task_id} already being executed by {current_executor}"
+            
+            # Check if task is in a state that can be executed
+            if current_status in ["Done", "Cancelled", "Failed"]:
+                return False, f"Task {task_id} is already {current_status}"
+            
+            # Atomically claim the task
+            cursor = conn.execute("""
+                UPDATE tasks 
+                SET status = 'In Progress', executor = ?, updated_at = ?
+                WHERE id = ? AND status NOT IN ('In Progress', 'Done', 'Cancelled', 'Failed')
+            """, (executor, time.time(), task_id))
+            
+            # Check if we actually updated a row
+            if cursor.rowcount > 0:
+                conn.commit()
+                logger.info(f"Task {task_id} claimed by {executor}")
+                return True, f"Task {task_id} claimed successfully"
+            else:
+                # Someone else claimed it between our SELECT and UPDATE
+                return False, f"Task {task_id} was claimed by another process"
+                
+    except Exception as e:
+        logger.error(f"Error claiming task {task_id}: {str(e)}")
+        return False, f"Database error: {str(e)}"
+
 def get_db_file():
     """Return the database file path"""
     return DB_FILE
@@ -455,22 +503,6 @@ def get_owner_options(active_clients):
         if username and username not in owners:
             owners.append(username)
     return owners
-
-def assign_anyone_task(tasks, clients):
-    """
-    Assigns unassigned 'Anyone' tasks to a random ONLINE client (by username).
-    Only assigns if executor is empty and client has sent heartbeat recently.
-    """
-    import random
-    # Only use clients that are currently active/online (filtered by get_active_clients)
-    available_users = [str(client['username']) for client in clients.values() if 'username' in client]
-    for tid, task in tasks.items():
-        # Only assign if executor is empty and status is not 'success' or 'failed'
-        if task.get("owner") == "Anyone" and (not task.get("executor")) and task.get("status") not in ("success", "failed"):
-            if available_users:
-                chosen = random.choice(available_users)
-                task["executor"] = chosen
-                update_task(tid, {"executor": chosen})
 
 def assign_all_tasks(tasks, clients):
     """
