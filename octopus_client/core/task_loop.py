@@ -105,3 +105,4 @@ class TaskExecutionLoop:
         finally:
             # Always remove from executing set when done
             self.task_executor.finish_execution(tid)
+        self.logger.debug(f"Cleaned up execution state for task {tid}")
