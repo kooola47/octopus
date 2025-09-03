@@ -70,7 +70,7 @@ class TaskExecutionLoop:
             # Atomically claim the task for execution to prevent race conditions
             if not self.task_executor.is_executing(tid):
                 # Try to claim the task atomically using server-side coordination
-                if self.task_executor.start_execution(tid):
+                if self.task_executor.start_execution(tid, username):
                     self.logger.info(f"Successfully claimed and executing task {tid} assigned to {username}")
                     self._execute_task_safely(tid, task, username)
                 else:
@@ -88,16 +88,16 @@ class TaskExecutionLoop:
             exec_status, result = self.task_executor.execute_task(task, tid, username)
             
             if task.get("owner") == "ALL":
+                # For ALL tasks, create execution record only
                 self.task_executor.post_execution_result(tid, username, exec_status, result)
             else:
-                # For scheduled tasks, don't mark as Done - they should keep running
+                # For scheduled tasks, create execution record but don't mark as Done
                 task_type = (task.get("type") or "").lower()
                 if task_type in ["scheduled", "schedule"]:
-                    # Post execution result but don't update task status to Done
                     self.task_executor.post_execution_result(tid, username, exec_status, result)
                     self.logger.info(f"Posted execution result for scheduled task {tid}: {exec_status}")
                 else:
-                    # For adhoc tasks, mark as Done when completed
+                    # For adhoc tasks, only mark as Done - no execution record needed
                     self.task_executor.update_task_status(tid, username, result)
                     self.logger.info(f"Updated adhoc task {tid} status to Done")
                 

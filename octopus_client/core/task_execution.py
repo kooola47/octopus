@@ -212,13 +212,8 @@ class TaskExecutor:
             except Exception:
                 kwargs = {}
         
-        # Add atomic task claiming mechanism to prevent race conditions
-        if self.is_executing(tid):
-            self.logger.warning(f"Task {tid} is already being executed by another instance")
-            return "success", "Task already executing"
-            
-        # Mark task as executing before starting execution
-        self.start_execution(tid)
+        # Task is already claimed by start_execution() in task_loop.py
+        # No need for additional race condition checks here
         
         try:
             from pluginhelper import import_plugin
@@ -323,6 +318,7 @@ class TaskExecutor:
         """Post execution result for ALL tasks to the executions table with unique execution ID."""
         try:
             # Generate unique execution ID
+            self.logger.info(f"##Generating execution ID for task {tid} and user {username}")
             execution_id = f"{tid}_{username}_{int(time.time() * 1000)}"
             
             response = requests.post(
@@ -362,22 +358,18 @@ class TaskExecutor:
         """Check if task is currently being executed"""
         return task_id in self.executing_tasks
     
-    def start_execution(self, task_id: str) -> bool:
+    def start_execution(self, task_id: str, username: str) -> bool:
         """
         Atomically claim task for execution using server-side coordination.
         Returns True if successfully claimed, False if already being executed.
         """
         import requests
-        import os
         
         try:
-            # Get executor name (client username)
-            executor = os.getenv("OCTOPUS_USERNAME", "unknown")
-            
             # Try to claim the task on the server
             response = requests.post(
                 f"{self.server_url}/tasks/{task_id}/claim",
-                json={"executor": executor},
+                json={"executor": username},
                 timeout=5
             )
             

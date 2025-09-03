@@ -78,15 +78,7 @@ def register_client_api_routes(app, global_cache, logger):
             updates = request.json or {}
             logger.info(f"Updating task {task_id} with: {updates}")
             
-            # If this is an execution result (has result field), record it separately
-            if "result" in updates and updates.get("executor"):
-                add_execution_result(
-                    task_id, 
-                    updates.get("executor"), 
-                    updates.get("status", "completed"),
-                    updates.get("result", "")
-                )
-            
+            # Only update task status - let client handle execution records separately
             ok = update_task(task_id, updates)
             logger.info(f"Task {task_id} update result: {ok}")
             return jsonify({"success": ok})
