@@ -15,9 +15,10 @@ This distinction is important: 'client' refers to the agent/service and its mach
 
 import time
 from flask import request, jsonify, render_template_string
+from constants import ExecutionStatus, TaskStatus
 from dbhelper import (
     get_tasks, add_task, update_task, delete_task,
-    add_execution_result, get_db_file, claim_task_for_execution
+    add_execution_result, update_execution_result, get_db_file, claim_task_for_execution
 )
 from services.performance_monitor import time_request
 import sqlite3
@@ -117,7 +118,27 @@ def register_client_api_routes(app, global_cache, logger):
         # Get status filter - default to empty string for "all status"
         status_filter = request.args.get('status', '').strip()
         
+        # Get client parameter for filtering tasks assigned to specific client
+        client_username = request.args.get('client', '').strip()
+        
         all_tasks = list(get_tasks().values())
+        
+        # Filter tasks for specific client if client parameter provided
+        if client_username:
+            filtered_tasks = []
+            for task in all_tasks:
+                owner = task.get('owner', '')
+                executor = task.get('executor', '')
+                
+                # Include task if:
+                # 1. Assigned to this client (executor = client_username)
+                # 2. Available to "Anyone" and not yet assigned (owner = Anyone, no executor)
+                # 3. Available to "ALL" (owner = ALL)
+                if (executor == client_username or 
+                    (owner == "Anyone" and not executor) or 
+                    owner == "ALL"):
+                    filtered_tasks.append(task)
+            all_tasks = filtered_tasks
         
         # Apply status filter if specified (empty means "all status")
         if status_filter:
@@ -234,6 +255,7 @@ def register_client_api_routes(app, global_cache, logger):
         """
         Unauthenticated endpoint for clients to submit execution results.
         This endpoint specifically handles execution result submissions without requiring web session authentication.
+        Supports both creating new executions and updating existing ones based on execution_id.
         """
         try:
             # Handle both form data and JSON data
@@ -247,17 +269,52 @@ def register_client_api_routes(app, global_cache, logger):
             # Extract required fields
             task_id = data.get("task_id")
             client = data.get("client") 
-            status = data.get("exec_status") or data.get("status", "completed")
+            status = data.get("exec_status") or data.get("status", ExecutionStatus.SUCCESS)  # Default to success
             result = data.get("exec_result") or data.get("result", "")
+            execution_id = data.get("execution_id")  # Optional - if provided, update existing record
+            
+            # Status will be normalized in add_execution_result using ExecutionStatus.normalize()
+            # No need for manual mapping here - let the centralized system handle it
             
             # Validate required fields
             if not task_id or not client:
                 logger.warning(f"Missing required fields in execution submission: task_id={task_id}, client={client}")
                 return jsonify({"error": "Missing required fields: task_id and client"}), 400
             
-            # Record the execution result
+            # If execution_id is provided, try to update existing record first
+            if execution_id:
+                logger.info(f"Attempting to update execution record: execution_id={execution_id}, status={status}")
+                if update_execution_result(execution_id, status, result):
+                    logger.info(f"Successfully updated execution record {execution_id}")
+                    
+                    # Update task status based on execution result
+                    from constants import ExecutionStatus, TaskStatus
+                    normalized_exec_status = ExecutionStatus.normalize(status)
+                    if normalized_exec_status == ExecutionStatus.SUCCESS:
+                        update_task(task_id, {"status": TaskStatus.COMPLETED})
+                        logger.info(f"Updated task {task_id} status to completed")
+                    elif normalized_exec_status in [ExecutionStatus.FAILED, ExecutionStatus.CANCELLED]:
+                        update_task(task_id, {"status": TaskStatus.FAILED})
+                        logger.info(f"Updated task {task_id} status to failed")
+                    
+                    return jsonify({"success": True, "message": "Execution result updated successfully"})
+                else:
+                    # If update failed, fall through to create new record
+                    logger.info(f"Update failed for execution_id {execution_id}, creating new record")
+            
+            # Create new execution record (or fallback from failed update)
             logger.info(f"Recording execution result: task_id={task_id}, client={client}, status={status}")
-            add_execution_result(task_id, client, status, result)
+            add_execution_result(task_id, client, status, result, execution_id)
+            
+            # Update task status based on execution result
+            from constants import ExecutionStatus, TaskStatus
+            normalized_exec_status = ExecutionStatus.normalize(status)
+            if normalized_exec_status == ExecutionStatus.SUCCESS:
+                update_task(task_id, {"status": TaskStatus.COMPLETED})
+                logger.info(f"Updated task {task_id} status to completed")
+            elif normalized_exec_status in [ExecutionStatus.FAILED, ExecutionStatus.CANCELLED]:
+                update_task(task_id, {"status": TaskStatus.FAILED})
+                logger.info(f"Updated task {task_id} status to failed")
             
             logger.info(f"Successfully recorded execution result for task {task_id} from client {client}")
             return jsonify({"success": True, "message": "Execution result recorded successfully"})

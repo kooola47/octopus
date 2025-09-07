@@ -8,6 +8,9 @@ flask>=2.3.0
 # HTTP client for server communication
 requests>=2.31.0
 
+# Advanced task scheduling
+APScheduler>=3.10.0
+
 # System monitoring
 psutil>=5.9.0
 

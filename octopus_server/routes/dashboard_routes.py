@@ -8,6 +8,7 @@ Flask routes for the web dashboard interface.
 import json
 import urllib.parse
 import sqlite3
+from constants import TaskStatus, ExecutionStatus
 import time
 from flask import request, render_template, redirect, url_for, render_template_string, flash
 from dbhelper import (
@@ -109,8 +110,8 @@ def register_dashboard_routes(app, global_cache, logger):
         tasks = get_tasks()
         for tid, task in tasks.items():
             db_status = task.get("status", "")
-            # Only compute status if the task isn't already Done/completed
-            if db_status not in ("Done", "success", "failed", "completed"):
+            # Only compute status if the task isn't already in a final state
+            if not TaskStatus.is_final_state(db_status):
                 computed_status = compute_task_status(task, active_clients)
                 task["status"] = computed_status
             # Keep the database status for completed tasks
@@ -339,20 +340,20 @@ def register_dashboard_routes(app, global_cache, logger):
             'total_executions': len(executions)
         }
         
-        # Safely count completed tasks
+        # Safely count completed tasks using centralized status logic
         try:
             if tasks:
                 if isinstance(tasks, dict):
                     # If tasks is a dict, count values with completed status
-                    stats['completed_tasks'] = len([t for t in tasks.values() if isinstance(t, dict) and t.get('status') == 'completed'])
-                    stats['active_tasks'] = len([t for t in tasks.values() if isinstance(t, dict) and t.get('status') != 'completed'])
+                    stats['completed_tasks'] = len([t for t in tasks.values() if isinstance(t, dict) and TaskStatus.is_final_state(t.get('status'))])
+                    stats['active_tasks'] = len([t for t in tasks.values() if isinstance(t, dict) and not TaskStatus.is_final_state(t.get('status'))])
                 elif isinstance(tasks, list):
                     # If tasks is a list, check each item
                     completed = 0
                     active = 0
                     for t in tasks:
                         if isinstance(t, dict):
-                            if t.get('status') == 'completed':
+                            if TaskStatus.is_final_state(t.get('status')):
                                 completed += 1
                             else:
                                 active += 1

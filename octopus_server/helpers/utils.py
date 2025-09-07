@@ -74,7 +74,8 @@ def is_timestamp_recent(timestamp: Union[str, float, int], max_age_seconds: int 
         return False
 
 def is_task_completed(status):
-    return status in ['Done', 'success', 'failed', 'completed']
+    # Task completion statuses (different from execution statuses)
+    return status in ['Done', 'Failed', 'Inactive']
 
 def sanitize_string(text, max_length=1000):
     if not text:

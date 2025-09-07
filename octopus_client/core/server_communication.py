@@ -8,6 +8,7 @@ Handles all communication with the Octopus server including commands and heartbe
 import time
 import requests
 import importlib
+from constants import TaskStatus
 from taskmanager import get_tasks
 from utils import get_hostname
 from typing import Dict, Any, List
@@ -89,7 +90,7 @@ class ServerCommunicator:
         """Claim an ALL task for execution"""
         update = {
             "executor": username,
-            "status": "Active",
+            "status": TaskStatus.RUNNING,
             "updated_at": time.time()
         }
         try:

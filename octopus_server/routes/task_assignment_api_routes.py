@@ -6,6 +6,7 @@ API endpoints for manual task assignment and debugging.
 """
 
 from flask import jsonify, request
+from constants import TaskStatus, ExecutionStatus
 from services.task_assignment_service import get_assignment_service
 from dbhelper import get_tasks, get_active_clients
 import time
@@ -57,7 +58,7 @@ def register_task_assignment_api_routes(app, global_cache, logger):
                     "created_at": task.get("created_at")
                 }
                 for tid, task in tasks.items()
-                if not task.get("executor") and task.get("status") not in ("success", "failed", "Done")
+                if not task.get("executor") and not TaskStatus.is_final_state(task.get("status"))
             ]
             
             return jsonify({

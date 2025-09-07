@@ -15,6 +15,7 @@ from flask import request, render_template, url_for, jsonify, Response
 from dbhelper import get_db_file, get_tasks, get_active_clients, add_task, delete_task
 from plugin_discovery import PluginDiscovery
 from services.global_cache_manager import GlobalCacheManager
+from constants import ExecutionStatus, TaskStatus, ClientStatus
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -95,13 +96,13 @@ def register_modern_routes(app, global_cache: GlobalCacheManager, logger):
                 time_diff = time.time() - row['last_heartbeat']
                 if time_diff < 150:
                     online_clients += 1
-                    row['status'] = 'online'
+                    row['status'] = ClientStatus.ONLINE
                 elif time_diff < 300:
                     idle_clients += 1
-                    row['status'] = 'idle'
+                    row['status'] = ClientStatus.BUSY  # Using BUSY for idle state
                 else:
                     offline_clients += 1
-                    row['status'] = 'offline'
+                    row['status'] = ClientStatus.OFFLINE
 
             stats['online_clients'] = online_clients
             stats['idle_clients'] = idle_clients
@@ -339,8 +340,8 @@ def register_modern_routes(app, global_cache: GlobalCacheManager, logger):
                     cursor = conn.cursor()
                     cursor.execute("""
                         INSERT INTO executions (task_id, client, status, start_time, result)
-                        VALUES (?, ?, 'pending', ?, 'Task assigned to client')
-                    """, (task_id, client_id, now))
+                        VALUES (?, ?, ?, ?, 'Task assigned to client')
+                    """, (task_id, client_id, ExecutionStatus.RUNNING, now))
                     conn.commit()
                     execution_id = cursor.lastrowid
             except Exception as e:
@@ -409,8 +410,8 @@ def register_modern_routes(app, global_cache: GlobalCacheManager, logger):
                 now = time.time()
                 cursor.execute("""
                     INSERT INTO executions (task_id, status, start_time, result)
-                    VALUES (?, 'pending', ?, 'Task started manually')
-                """, (task_id, now))
+                    VALUES (?, ?, ?, 'Task started manually')
+                """, (task_id, ExecutionStatus.RUNNING, now))
                 conn.commit()
                 execution_id = cursor.lastrowid
                 
@@ -504,18 +505,61 @@ def register_modern_routes(app, global_cache: GlobalCacheManager, logger):
             with sqlite3.connect(get_db_file()) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                cursor.execute("SELECT * FROM executions WHERE id = ?", (execution_id,))
-                execution = cursor.fetchone()
                 
-                if not execution:
+                # Join executions with tasks to get plugin, action, and args information
+                cursor.execute("""
+                    SELECT 
+                        e.*,
+                        t.plugin,
+                        t.action,
+                        t.args,
+                        t.kwargs,
+                        t.owner
+                    FROM executions e 
+                    LEFT JOIN tasks t ON e.task_id = t.id 
+                    WHERE e.id = ?
+                """, (execution_id,))
+                execution_with_task = cursor.fetchone()
+                
+                if not execution_with_task:
                     return {"error": "Execution not found"}, 404
                 
                 # Convert to dict and add computed fields
-                execution_dict = dict(execution)
+                execution_dict = dict(execution_with_task)
                 
                 # Add duration if we have both created_at and updated_at
                 if execution_dict.get('created_at') and execution_dict.get('updated_at'):
                     execution_dict['duration'] = execution_dict['updated_at'] - execution_dict['created_at']
+                
+                # Combine args and kwargs into a single input string
+                args_str = execution_dict.get('args', '[]')
+                kwargs_str = execution_dict.get('kwargs', '{}')
+                
+                # Format input args as a readable string
+                input_args = ""
+                try:
+                    import ast
+                    args_list = ast.literal_eval(args_str) if args_str else []
+                    kwargs_dict = ast.literal_eval(kwargs_str) if kwargs_str else {}
+                    
+                    input_parts = []
+                    if args_list:
+                        input_parts.extend([str(arg) for arg in args_list])
+                    if kwargs_dict:
+                        input_parts.extend([f"{k}={v}" for k, v in kwargs_dict.items()])
+                    
+                    input_args = ", ".join(input_parts) if input_parts else "No arguments"
+                except Exception:
+                    # Fallback if parsing fails
+                    if args_str and args_str != '[]':
+                        input_args = f"args: {args_str}"
+                    if kwargs_str and kwargs_str != '{}':
+                        if input_args:
+                            input_args += f", kwargs: {kwargs_str}"
+                        else:
+                            input_args = f"kwargs: {kwargs_str}"
+                    if not input_args:
+                        input_args = "No arguments"
                 
                 # Format the response to match what the frontend expects
                 response_data = {
@@ -529,9 +573,11 @@ def register_modern_routes(app, global_cache: GlobalCacheManager, logger):
                     "created_at": execution_dict.get('created_at'),
                     "updated_at": execution_dict.get('updated_at'),
                     "duration": execution_dict.get('duration'),
-                    # Add default values for fields that might be in the database schema
+                    # Add task information
                     "plugin": execution_dict.get('plugin', 'N/A'),
-                    "action": execution_dict.get('action', 'N/A')
+                    "action": execution_dict.get('action', 'N/A'),
+                    "input_args": input_args,
+                    "owner": execution_dict.get('owner', 'N/A')
                 }
                 
                 return {"execution": response_data}
@@ -557,8 +603,8 @@ def register_modern_routes(app, global_cache: GlobalCacheManager, logger):
                 now = time.time()
                 cursor.execute("""
                     INSERT INTO executions (task_id, client, status, start_time, result)
-                    VALUES (?, ?, 'pending', ?, 'Retrying failed execution')
-                """, (execution['task_id'], execution['client'], now))
+                    VALUES (?, ?, ?, ?, 'Retrying failed execution')
+                """, (execution['task_id'], execution['client'], ExecutionStatus.RUNNING, now))
                 conn.commit()
                 new_execution_id = cursor.lastrowid
                 
@@ -734,6 +780,10 @@ def register_modern_routes(app, global_cache: GlobalCacheManager, logger):
 def get_dashboard_stats(cache):
     """Get dashboard statistics from real data"""
     try:
+        from constants import TaskStatus, ExecutionStatus
+        import logging
+        logger = logging.getLogger("octopus_server")
+        
         with sqlite3.connect(get_db_file()) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -742,40 +792,54 @@ def get_dashboard_stats(cache):
             cursor.execute("SELECT COUNT(*) as count FROM tasks")
             total_tasks = cursor.fetchone()['count']
             
-            # Get active clients from cache (heartbeat system)
-            active_clients = 0
+            # Get online clients from cache (heartbeat system)
+            online_clients = 0
             try:
-                clients = cache.all()
+                clients = cache.get_by_cache_type('clients')
                 now = time.time()
+                
                 for client_id, client_data in clients.items():
+                    # Check both heartbeat timing and explicit status
                     last_heartbeat = client_data.get('last_heartbeat', 0)
-                    if now - last_heartbeat < 60:  # Active within last 60 seconds
-                        active_clients += 1
+                    client_status = client_data.get('status', '')
+                    heartbeat_diff = now - last_heartbeat
+                    
+                    # Count as online if either:
+                    # 1. Has recent heartbeat (within 60 seconds), OR
+                    # 2. Explicitly marked as online status
+                    if (heartbeat_diff < 60) or (ClientStatus.normalize(client_status) == ClientStatus.ONLINE):
+                        online_clients += 1
+                        
             except Exception as e:
-                logger.error(f"Error getting active clients from cache: {e}")
-                active_clients = 0
+                logger.error(f"Error getting online clients from cache: {e}")
+                online_clients = 0
             
-            # Get running tasks
-            cursor.execute("SELECT COUNT(*) as count FROM tasks WHERE status IN ('running', 'Active')")
-            running_tasks = cursor.fetchone()['count']
+            # Get active (running) tasks using centralized status
+            cursor.execute("SELECT COUNT(*) as count FROM tasks WHERE status = ?", (TaskStatus.RUNNING,))
+            active_tasks = cursor.fetchone()['count']
             
-            # Get today's executions
-            today_start = time.time() - 86400  # 24 hours ago
-            cursor.execute("SELECT COUNT(*) as count FROM executions WHERE created_at > ?", (today_start,))
+            # Get completed tasks using centralized status
+            cursor.execute("SELECT COUNT(*) as count FROM tasks WHERE status = ?", (TaskStatus.COMPLETED,))
+            completed_tasks = cursor.fetchone()['count']
+            
+            # Get total executions
+            cursor.execute("SELECT COUNT(*) as count FROM executions")
             total_executions = cursor.fetchone()['count']
             
+            logger.info(f"DEBUG: Dashboard stats - Active: {active_tasks}, Completed: {completed_tasks}, Online: {online_clients}, Executions: {total_executions}")
+            
             return {
-                'total_tasks': total_tasks,
-                'active_clients': active_clients,
-                'running_tasks': running_tasks,
+                'active_tasks': active_tasks,
+                'completed_tasks': completed_tasks,
+                'online_clients': online_clients,
                 'total_executions': total_executions
             }
     except Exception as e:
         logger.error(f"Error getting dashboard stats: {e}")
         return {
-            'total_tasks': 0,
-            'active_clients': 0,
-            'running_tasks': 0,
+            'active_tasks': 0,
+            'completed_tasks': 0,
+            'online_clients': 0,
             'total_executions': 0
         }
 
@@ -803,19 +867,23 @@ def get_recent_activity(limit=10):
             
             activities = []
             for row in cursor.fetchall():
-                # Determine event type and description based on status
-                if row['status'] == 'success':
+                # Determine event type and description based on status using centralized logic
+                normalized_status = ExecutionStatus.normalize(row['status'])
+                if normalized_status == ExecutionStatus.SUCCESS:
                     event_type = 'Task Completed'
                     description = f"Successfully executed task {row['task_id'][:8] if row['task_id'] else 'unknown'}"
-                elif row['status'] == 'failed':
+                elif normalized_status == ExecutionStatus.FAILED:
                     event_type = 'Task Failed'
                     description = f"Failed to execute task {row['task_id'][:8] if row['task_id'] else 'unknown'}"
                 else:
                     event_type = 'Task Started'
                     description = f"Started executing task {row['task_id'][:8] if row['task_id'] else 'unknown'}"
                 
-                # Determine client status (simplified)
-                client_status = 'online' if row['status'] in ['success', 'running'] else 'offline'
+                # Determine client status based on normalized execution status
+                if normalized_status in [ExecutionStatus.SUCCESS, ExecutionStatus.RUNNING]:
+                    client_status = ClientStatus.ONLINE
+                else:
+                    client_status = ClientStatus.OFFLINE
                 
                 activities.append({
                     'timestamp': row['created_at'],
@@ -917,21 +985,21 @@ def get_clients_paginated(page=1, page_size=25, search='', status_filter=''):
                 for i, row in enumerate(heartbeat_data):
                     time_diff = current_time - row['last_heartbeat']
                     if time_diff < 60:
-                        status = 'online'
+                        status = ClientStatus.ONLINE
                     elif time_diff < 300:  # 5 minutes
-                        status = 'idle'
+                        status = ClientStatus.BUSY  # Using BUSY for idle state
                     else:
-                        status = 'offline'
+                        status = ClientStatus.OFFLINE
                     
                     # Get execution count for this client
                     cursor.execute("SELECT COUNT(*) as count FROM executions WHERE client = ?", (row['name'],))
                     exec_result = cursor.fetchone()
                     tasks_executed = exec_result['count'] if exec_result else 0
                     
-                    # Get success rate
-                    cursor.execute("SELECT COUNT(*) as count FROM executions WHERE client = ? AND status = 'success'", (row['name'],))
-                    success_result = cursor.fetchone()
-                    success_count = success_result['count'] if success_result else 0
+                    # Get success rate using centralized status logic
+                    cursor.execute("SELECT status FROM executions WHERE client = ?", (row['name'],))
+                    all_executions = cursor.fetchall()
+                    success_count = len([ex for ex in all_executions if ExecutionStatus.normalize(ex['status']) == ExecutionStatus.SUCCESS])
                     success_rate = (success_count / tasks_executed * 100) if tasks_executed > 0 else 0
                     
                     client = {
@@ -964,16 +1032,17 @@ def get_clients_paginated(page=1, page_size=25, search='', status_filter=''):
                     last_seen = result['last_seen'] if result and result['last_seen'] else current_time - 3600
                     
                     time_diff = current_time - last_seen
-                    status = 'online' if time_diff < 3600 else 'offline'  # 1 hour threshold
+                    status = ClientStatus.ONLINE if time_diff < 3600 else ClientStatus.OFFLINE  # 1 hour threshold
                     
                     # Get execution stats
                     cursor.execute("SELECT COUNT(*) as count FROM executions WHERE client = ?", (client_name,))
                     exec_result = cursor.fetchone()
                     tasks_executed = exec_result['count'] if exec_result else 0
                     
-                    cursor.execute("SELECT COUNT(*) as count FROM executions WHERE client = ? AND status = 'success'", (client_name,))
-                    success_result = cursor.fetchone()
-                    success_count = success_result['count'] if success_result else 0
+                    # Get success rate using centralized status logic
+                    cursor.execute("SELECT status FROM executions WHERE client = ?", (client_name,))
+                    all_client_executions = cursor.fetchall()
+                    success_count = len([ex for ex in all_client_executions if ExecutionStatus.normalize(ex['status']) == ExecutionStatus.SUCCESS])
                     success_rate = (success_count / tasks_executed * 100) if tasks_executed > 0 else 0
                     
                     client = {
@@ -1081,10 +1150,10 @@ def get_tasks_paginated(page=1, page_size=25, search='', status_filter='', type_
         
         # Convert dictionary to list format for easier processing
         for task_id, task_data in tasks_dict.items():
-            # Calculate execution statistics
+            # Calculate execution statistics using centralized status logic
             executions = task_data.get('executions', [])
             total_executions = len(executions)
-            success_executions = len([e for e in executions if e.get('status') == 'success'])
+            success_executions = len([e for e in executions if ExecutionStatus.normalize(e.get('status')) == ExecutionStatus.SUCCESS])
             success_rate = (success_executions / total_executions * 100) if total_executions > 0 else 0
             
             # Determine priority based on execution frequency and status
@@ -1108,7 +1177,7 @@ def get_tasks_paginated(page=1, page_size=25, search='', status_filter='', type_
                 'owner': task_data.get('owner', 'System'),
                 'executor': task_data.get('executor', ''),
                 'plugin': task_data.get('plugin', 'unknown'),
-                'status': task_data.get('status', 'pending'),
+                'status': task_data.get('status', TaskStatus.PENDING),
                 'type': task_data.get('type', 'scheduled'),
                 'priority': priority,
                 'last_execution': last_execution,
@@ -1126,7 +1195,6 @@ def get_tasks_paginated(page=1, page_size=25, search='', status_filter='', type_
                             search.lower() in t.get('plugin', '').lower() or
                             search.lower() in t.get('description', '').lower()]
         if status_filter:
-            from constants import TaskStatus
             normalized_filter = TaskStatus.normalize(status_filter)
             filtered_tasks = [t for t in filtered_tasks if TaskStatus.normalize(t.get('status')) == normalized_filter]
         if type_filter:
@@ -1148,27 +1216,40 @@ def get_task_stats():
     """Get task statistics from real database data"""
     try:
         from constants import TaskStatus
+        import logging
+        logger = logging.getLogger("octopus_server")
         
         tasks_dict = get_tasks()
-        logger.info(f"Tasks retrieved: {tasks_dict}")
+        logger.info(f"DEBUG: Found {len(tasks_dict)} tasks for stats calculation")
+        
         total = len(tasks_dict)
         running = 0
         completed = 0
         failed = 0
         pending = 0
         
+        # Debug: collect all statuses found
+        status_found = []
+        
         for task_id, task_data in tasks_dict.items():
             status = task_data.get('status', '')
+            status_found.append(status)
             normalized_status = TaskStatus.normalize(status)
+            logger.info(f"DEBUG: Task {task_id} - Status '{status}' normalized to '{normalized_status}'")
             
             if normalized_status == TaskStatus.RUNNING:
                 running += 1
-            elif normalized_status == TaskStatus.DONE:
+            elif normalized_status == TaskStatus.COMPLETED:
                 completed += 1
             elif normalized_status == TaskStatus.FAILED:
                 failed += 1
-            else:
+            elif normalized_status == TaskStatus.CANCELLED:
+                failed += 1  # Group cancelled with failed for UI display
+            else:  # PENDING or any other status
                 pending += 1
+        
+        logger.info(f"DEBUG: Task statuses found: {status_found}")
+        logger.info(f"DEBUG: Task stats - Total: {total}, Pending: {pending}, Running: {running}, Completed: {completed}, Failed: {failed}")
         
         return {
             'total_tasks': total,
@@ -1251,7 +1332,7 @@ def get_executions_paginated(page=1, page_size=25, search='', status_filter='', 
             # Get paginated results
             offset = (page - 1) * page_size
             query = f"""
-                SELECT execution_id, task_id, client, status, result, created_at, updated_at
+                SELECT id, execution_id, task_id, client, status, result, created_at, updated_at
                 FROM executions 
                 WHERE {where_clause}
                 ORDER BY created_at DESC
@@ -1280,39 +1361,55 @@ def get_executions_paginated(page=1, page_size=25, search='', status_filter='', 
         return [], 0
 
 def get_execution_stats():
-    """Get execution statistics"""
+    """Get execution statistics using centralized status logic"""
     try:
+        from constants import ExecutionStatus
+        import logging
+        logger = logging.getLogger("octopus_server")
+        
         with sqlite3.connect(get_db_file()) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            # Get total executions
-            cursor.execute("SELECT COUNT(*) as count FROM executions")
-            total = cursor.fetchone()['count']
+            # Get all executions with their statuses
+            cursor.execute("SELECT status FROM executions")
+            all_executions = cursor.fetchall()
             
-            # Get successful executions
-            cursor.execute("SELECT COUNT(*) as count FROM executions WHERE status = 'success'")
-            successful = cursor.fetchone()['count']
+            total = len(all_executions)
+            successful = 0
+            failed = 0
+            running = 0
             
-            # Get failed executions
-            cursor.execute("SELECT COUNT(*) as count FROM executions WHERE status = 'failed'")
-            failed = cursor.fetchone()['count']
+            # Debug: log all statuses found
+            status_found = [row['status'] for row in all_executions]
+            logger.info(f"DEBUG: Found {total} executions with statuses: {status_found}")
             
-            # Get running executions
-            cursor.execute("SELECT COUNT(*) as count FROM executions WHERE status = 'running'")
-            running = cursor.fetchone()['count']
+            # Count statuses using centralized logic
+            for row in all_executions:
+                status = row['status']
+                normalized = ExecutionStatus.normalize(status)
+                logger.info(f"DEBUG: Status '{status}' normalized to '{normalized}'")
+                
+                if normalized == ExecutionStatus.SUCCESS:
+                    successful += 1
+                elif normalized == ExecutionStatus.FAILED:
+                    failed += 1
+                elif normalized == ExecutionStatus.RUNNING:
+                    running += 1
+            
+            logger.info(f"DEBUG: Stats - Total: {total}, Success: {successful}, Failed: {failed}, Running: {running}")
             
             # Calculate average duration for completed executions
             cursor.execute("""
                 SELECT AVG(
                     CASE 
-                        WHEN ended_at IS NOT NULL AND started_at IS NOT NULL 
-                        THEN (julianday(ended_at) - julianday(started_at)) * 86400 
+                        WHEN updated_at IS NOT NULL AND created_at IS NOT NULL 
+                        THEN (updated_at - created_at)
                         ELSE NULL 
                     END
                 ) as avg_duration 
                 FROM executions 
-                WHERE status = 'success' AND ended_at IS NOT NULL AND started_at IS NOT NULL
+                WHERE status IS NOT NULL
             """)
             avg_duration_result = cursor.fetchone()
             avg_duration = round(avg_duration_result['avg_duration'] or 0, 1)
@@ -1324,7 +1421,10 @@ def get_execution_stats():
                 'running_executions': running,
                 'avg_duration': avg_duration
             }
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error in get_execution_stats: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return {
             'total_executions': 0,
             'completed_executions': 0,

@@ -8,6 +8,7 @@ Flask routes for dashboard data APIs.
 import time
 import sqlite3
 import logging
+from constants import TaskStatus, ExecutionStatus
 from flask import jsonify, request
 from dbhelper import (
     get_tasks, get_active_clients, assign_all_tasks,
@@ -61,8 +62,8 @@ def register_dashboard_api_routes(app, global_cache, logger):
         # Update task statuses after assignment, but don't override completed tasks
         for tid, task in tasks.items():
             db_status = task.get("status", "")
-            # Only compute status if the task isn't already Done/completed
-            if db_status not in ("Done", "success", "failed", "completed"):
+            # Only compute status if the task isn't already in a final state
+            if not TaskStatus.is_final_state(db_status):
                 computed_status = compute_task_status(task, active_clients)
                 task["status"] = computed_status
         
@@ -279,8 +280,8 @@ def register_dashboard_api_routes(app, global_cache, logger):
         # Update task statuses after assignment, but don't override completed tasks
         for tid, task in tasks.items():
             db_status = task.get("status", "")
-            # Only compute status if the task isn't already Done/completed
-            if db_status not in ("Done", "success", "failed", "completed"):
+            # Only compute status if the task isn't already in a final state
+            if not TaskStatus.is_final_state(db_status):
                 computed_status = compute_task_status(task, active_clients)
                 task["status"] = computed_status
         

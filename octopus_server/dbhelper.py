@@ -13,6 +13,7 @@ import os
 import sys
 import logging
 import threading
+from constants import TaskStatus, ExecutionStatus
 from contextlib import contextmanager
 
 # Add parent directory to path for shared modules
@@ -331,7 +332,7 @@ def add_task(task):
             start_time,
             end_time,
             task.get("interval"),
-            "Created",  # Changed from "pending" to "Created"
+            TaskStatus.PENDING,  # Use centralized TaskStatus constant
             task.get("executor", ""),
             task.get("result", ""),
             now_ts,
@@ -360,7 +361,7 @@ def update_task(task_id, updates):
         
         # Prevent scheduled tasks from being marked as Done unless execution window has ended
         if (original_type in ["scheduled", "schedule"] and 
-            new_status in ["done", "completed", "success"] and
+            new_status in [TaskStatus.COMPLETED, "Inactive"] and  # Standardized task completion statuses
             task.get("execution_end_time")):
             try:
                 end_time_val = task.get("execution_end_time")
@@ -394,32 +395,14 @@ def update_task(task_id, updates):
             task.get("execution_start_time"),
             task.get("execution_end_time"),
             task.get("interval"),
-            task.get("status", "Created"),  # Changed from "pending" to "Created"
+            task.get("status", TaskStatus.PENDING),  # Use centralized TaskStatus constant
             task.get("executor", ""),
             task.get("result", ""),
             now_ts,
             task_id
         ))
-        # Insert/update executions table only if there's actual result data (not just assignment)
-        client = updates.get("executor")
-        result = updates.get("result")
-        exec_status = updates.get("status")
-        
-        # Only create execution record if we have actual execution results
-        if client and (result or exec_status in ("success", "failed", "Done")):
-            # Insert a new execution row; if a unique constraint is added later, replace with UPSERT
-            conn.execute('''
-                INSERT INTO executions (execution_id, task_id, client, status, result, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                f"{task_id}_{client}_{int(now_ts*1000)}",
-                task_id,
-                client,
-                exec_status or "completed",
-                str(result or ""),
-                now_ts,
-                now_ts
-            ))
+        # Note: Execution records should only be created by the proper execution flow
+        # via add_execution_result() function, not during task status updates
         conn.commit()
     return True
 
@@ -433,7 +416,7 @@ def delete_task(task_id):
 
 def claim_task_for_execution(task_id, executor):
     """
-    Atomically claim a task for execution by setting it to 'In Progress' status.
+    Atomically claim a task for execution by setting it to 'running' status.
     Returns (success, message) tuple.
     """
     logger = logging.getLogger("octopus_server")
@@ -449,22 +432,23 @@ def claim_task_for_execution(task_id, executor):
             current_status, current_executor = row
             
             # Check if task is already being executed
-            if current_status == "In Progress":
+            if current_status == TaskStatus.RUNNING:
                 if current_executor == executor:
                     return True, f"Task {task_id} already claimed by {executor}"
                 else:
                     return False, f"Task {task_id} already being executed by {current_executor}"
             
             # Check if task is in a state that can be executed
-            if current_status in ["Done", "Cancelled", "Failed"]:
+            if current_status in [TaskStatus.COMPLETED, TaskStatus.CANCELLED, TaskStatus.FAILED]:
                 return False, f"Task {task_id} is already {current_status}"
             
             # Atomically claim the task
             cursor = conn.execute("""
                 UPDATE tasks 
-                SET status = 'In Progress', executor = ?, updated_at = ?
-                WHERE id = ? AND status NOT IN ('In Progress', 'Done', 'Cancelled', 'Failed')
-            """, (executor, time.time(), task_id))
+                SET status = ?, executor = ?, updated_at = ?
+                WHERE id = ? AND status NOT IN (?, ?, ?)
+            """, (TaskStatus.RUNNING, executor, time.time(), task_id, 
+                 TaskStatus.RUNNING, TaskStatus.COMPLETED, TaskStatus.CANCELLED))
             
             # Check if we actually updated a row
             if cursor.rowcount > 0:
@@ -550,7 +534,7 @@ def assign_all_tasks(tasks, clients):
             logger.debug(f"Processing task {tid}: owner={owner}, executor={executor}, status={status}")
             
             # Skip if task is already done
-            if status in ("success", "failed", "Done"):
+            if TaskStatus.is_final_state(status):
                 continue
                 
             # Skip if task already has an executor (prevent re-assignment)
@@ -559,9 +543,9 @@ def assign_all_tasks(tasks, clients):
                 
             # Handle different owner types
             if owner == "ALL":
-                # ALL tasks should be marked as Active immediately so all clients can pick them up
+                # ALL tasks should be marked as running immediately so all clients can pick them up
                 logger.info(f"Assigning ALL task {tid} to all clients")
-                update_task(tid, {"executor": "ALL", "status": "Active"})
+                update_task(tid, {"executor": "ALL", "status": TaskStatus.RUNNING})
                 task["executor"] = "ALL"
                     
             elif owner == "Anyone" or not owner or owner.strip() == "":
@@ -569,19 +553,19 @@ def assign_all_tasks(tasks, clients):
                 if available_users:
                     chosen = random.choice(available_users)
                     logger.info(f"Assigning Anyone task {tid} to {chosen}")
-                    update_task(tid, {"executor": chosen, "status": "Active"})
+                    update_task(tid, {"executor": chosen, "status": TaskStatus.RUNNING})
                     task["executor"] = chosen
                 else:
                     logger.warning(f"No available users to assign Anyone task {tid}, leaving as unassigned")
                     # Set executor to empty string instead of leaving it as "ALL"
-                    update_task(tid, {"executor": "", "status": "Created"})
+                    update_task(tid, {"executor": "", "status": TaskStatus.PENDING})
                     task["executor"] = ""
                     
             else:
                 # Specific user assignment
                 if owner in available_users:
                     logger.info(f"Assigning specific user task {tid} to {owner}")
-                    update_task(tid, {"executor": owner, "status": "Active"}) 
+                    update_task(tid, {"executor": owner, "status": TaskStatus.RUNNING}) 
                     task["executor"] = owner
                 else:
                     logger.warning(f"Task {tid} owner '{owner}' is not in available users: {available_users}")
@@ -591,10 +575,11 @@ def assign_all_tasks(tasks, clients):
 
 def compute_task_status(task, clients):
     """
-    Returns the status for a task:
-    - Created: when only created (no executor assigned)
-    - Active: executor assigned but not executed yet
-    - Done: Adhoc executed or now > end time for Schedule
+    Returns the status for a task using centralized TaskStatus constants:
+    - pending: when only created (no executor assigned)
+    - running: executor assigned but not executed yet
+    - completed: Adhoc executed or now > end time for Schedule
+    - failed/cancelled: based on execution results
     
     NOTE: This function should NOT override database status for completed tasks
     """
@@ -611,9 +596,9 @@ def compute_task_status(task, clients):
         logger.debug(f"Task {task.get('id')} already completed with status: {db_status}")
         return db_status
     
-    # If no executor assigned, it's Created
+    # If no executor assigned, it's pending
     if not executor or executor == "":
-        return TaskStatus.CREATED
+        return TaskStatus.PENDING
     
     # Check if task type is Adhoc
     if task_type == TaskType.ADHOC:
@@ -623,14 +608,14 @@ def compute_task_status(task, clients):
             # For ALL tasks, complete when any client succeeds (first success wins)
             if owner == TaskOwnership.ALL:
                 if any(TaskStatus.is_final_state(exec.get("status")) for exec in executions):
-                    return TaskStatus.DONE  # Complete when any client completes the ALL task
+                    return TaskStatus.COMPLETED  # Complete when any client completes the ALL task
             else:
                 # For specific user or Anyone tasks, check if completed
                 if any(TaskStatus.is_final_state(exec.get("status")) for exec in executions):
-                    return TaskStatus.DONE
+                    return TaskStatus.COMPLETED
         
-        # If executor is assigned but no executions yet, it's Active
-        return TaskStatus.ACTIVE
+        # If executor is assigned but no executions yet, it's running
+        return TaskStatus.RUNNING
     
     # Check if task type is Schedule
     elif task_type == "Schedule":
@@ -648,14 +633,14 @@ def compute_task_status(task, clients):
                 else:
                     end_ts = float(end_time)
                 if now > end_ts:
-                    return "Done"
+                    return TaskStatus.COMPLETED
             except Exception:
                 pass
-        # If not past end time and has executor, it's active
-        return "Active"
+        # If not past end time and has executor, it's running
+        return TaskStatus.RUNNING
     
     # Default case
-    return "Created"
+    return TaskStatus.PENDING
 
 def get_active_clients(clients, now=None, timeout=30):
     """
@@ -673,10 +658,10 @@ def get_active_clients(clients, now=None, timeout=30):
         if client.get("last_heartbeat") and now - client["last_heartbeat"] <= timeout
     }
 
-def add_execution_result(task_id, client, status, result):
+def update_execution_result(execution_id, status, result):
     """
-    Add execution result for a task with unique execution ID.
-    Each execution gets its own record, allowing multiple executions per task per client.
+    Update an existing execution result by execution_id.
+    Returns True if update was successful, False if execution_id not found.
     """
     import logging
     import time
@@ -684,14 +669,52 @@ def add_execution_result(task_id, client, status, result):
     
     init_db()
     
-    # Generate unique execution ID
-    execution_id = f"{task_id}_{client}_{int(time.time() * 1000)}"
     current_time = time.time()
     
     with sqlite3.connect(DB_FILE) as conn:
-        logger.info(f"Adding execution result: execution_id={execution_id}, task_id={task_id}, client={client}, status={status}")
+        logger.info(f"Updating execution result: execution_id={execution_id}, status={status}")
         
-        # Always insert a new execution record (no conflict resolution)
+        # Check if execution exists
+        cursor = conn.execute('SELECT id FROM executions WHERE execution_id = ?', (execution_id,))
+        if not cursor.fetchone():
+            logger.warning(f"Execution {execution_id} not found for update")
+            return False
+        
+        # Update the execution record
+        conn.execute('''
+            UPDATE executions SET status = ?, result = ?, updated_at = ? 
+            WHERE execution_id = ?
+        ''', (status, str(result), current_time, execution_id))
+        
+        conn.commit()
+        logger.info(f"Successfully updated execution {execution_id}")
+        return True
+
+def add_execution_result(task_id, client, status, result, execution_id=None):
+    """
+    Add execution result for a task with unique execution ID.
+    Each execution gets its own record, allowing multiple executions per task per client.
+    If execution_id is provided, use it; otherwise generate a new one.
+    Status is normalized using centralized ExecutionStatus system.
+    """
+    import logging
+    import time
+    from constants import ExecutionStatus
+    logger = logging.getLogger("octopus_server")
+    
+    init_db()
+    
+    # Normalize status using centralized system
+    normalized_status = ExecutionStatus.normalize(status)
+    logger.info(f"Normalizing status '{status}' to '{normalized_status}'")
+    
+    # Use provided execution_id or generate unique execution ID
+    if execution_id is None:
+        execution_id = f"{task_id}_{client}_{int(time.time() * 1000)}"
+    current_time = time.time()
+
+    with sqlite3.connect(DB_FILE) as conn:
+        logger.info(f"Adding execution result: execution_id={execution_id}, task_id={task_id}, client={client}, status={normalized_status}")        # Always insert a new execution record (no conflict resolution)
         conn.execute('''
             INSERT INTO executions (execution_id, task_id, client, status, result, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -699,7 +722,7 @@ def add_execution_result(task_id, client, status, result):
             execution_id,
             task_id,
             client,
-            status,
+            normalized_status,  # Use normalized status
             str(result),
             current_time,
             current_time
@@ -707,15 +730,16 @@ def add_execution_result(task_id, client, status, result):
         
         # For adhoc tasks, update the task status to Done when execution completes
         # Check if this is an adhoc task and if the execution status indicates completion
-        if status.lower() in ['success', 'completed', 'done', 'failed', 'error']:
+        if normalized_status in [ExecutionStatus.SUCCESS, ExecutionStatus.FAILED]:  # Only Success and Failed indicate completion
             # Get the task type and timing info
             task_row = conn.execute('SELECT type, execution_end_time FROM tasks WHERE id = ?', (task_id,)).fetchone()
             if task_row:
                 task_type, end_time = task_row
                 
                 if task_type.lower() == 'adhoc':
-                    # Update task status to Done for completed adhoc tasks
-                    task_status = 'Done' if status.lower() in ['success', 'completed', 'done'] else 'Failed'
+                    # Update task status to Done for completed adhoc tasks  
+                    # Use standardized execution statuses: Success -> Done, Failed -> Failed
+                    task_status = 'Done' if status == 'Success' else 'Failed'
                     conn.execute('''
                         UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?
                     ''', (task_status, current_time, task_id))

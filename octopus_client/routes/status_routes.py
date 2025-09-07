@@ -7,6 +7,7 @@ Flask routes for client status monitoring and reporting.
 
 import time
 from flask import jsonify
+from constants import ExecutionStatus
 
 def register_status_routes(app, cache, logger):
     @app.route("/config", methods=["GET"])
@@ -42,7 +43,7 @@ def register_status_routes(app, cache, logger):
             from main import latest_task_info
             
             status_data = {
-                "status": "running",
+                "status": ExecutionStatus.RUNNING,
                 "uptime_seconds": uptime,
                 "uptime_human": _format_uptime(uptime),
                 "login_time": login_time,

@@ -47,10 +47,9 @@
             <select class="form-select" id="statusFilter">
                 <option value="">All Status</option>
                 <option value="success">Success</option>
-                <option value="completed">Completed</option>
                 <option value="running">Running</option>
                 <option value="failed">Failed</option>
-                <option value="pending">Pending</option>
+                <option value="cancelled">Cancelled</option>
             </select>
             <select class="form-select" id="clientFilter">
                 <option value="">All Clients</option>
@@ -77,7 +76,7 @@
     {
         'icon': 'bi bi-check-circle',
         'value': stats.completed_executions or 0,
-        'label': 'Completed',
+        'label': 'Success',
         'class': 'success'
     },
     {
@@ -197,19 +196,6 @@
                             <div class="btn-group btn-group-sm">
                                 <button class="btn btn-outline-primary" title="View Details" onclick="viewExecution({{ execution.id }})">
                                     <i class="bi bi-eye"></i>
-                                </button>
-                                {% if execution.result %}
-                                <button class="btn btn-outline-info" title="View Result" onclick="viewResult({{ execution.id }})">
-                                    <i class="bi bi-file-text"></i>
-                                </button>
-                                {% endif %}
-                                {% if execution.status == 'failed' %}
-                                <button class="btn btn-outline-success" title="Retry" onclick="retryExecution({{ execution.id }})">
-                                    <i class="bi bi-arrow-clockwise"></i>
-                                </button>
-                                {% endif %}
-                                <button class="btn btn-outline-secondary" title="Download Log" onclick="downloadLog({{ execution.id }})">
-                                    <i class="bi bi-download"></i>
                                 </button>
                             </div>
                         </td>
@@ -505,19 +491,24 @@
                             <table class="table table-sm">
                                 <tr><th>ID:</th><td>${execution.id || 'N/A'}</td></tr>
                                 <tr><th>Status:</th><td><span class="badge bg-${execution.status === 'success' || execution.status === 'completed' ? 'success' : execution.status === 'failed' ? 'danger' : 'warning'}">${execution.status || 'Unknown'}</span></td></tr>
-                                <tr><th>Duration:</th><td>${execution.duration ? execution.duration + 's' : 'N/A'}</td></tr>
+                                <tr><th>Duration:</th><td>${execution.duration ? execution.duration.toFixed(2) + 's' : 'N/A'}</td></tr>
                                 <tr><th>Started:</th><td>${execution.created_at ? new Date(execution.created_at * 1000).toLocaleString() : 'N/A'}</td></tr>
+                                <tr><th>Client:</th><td>${execution.client || 'N/A'}</td></tr>
                             </table>
                         </div>
                         <div class="col-md-6">
                             <h6>Task Information</h6>
                             <table class="table table-sm">
                                 <tr><th>Task ID:</th><td>${execution.task_id || 'N/A'}</td></tr>
-                                <tr><th>Plugin:</th><td>${execution.plugin || 'N/A'}</td></tr>
-                                <tr><th>Action:</th><td>${execution.action || 'N/A'}</td></tr>
-                                <tr><th>Client:</th><td>${execution.client || 'N/A'}</td></tr>
+                                <tr><th>Plugin:</th><td><span class="badge bg-info">${execution.plugin || 'N/A'}</span></td></tr>
+                                <tr><th>Action:</th><td><span class="badge bg-secondary">${execution.action || 'N/A'}</span></td></tr>
+                                <tr><th>Owner:</th><td>${execution.owner || 'N/A'}</td></tr>
                             </table>
                         </div>
+                    </div>
+                    <div class="mt-3">
+                        <h6>Input Arguments</h6>
+                        <pre class="bg-light p-2 rounded"><code>${execution.input_args || 'No arguments'}</code></pre>
                     </div>
                     <div class="mt-3">
                         <h6>Result</h6>
