@@ -297,6 +297,86 @@ class ClientGlobalCacheManager:
         """Get all user preferences"""
         return self._caches['user_preferences'].all()
     
+    # === User Parameters Methods ===
+    
+    def get_user_parameter(self, category: str, param_name: str, default: Any = None) -> Any:
+        """
+        Get a user parameter value for the current user
+        
+        Args:
+            category: Parameter category (e.g., 'api_credentials', 'notifications')
+            param_name: Parameter name
+            default: Default value if parameter not found
+            
+        Returns:
+            Parameter value or default
+        """
+        user_name = self.get_current_user_name()
+        if not user_name:
+            self.logger.warning("No current user set, cannot get user parameter")
+            return default
+        
+        # Try to get from category-specific cache first (faster)
+        category_params = self.get(f"user_params_{user_name}_{category}", 'server_data', None, {})
+        if category_params and param_name in category_params:
+            param_data = category_params[param_name]
+            return param_data.get('value', default) if isinstance(param_data, dict) else param_data
+        
+        # Fall back to full parameters cache
+        all_params = self.get(f"user_params_{user_name}", 'server_data', None, {})
+        if category in all_params and param_name in all_params[category]:
+            param_data = all_params[category][param_name]
+            return param_data.get('value', default) if isinstance(param_data, dict) else param_data
+        
+        return default
+    
+    def get_user_parameters_category(self, category: str) -> Dict[str, Any]:
+        """
+        Get all parameters for a specific category for the current user
+        
+        Args:
+            category: Parameter category
+            
+        Returns:
+            Dictionary of parameter_name -> parameter_data
+        """
+        user_name = self.get_current_user_name()
+        if not user_name:
+            self.logger.warning("No current user set, cannot get user parameters")
+            return {}
+        
+        # Try category-specific cache first
+        category_params = self.get(f"user_params_{user_name}_{category}", 'server_data', None, {})
+        if category_params:
+            return category_params
+        
+        # Fall back to full parameters cache
+        all_params = self.get(f"user_params_{user_name}", 'server_data', None, {})
+        return all_params.get(category, {})
+    
+    def get_all_user_parameters(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Get all user parameters for the current user
+        
+        Returns:
+            Dictionary of category -> {parameter_name -> parameter_data}
+        """
+        user_name = self.get_current_user_name()
+        if not user_name:
+            self.logger.warning("No current user set, cannot get user parameters")
+            return {}
+        
+        return self.get(f"user_params_{user_name}", 'server_data', None, {})
+    
+    def force_sync_user_parameters(self) -> bool:
+        """Force sync user parameters from server"""
+        user_name = self.get_current_user_name()
+        if not user_name:
+            self.logger.warning("No current user set, cannot sync user parameters")
+            return False
+        
+        return self._sync_user_parameters(user_name)
+    
     # === Server Data Sync Methods ===
     
     def sync_from_server(self, force: bool = False) -> bool:
@@ -326,6 +406,8 @@ class ClientGlobalCacheManager:
                 user_name = self.get_current_user_name()
                 if user_name:
                     self._sync_user_profile_data(user_name)
+                    # Sync user parameters as well
+                    self._sync_user_parameters(user_name)
                 
                 # Sync available plugins
                 self._sync_available_plugins()
@@ -435,6 +517,61 @@ class ClientGlobalCacheManager:
             return False
         except Exception as e:
             self.logger.error(f"Error syncing plugins: {e}")
+            return False
+
+    def _sync_user_parameters(self, username: str) -> bool:
+        """Sync user parameters from server"""
+        try:
+            # Prepare headers with user identity
+            headers = {}
+            user_identity = self.get_current_user_identity()
+            current_user = self.get_current_user_name()
+
+            if user_identity:
+                headers['X-User-Identity'] = user_identity
+            if current_user:
+                headers['X-Username'] = current_user
+            
+            response = requests.get(
+                f"{self.server_url}/api/cache/user/{username}/parameters", 
+                headers=headers,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                parameters_data = response.json()
+                
+                # Store user parameters data (only if it's for the current user)
+                if username == current_user:
+                    # Store in server_data cache with structured keys for plugin access
+                    self.set(f"user_params_{username}", parameters_data, 'server_data', 3600)  # 1 hour TTL
+                    
+                    # Also store individual categories for faster plugin access
+                    for category, params in parameters_data.items():
+                        self.set(f"user_params_{username}_{category}", params, 'server_data', 3600)
+                    
+                    self.logger.debug(f"Synced user parameters for user {username}")
+                    return True
+                else:
+                    self.logger.warning(f"Received parameters for {username} but current user is {current_user}")
+                    return False
+            elif response.status_code == 403:
+                self.logger.warning(f"Access denied when syncing parameters for {username}")
+                return False
+            elif response.status_code == 404:
+                self.logger.debug(f"No parameters found for user {username}")
+                # Store empty parameters to indicate we checked
+                self.set(f"user_params_{username}", {}, 'server_data', 3600)
+                return True
+            else:
+                self.logger.warning(f"Server returned {response.status_code} for user parameters")
+                return False
+                
+        except requests.RequestException as e:
+            self.logger.error(f"Network error syncing user parameters: {e}")
+            return False
+        except Exception as e:
+            self.logger.error(f"Error syncing user parameters: {e}")
             return False
     
     # === Auto Sync Control ===
@@ -603,3 +740,59 @@ def get_server_data(key: str, default: Any = None) -> Any:
 def sync_from_server(force: bool = False) -> bool:
     """Global function to sync data from server"""
     return get_client_global_cache_manager().sync_from_server(force)
+
+
+# User parameters helper functions for plugins
+def get_user_parameter(category: str, param_name: str, default: Any = None) -> Any:
+    """
+    Global function for plugins to get user parameters
+    
+    Args:
+        category: Parameter category (e.g., 'api_credentials', 'notifications')
+        param_name: Parameter name  
+        default: Default value if parameter not found
+        
+    Returns:
+        Parameter value or default
+        
+    Example:
+        api_key = get_user_parameter('api_credentials', 'servicenow_api_key', 'default_key')
+    """
+    return get_client_global_cache_manager().get_user_parameter(category, param_name, default)
+
+
+def get_user_parameters_category(category: str) -> Dict[str, Any]:
+    """
+    Global function for plugins to get all parameters in a category
+    
+    Args:
+        category: Parameter category
+        
+    Returns:
+        Dictionary of parameter_name -> parameter_data
+        
+    Example:
+        credentials = get_user_parameters_category('api_credentials')
+        api_key = credentials.get('servicenow_api_key', {}).get('value')
+    """
+    return get_client_global_cache_manager().get_user_parameters_category(category)
+
+
+def get_all_user_parameters() -> Dict[str, Dict[str, Any]]:
+    """
+    Global function for plugins to get all user parameters
+    
+    Returns:
+        Dictionary of category -> {parameter_name -> parameter_data}
+    """
+    return get_client_global_cache_manager().get_all_user_parameters()
+
+
+def force_sync_user_parameters() -> bool:
+    """
+    Global function to force sync user parameters from server
+    
+    Returns:
+        True if sync successful, False otherwise
+    """
+    return get_client_global_cache_manager().force_sync_user_parameters()

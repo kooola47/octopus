@@ -81,6 +81,61 @@ def register_cache_api_routes(app, global_cache, logger):
             logger.error(f"Error setting user profile cache for {username}: {e}")
             return jsonify({"error": str(e)}), 500
 
+    @app.route("/api/cache/user/<username>/parameters", methods=["GET"])
+    def api_get_user_parameters_cache(username):
+        """Get user parameters cache data for clients"""
+        try:
+            requesting_user = get_requesting_user_identity(logger)
+            logger.info(f"Client requesting user parameters for {username}: {requesting_user}")
+            
+            # Check access rights - only the user themselves or admin can access parameters
+            if requesting_user and requesting_user != username and not global_cache._is_admin_user(requesting_user):
+                return jsonify({"error": "Access denied: You can only access your own parameters"}), 403
+            
+            # Try to get from cache first
+            cache_key = f"user_params_{username}"
+            cached_params = global_cache.get(cache_key, 'startup', None, None)
+            
+            if cached_params:
+                return jsonify(cached_params)
+            else:
+                # If not in cache, try to load and cache from database
+                try:
+                    from user_parameters import UserParametersManager
+                    import sys
+                    import os
+                    
+                    # Add the server directory to path if needed
+                    server_dir = os.path.dirname(os.path.dirname(__file__))
+                    if server_dir not in sys.path:
+                        sys.path.append(server_dir)
+                    
+                    from dbhelper import get_db_connection
+                    
+                    class DBHelper:
+                        def get_connection(self):
+                            return get_db_connection()
+                    
+                    params_manager = UserParametersManager(DBHelper())
+                    parameters = params_manager.get_user_parameters(username)
+                    
+                    if parameters:
+                        # Cache the parameters
+                        params_manager.cache_user_parameters(username, global_cache)
+                        return jsonify(parameters)
+                    else:
+                        return jsonify({})
+                        
+                except Exception as e:
+                    logger.error(f"Error loading user parameters for {username}: {e}")
+                    return jsonify({"error": "Failed to load user parameters"}), 500
+                    
+        except PermissionError as e:
+            return jsonify({"error": str(e)}), 403
+        except Exception as e:
+            logger.error(f"Error getting user parameters for {username}: {e}")
+            return jsonify({"error": str(e)}), 500
+
     @app.route("/api/cache/broadcast/<key>", methods=["POST"])
     def api_broadcast_to_clients(key):
         """Broadcast data to all clients"""
