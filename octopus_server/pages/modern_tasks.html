@@ -465,6 +465,90 @@
         </div>
     </div>
 </div>
+
+<!-- Task Details Modal -->
+<div class="modal fade" id="taskDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Task Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Task ID</label>
+                            <p class="form-control-plaintext" id="detailTaskId">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Name</label>
+                            <p class="form-control-plaintext" id="detailTaskName">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Description</label>
+                            <p class="form-control-plaintext" id="detailTaskDescription">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Owner</label>
+                            <p class="form-control-plaintext" id="detailTaskOwner">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Executor</label>
+                            <p class="form-control-plaintext" id="detailTaskExecutor">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Plugin</label>
+                            <p class="form-control-plaintext" id="detailTaskPlugin">-</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Status</label>
+                            <p class="form-control-plaintext" id="detailTaskStatus">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Type</label>
+                            <p class="form-control-plaintext" id="detailTaskType">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Interval</label>
+                            <p class="form-control-plaintext" id="detailTaskInterval">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Function</label>
+                            <p class="form-control-plaintext" id="detailTaskFunction">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Parameters</label>
+                            <p class="form-control-plaintext" id="detailTaskParams">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Created</label>
+                            <p class="form-control-plaintext" id="detailTaskCreated">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Updated</label>
+                            <p class="form-control-plaintext" id="detailTaskUpdated">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editTask(document.getElementById('detailTaskId').textContent)">
+                    <i class="bi bi-pencil me-1"></i> Edit Task
+                </button>
+                <button type="button" class="btn btn-success" onclick="runTask(document.getElementById('detailTaskId').textContent)">
+                    <i class="bi bi-play me-1"></i> Run Task
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -532,20 +616,74 @@
     
     // Task actions
     function viewTask(taskId) {
-        // Implementation for viewing task details
-        console.log('View task:', taskId);
+        // Fetch task details and show in modal
+        fetch(`/api/tasks/${taskId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast('Error loading task details: ' + data.error, 'danger');
+                } else {
+                    showTaskDetailsModal(data.task);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching task details:', error);
+                showToast('Error loading task details', 'danger');
+            });
     }
     
     function runTask(taskId) {
         if (confirm('Run this task now?')) {
-            // Implementation for running task
-            console.log('Run task:', taskId);
+            // Show loading state
+            const runButton = document.querySelector(`button[onclick="runTask('${taskId}')"]`);
+            if (runButton) {
+                runButton.disabled = true;
+                runButton.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+            }
+            
+            fetch(`/api/tasks/${taskId}/run`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast('Error running task: ' + data.error, 'danger');
+                } else {
+                    showToast('Task started successfully!', 'success');
+                }
+            })
+            .catch(error => {
+                console.error('Error running task:', error);
+                showToast('Error running task', 'danger');
+            })
+            .finally(() => {
+                // Restore button state
+                if (runButton) {
+                    runButton.disabled = false;
+                    runButton.innerHTML = '<i class="bi bi-play"></i>';
+                }
+            });
         }
     }
     
     function editTask(taskId) {
-        // Implementation for editing task
-        console.log('Edit task:', taskId);
+        // Fetch task details and show in edit modal
+        fetch(`/api/tasks/${taskId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast('Error loading task details: ' + data.error, 'danger');
+                } else {
+                    showEditTaskModal(data.task);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching task details:', error);
+                showToast('Error loading task details', 'danger');
+            });
     }
     
     function deleteTask(taskId) {
@@ -1189,6 +1327,34 @@
     
     function refreshTasks() {
         location.reload();
+    }
+    
+    // Modal helper functions
+    function showTaskDetailsModal(task) {
+        const modal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
+        
+        // Populate modal with task details
+        document.getElementById('detailTaskId').textContent = task.id || 'N/A';
+        document.getElementById('detailTaskName').textContent = task.name || task.action || 'Unnamed Task';
+        document.getElementById('detailTaskDescription').textContent = task.description || 'No description provided';
+        document.getElementById('detailTaskOwner').textContent = task.owner === 'ALL' ? 'Anyone' : (task.owner || 'Anyone');
+        document.getElementById('detailTaskExecutor').textContent = task.executor || 'Not assigned';
+        document.getElementById('detailTaskPlugin').textContent = task.plugin || 'Unknown';
+        document.getElementById('detailTaskStatus').textContent = (task.status || '').charAt(0).toUpperCase() + (task.status || '').slice(1);
+        document.getElementById('detailTaskType').textContent = task.type || 'Unknown';
+        document.getElementById('detailTaskInterval').textContent = task.interval || 'N/A';
+        document.getElementById('detailTaskFunction').textContent = task.function || 'N/A';
+        document.getElementById('detailTaskParams').textContent = task.params || 'None';
+        document.getElementById('detailTaskCreated').textContent = task.created_at ? new Date(task.created_at * 1000).toLocaleString() : 'N/A';
+        document.getElementById('detailTaskUpdated').textContent = task.updated_at ? new Date(task.updated_at * 1000).toLocaleString() : 'N/A';
+        
+        modal.show();
+    }
+    
+    function showEditTaskModal(task) {
+        // For now, redirect to a simpler implementation
+        // In a full implementation, we would populate an edit form modal
+        showToast('Edit functionality will be available soon. Use the Create Task button to add new tasks for now.', 'info');
     }
     
     // Initialize filters on page load

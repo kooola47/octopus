@@ -12,7 +12,7 @@ import logging
 import os
 from anyio import current_time
 from flask import request, render_template, url_for, jsonify, Response
-from dbhelper import get_db_file, get_tasks, get_active_clients, add_task, delete_task
+from dbhelper import get_db_file, get_tasks, get_active_clients, add_task, delete_task, update_task
 from plugin_discovery import PluginDiscovery
 from services.global_cache_manager import GlobalCacheManager
 from constants import ExecutionStatus, TaskStatus, ClientStatus
@@ -495,6 +495,37 @@ def register_modern_routes(app, global_cache: GlobalCacheManager, logger):
             
         except Exception as e:
             logger.error(f"Error creating task: {e}")
+            return {"error": "Internal server error"}, 500
+
+    @app.route("/api/tasks/<task_id>", methods=["PUT"])
+    def api_update_task(task_id):
+        """Update a specific task via modern API"""
+        try:
+            task_data = request.get_json()
+            
+            if not task_data:
+                return {"error": "No task data provided"}, 400
+            
+            # Check if task exists first
+            with sqlite3.connect(get_db_file()) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id FROM tasks WHERE id = ?", (task_id,))
+                task = cursor.fetchone()
+                
+                if not task:
+                    return {"error": "Task not found"}, 404
+            
+            # Update the task
+            success = update_task(task_id, task_data)
+            
+            if success:
+                logger.info(f"Task {task_id} updated successfully")
+                return {"message": f"Task {task_id} updated successfully"}
+            else:
+                return {"error": "Failed to update task"}, 500
+                
+        except Exception as e:
+            logger.error(f"Error updating task {task_id}: {e}")
             return {"error": "Internal server error"}, 500
 
     # Execution Management API Endpoints
