@@ -1287,6 +1287,10 @@ def get_available_owners():
 def get_executions_paginated(page=1, page_size=25, search='', status_filter='', client_filter='', time_range=''):
     """Get executions with pagination and filters"""
     try:
+        import logging
+        logger = logging.getLogger("octopus_server")
+        logger.info(f"DEBUG: get_executions_paginated called with: page={page}, page_size={page_size}, search='{search}', status_filter='{status_filter}', client_filter='{client_filter}', time_range='{time_range}'")
+        
         with sqlite3.connect(get_db_file()) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -1301,8 +1305,12 @@ def get_executions_paginated(page=1, page_size=25, search='', status_filter='', 
                 params.extend([search_param, search_param, search_param])
             
             if status_filter:
+                # Normalize the status filter using the centralized constants
+                from constants import ExecutionStatus
+                normalized_status = ExecutionStatus.normalize(status_filter)
+                logger.info(f"DEBUG: Filtering by status - input: '{status_filter}', normalized: '{normalized_status}'")
                 where_conditions.append("status = ?")
-                params.append(status_filter)
+                params.append(normalized_status)
             
             if client_filter:
                 where_conditions.append("client = ?")
@@ -1356,6 +1364,7 @@ def get_executions_paginated(page=1, page_size=25, search='', status_filter='', 
                 
                 executions.append(exec_dict)
             
+            logger.info(f"DEBUG: Returning {len(executions)} executions out of {total_executions} total")
             return executions, total_executions
     except Exception as e:
         return [], 0

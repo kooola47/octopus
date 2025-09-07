@@ -39,30 +39,30 @@
                 <i class="bi bi-search text-muted"></i>
             </span>
             <input type="text" id="executionSearch" class="form-control search-box border-start-0" 
-                   placeholder="Search by task, client, or result...">
+                   placeholder="Search by task, client, or result..." value="{{ request.args.get('search', '') }}">
         </div>
     </div>
     <div class="col-lg-8">
         <div class="d-flex gap-2">
             <select class="form-select" id="statusFilter">
                 <option value="">All Status</option>
-                <option value="success">Success</option>
-                <option value="running">Running</option>
-                <option value="failed">Failed</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="success"{% if request.args.get('status') == 'success' %} selected{% endif %}>Success</option>
+                <option value="running"{% if request.args.get('status') == 'running' %} selected{% endif %}>Running</option>
+                <option value="failed"{% if request.args.get('status') == 'failed' %} selected{% endif %}>Failed</option>
+                <option value="cancelled"{% if request.args.get('status') == 'cancelled' %} selected{% endif %}>Cancelled</option>
             </select>
             <select class="form-select" id="clientFilter">
                 <option value="">All Clients</option>
                 {% for client_id in clients.keys() %}
-                <option value="{{ client_id }}">{{ client_id }}</option>
+                <option value="{{ client_id }}"{% if request.args.get('client') == client_id %} selected{% endif %}>{{ client_id }}</option>
                 {% endfor %}
             </select>
             <select class="form-select" id="dateFilter">
                 <option value="">All Time</option>
-                <option value="today">Today</option>
-                <option value="yesterday">Yesterday</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
+                <option value="today"{% if request.args.get('time_range') == 'today' %} selected{% endif %}>Today</option>
+                <option value="yesterday"{% if request.args.get('time_range') == 'yesterday' %} selected{% endif %}>Yesterday</option>
+                <option value="week"{% if request.args.get('time_range') == 'week' %} selected{% endif %}>This Week</option>
+                <option value="month"{% if request.args.get('time_range') == 'month' %} selected{% endif %}>This Month</option>
             </select>
             <button class="btn btn-outline-secondary" onclick="clearFilters()">
                 <i class="bi bi-x-circle"></i>
@@ -396,42 +396,58 @@
         filters.forEach(filterId => {
             const filter = document.getElementById(filterId);
             if (filter) {
-                filter.addEventListener('change', applyFilters);
+                filter.addEventListener('change', function() {
+                    // Update URL with new filter values and reload
+                    const url = new URL(window.location);
+                    
+                    // Get current filter values
+                    const statusValue = document.getElementById('statusFilter').value;
+                    const clientValue = document.getElementById('clientFilter').value;
+                    const dateValue = document.getElementById('dateFilter').value;
+                    
+                    // Update URL parameters
+                    if (statusValue) {
+                        url.searchParams.set('status', statusValue);
+                    } else {
+                        url.searchParams.delete('status');
+                    }
+                    
+                    if (clientValue) {
+                        url.searchParams.set('client', clientValue);
+                    } else {
+                        url.searchParams.delete('client');
+                    }
+                    
+                    if (dateValue) {
+                        url.searchParams.set('time_range', dateValue);
+                    } else {
+                        url.searchParams.delete('time_range');
+                    }
+                    
+                    // Reset to first page when applying filters
+                    url.searchParams.set('page', '1');
+                    
+                    // Reload with new URL
+                    window.location.href = url.toString();
+                });
             }
         });
     }
     
     function applyFilters() {
-        const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
-        const clientFilter = document.getElementById('clientFilter').value;
-        const dateFilter = document.getElementById('dateFilter').value;
-        const rows = document.querySelectorAll('.execution-item');
-        
-        rows.forEach(row => {
-            const status = row.querySelector('.badge').textContent.toLowerCase().trim();
-            const client = row.querySelectorAll('.badge')[1]?.textContent.trim() || '';
-            
-            const statusMatch = !statusFilter || status.includes(statusFilter);
-            const clientMatch = !clientFilter || client.includes(clientFilter);
-            const dateMatch = true; // TODO: Implement date filtering
-            
-            if (statusMatch && clientMatch && dateMatch) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
+        // This function is no longer needed since we're doing server-side filtering
+        // Keep it for compatibility but it won't do anything
     }
     
     function clearFilters() {
-        document.getElementById('statusFilter').value = '';
-        document.getElementById('clientFilter').value = '';
-        document.getElementById('dateFilter').value = '';
-        document.getElementById('executionSearch').value = '';
-        
-        document.querySelectorAll('.execution-item').forEach(row => {
-            row.style.display = '';
-        });
+        // Clear URL parameters and reload
+        const url = new URL(window.location);
+        url.searchParams.delete('status');
+        url.searchParams.delete('client');
+        url.searchParams.delete('time_range');
+        url.searchParams.delete('search');
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
     }
     
     // View toggle functionality
