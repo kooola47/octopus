@@ -30,6 +30,98 @@ def register_status_routes(app, cache, logger):
         except Exception as e:
             logger.error(f"Error getting all cache data: {e}")
             return jsonify({"status": "error", "error": str(e), "timestamp": time.time()}), 500
+
+    @app.route("/user-params", methods=["GET"])
+    def get_user_params():
+        """Return user parameters organized by category"""
+        try:
+            from global_cache_manager import get_params_summary, get_params, list_param_categories
+            
+            # Get organized summary
+            summary = get_params_summary()
+            
+            # Get all parameters organized by category
+            all_params = get_params()
+            
+            # Format for better display
+            formatted_params = {}
+            for category, params in all_params.items():
+                formatted_params[category] = {}
+                for param_name, param_data in params.items():
+                    if isinstance(param_data, dict):
+                        # Show value but mask sensitive data
+                        value = param_data.get('value', '')
+                        if param_data.get('type') == 'string' and len(str(value)) > 20:
+                            # Likely sensitive data, mask it
+                            value = f"{str(value)[:4]}...{str(value)[-4:]}" if len(str(value)) > 8 else "***"
+                        
+                        formatted_params[category][param_name] = {
+                            "value": value,
+                            "type": param_data.get('type', 'string'),
+                            "description": param_data.get('description', ''),
+                            "is_set": param_data.get('value') is not None
+                        }
+                    else:
+                        formatted_params[category][param_name] = {
+                            "value": param_data,
+                            "type": "unknown",
+                            "description": "",
+                            "is_set": param_data is not None
+                        }
+            
+            return jsonify({
+                "status": "ok",
+                "summary": summary,
+                "parameters": formatted_params,
+                "categories": list_param_categories(),
+                "timestamp": time.time()
+            })
+        except Exception as e:
+            logger.error(f"Error getting user parameters: {e}")
+            return jsonify({"status": "error", "error": str(e), "timestamp": time.time()}), 500
+
+    @app.route("/user-params/<category>", methods=["GET"])
+    def get_user_params_category(category):
+        """Return user parameters for a specific category"""
+        try:
+            from global_cache_manager import get_params
+            
+            params = get_params(category)
+            
+            # Format the response
+            formatted_params = {}
+            for param_name, param_data in params.items():
+                if isinstance(param_data, dict):
+                    # Show value but mask sensitive data
+                    value = param_data.get('value', '')
+                    if param_data.get('type') == 'string' and len(str(value)) > 20:
+                        # Likely sensitive data, mask it
+                        value = f"{str(value)[:4]}...{str(value)[-4:]}" if len(str(value)) > 8 else "***"
+                    
+                    formatted_params[param_name] = {
+                        "value": value,
+                        "type": param_data.get('type', 'string'),
+                        "description": param_data.get('description', ''),
+                        "is_set": param_data.get('value') is not None
+                    }
+                else:
+                    formatted_params[param_name] = {
+                        "value": param_data,
+                        "type": "unknown", 
+                        "description": "",
+                        "is_set": param_data is not None
+                    }
+            
+            return jsonify({
+                "status": "ok",
+                "category": category,
+                "parameters": formatted_params,
+                "param_count": len(formatted_params),
+                "timestamp": time.time()
+            })
+        except Exception as e:
+            logger.error(f"Error getting user parameters for category {category}: {e}")
+            return jsonify({"status": "error", "error": str(e), "timestamp": time.time()}), 500
     """Register status monitoring routes with the Flask client app"""
 
     @app.route("/status", methods=["GET"])

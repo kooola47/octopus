@@ -377,6 +377,119 @@ class ClientGlobalCacheManager:
         
         return self._sync_user_parameters(user_name)
     
+    # === Simplified User Parameter Access (Auto-detects current user) ===
+    
+    def get_param(self, category: str, param_name: str, default: Any = None) -> Any:
+        """
+        Simplified method to get user parameter (auto-detects current user)
+        
+        Args:
+            category: Parameter category
+            param_name: Parameter name  
+            default: Default value
+            
+        Returns:
+            Parameter value or default
+        """
+        return self.get_user_parameter(category, param_name, default)
+    
+    def get_params(self, category: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Get user parameters by category or all parameters (auto-detects current user)
+        
+        Args:
+            category: Specific category, or None for all categories
+            
+        Returns:
+            Parameters dictionary organized by category
+        """
+        if category:
+            return self.get_user_parameters_category(category)
+        else:
+            return self.get_all_user_parameters()
+    
+    def list_param_categories(self) -> List[str]:
+        """
+        Get list of available parameter categories for current user
+        
+        Returns:
+            List of category names
+        """
+        all_params = self.get_all_user_parameters()
+        return list(all_params.keys())
+    
+    def get_api_credentials(self) -> Dict[str, Any]:
+        """Get all API credentials for current user"""
+        return self.get_params('api_credentials')
+    
+    def get_notifications_config(self) -> Dict[str, Any]:
+        """Get notification configuration for current user"""
+        return self.get_params('notifications')
+    
+    def get_integrations_config(self) -> Dict[str, Any]:
+        """Get integrations configuration for current user"""
+        return self.get_params('integrations')
+    
+    def get_user_preferences(self) -> Dict[str, Any]:
+        """Get user preferences for current user"""
+        return self.get_params('preferences')
+    
+    def get_custom_params(self) -> Dict[str, Any]:
+        """Get custom parameters for current user"""
+        return self.get_params('custom')
+    
+    def get_params_summary(self) -> Dict[str, Any]:
+        """
+        Get a summary of user parameters organized by category
+        
+        Returns:
+            Organized summary with counts and available parameters
+        """
+        user_name = self.get_current_user_name()
+        if not user_name:
+            return {"error": "No current user set"}
+        
+        all_params = self.get_all_user_parameters()
+        
+        summary = {
+            "user": user_name,
+            "total_categories": len(all_params),
+            "categories": {},
+            "last_sync": self._last_server_sync
+        }
+        
+        for category, params in all_params.items():
+            param_list = []
+            sensitive_count = 0
+            
+            for param_name, param_data in params.items():
+                if isinstance(param_data, dict):
+                    param_info = {
+                        "name": param_name,
+                        "type": param_data.get("type", "string"),
+                        "description": param_data.get("description", ""),
+                        "has_value": param_data.get("value") is not None
+                    }
+                    if param_data.get("type") == "string" and len(str(param_data.get("value", ""))) > 20:
+                        sensitive_count += 1
+                else:
+                    param_info = {
+                        "name": param_name,
+                        "type": "unknown",
+                        "description": "",
+                        "has_value": param_data is not None
+                    }
+                
+                param_list.append(param_info)
+            
+            summary["categories"][category] = {
+                "param_count": len(params),
+                "sensitive_params": sensitive_count,
+                "parameters": param_list
+            }
+        
+        return summary
+    
     # === Server Data Sync Methods ===
     
     def sync_from_server(self, force: bool = False) -> bool:
@@ -796,3 +909,124 @@ def force_sync_user_parameters() -> bool:
         True if sync successful, False otherwise
     """
     return get_client_global_cache_manager().force_sync_user_parameters()
+
+
+# Simplified user parameter access (no username required)
+def get_param(category: str, param_name: str, default: Any = None) -> Any:
+    """
+    Simplified global function to get user parameter (auto-detects current user)
+    
+    Args:
+        category: Parameter category
+        param_name: Parameter name
+        default: Default value
+        
+    Returns:
+        Parameter value or default
+        
+    Example:
+        api_key = get_param('api_credentials', 'servicenow_api_key')
+        email = get_param('notifications', 'email_address', 'no-email@example.com')
+    """
+    return get_client_global_cache_manager().get_param(category, param_name, default)
+
+
+def get_params(category: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Get user parameters by category or all parameters (auto-detects current user)
+    
+    Args:
+        category: Specific category, or None for all categories
+        
+    Returns:
+        Parameters dictionary organized by category
+        
+    Examples:
+        # Get all API credentials
+        credentials = get_params('api_credentials')
+        
+        # Get all user parameters
+        all_params = get_params()
+    """
+    return get_client_global_cache_manager().get_params(category)
+
+
+def list_param_categories() -> List[str]:
+    """
+    Get list of available parameter categories for current user
+    
+    Returns:
+        List of category names
+        
+    Example:
+        categories = list_param_categories()
+        # Returns: ['api_credentials', 'notifications', 'integrations', 'preferences']
+    """
+    return get_client_global_cache_manager().list_param_categories()
+
+
+def get_api_credentials() -> Dict[str, Any]:
+    """
+    Get all API credentials for current user
+    
+    Returns:
+        Dictionary of API credentials
+        
+    Example:
+        creds = get_api_credentials()
+        servicenow_key = creds.get('servicenow_api_key', {}).get('value')
+    """
+    return get_client_global_cache_manager().get_api_credentials()
+
+
+def get_notifications_config() -> Dict[str, Any]:
+    """
+    Get notification configuration for current user
+    
+    Returns:
+        Dictionary of notification settings
+        
+    Example:
+        notifications = get_notifications_config()
+        email = notifications.get('email_address', {}).get('value')
+    """
+    return get_client_global_cache_manager().get_notifications_config()
+
+
+def get_integrations_config() -> Dict[str, Any]:
+    """
+    Get integrations configuration for current user
+    
+    Returns:
+        Dictionary of integration settings
+        
+    Example:
+        integrations = get_integrations_config()
+        servicenow_url = integrations.get('servicenow_instance', {}).get('value')
+    """
+    return get_client_global_cache_manager().get_integrations_config()
+
+
+def get_user_preferences() -> Dict[str, Any]:
+    """
+    Get user preferences for current user
+    
+    Returns:
+        Dictionary of user preferences
+    """
+    return get_client_global_cache_manager().get_user_preferences()
+
+
+def get_params_summary() -> Dict[str, Any]:
+    """
+    Get a summary of user parameters organized by category
+    
+    Returns:
+        Organized summary with counts and available parameters
+        
+    Example:
+        summary = get_params_summary()
+        print(f"User: {summary['user']}")
+        print(f"Categories: {list(summary['categories'].keys())}")
+    """
+    return get_client_global_cache_manager().get_params_summary()

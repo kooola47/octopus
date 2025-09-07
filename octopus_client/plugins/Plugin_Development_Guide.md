@@ -70,7 +70,14 @@ from global_cache_manager import (
     get_user_parameter, 
     get_user_parameters_category, 
     get_all_user_parameters,
-    force_sync_user_parameters
+    force_sync_user_parameters,
+    # Simplified methods (auto-detect current user)
+    get_param,
+    get_params,
+    get_api_credentials,
+    get_notifications_config,
+    get_integrations_config,
+    get_params_summary
 )
 
 def example_with_user_params():
@@ -79,15 +86,30 @@ def example_with_user_params():
     # Force sync parameters from server (optional)
     sync_success = force_sync_user_parameters()
     
-    # Get specific parameter
-    api_key = get_user_parameter('api_credentials', 'servicenow_api_key', 'default_key')
+    # === SIMPLIFIED METHODS (Recommended) ===
+    
+    # Get specific parameter (no username needed)
+    api_key = get_param('api_credentials', 'servicenow_api_key', 'default_key')
     
     # Get all credentials in a category
-    credentials = get_user_parameters_category('api_credentials')
+    credentials = get_params('api_credentials')
     
     # Get notification settings
-    email = get_user_parameter('notifications', 'email_address', 'no-email@example.com')
-    notify = get_user_parameter('notifications', 'notify_on_completion', False)
+    email = get_param('notifications', 'email_address', 'no-email@example.com')
+    notify = get_param('notifications', 'notify_on_completion', False)
+    
+    # Get all parameters by category
+    all_api_creds = get_api_credentials()
+    notifications = get_notifications_config()
+    integrations = get_integrations_config()
+    
+    # Get organized summary
+    summary = get_params_summary()
+    
+    # === ORIGINAL METHODS (Still available) ===
+    
+    # Get specific parameter (explicit method)
+    api_key_old = get_user_parameter('api_credentials', 'servicenow_api_key', 'default_key')
     
     # Get integration settings
     servicenow_url = get_user_parameter('integrations', 'servicenow_instance', 'https://dev.service-now.com')
@@ -99,10 +121,62 @@ def example_with_user_params():
             "api_key_set": api_key != 'default_key',
             "email": email,
             "notifications_enabled": notify,
-            "servicenow_configured": servicenow_url != 'https://dev.service-now.com'
+            "servicenow_configured": servicenow_url != 'https://dev.service-now.com',
+            "available_categories": list(summary.get('categories', {}).keys()),
+            "total_params": sum(cat['param_count'] for cat in summary.get('categories', {}).values())
         },
         "type": "user_params_example"
     }
+```
+
+### Simplified Usage Examples
+```python
+# Get API credentials without specifying username
+def get_servicenow_config():
+    """Get ServiceNow configuration using simplified methods"""
+    
+    # Get API key
+    api_key = get_param('api_credentials', 'servicenow_api_key')
+    
+    # Get instance URL  
+    instance_url = get_param('integrations', 'servicenow_instance')
+    
+    # Get user email for notifications
+    user_email = get_param('notifications', 'email_address', 'noreply@company.com')
+    
+    # Or get all integration settings at once
+    integrations = get_integrations_config()
+    
+    return {
+        'api_key': api_key,
+        'instance_url': instance_url,
+        'user_email': user_email,
+        'all_integrations': integrations
+    }
+
+# Access parameters by category
+def check_user_configuration():
+    """Check what parameters are configured for the user"""
+    
+    # Get summary of all parameters
+    summary = get_params_summary()
+    
+    # Get specific categories
+    api_creds = get_api_credentials()
+    notifications = get_notifications_config()
+    
+    config_status = {
+        'user': summary.get('user'),
+        'categories_available': list(summary.get('categories', {}).keys()),
+        'api_credentials_set': len(api_creds) > 0,
+        'notifications_configured': len(notifications) > 0,
+        'servicenow_ready': bool(
+            get_param('api_credentials', 'servicenow_api_key') and 
+            get_param('integrations', 'servicenow_instance')
+        )
+    }
+    
+    return config_status
 ```
 
 ### Server-Side Parameter Access
